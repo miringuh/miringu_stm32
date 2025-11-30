@@ -1,0 +1,9 @@
+{
+  "C_Cpp.errorSquiggles": "disabled",
+  "files.associations": {
+    "bitplace.h": "c",
+    "spi.h": "c",
+    "rcc_conf.h": "c",
+    "eusart.h": "c"
+  }
+}
