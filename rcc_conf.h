@@ -40,7 +40,7 @@ void pllInit()
         while (!(RCC->CR & RCC_CR_PLLRDY))
                 ;
         RCC->CFGR &= ~RCC_CFGR_SW;
-        RCC->CFGR |= RCC_CFGR_SW_PLL;//==SYSCLK
+        RCC->CFGR |= RCC_CFGR_SW_PLL; //==SYSCLK
         while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL)
                 ;
 }

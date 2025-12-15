@@ -24,7 +24,8 @@ In 7-bit addressing mode,
 –To enter Tx mode, a master sends the slave address with LSB reset.(WRITE) xxxx xxx0 0x27 <<1 0x46
 –To enter Rx mode, a master sends the slave address with LSB set.  (READ)  xxxx xxx1 0x27 <<1 0x36
 
-In 10-bit addressing mode, (The TRA bit indicates  master/Receiver or Transmitter mode.)
+In 10-bit addressing mode,
+(The TRA bit indicates  master/Receiver or Transmitter mode.)
 –To enter Tx mode, a master sends the header (11110xx0) then the slave address with LSB reset, (where xx denotes MSB of the address).
 –To enter RX mode, a master sends the header (11110xx0) then the slave address with LSB reset. Then send a repeated Start condition
     then header (11110xx1), (where xx denotes MSB of the two address)
