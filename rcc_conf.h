@@ -44,10 +44,8 @@ void pllInit()
         while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL)
                 ;
 }
-
 void hseInit()
 {
-
         RCC->CR = RCC_CR_HSEON;
         while ((RCC->CR & RCC_CR_HSERDY) != RCC_CR_HSERDY)
                 ;
@@ -72,13 +70,11 @@ void hse_delay(uint32_t ms)
         }
 }
 //
-
 void rcc_init(void)
 {
         RCC->CR |= RCC_CR_HSEON;
         while (!(RCC->CR & RCC_CR_HSERDY))
                 ;
-
         FLASH->ACR |= FLASH_ACR_PRFTBE; // enable prefetch buffer
         FLASH->ACR &= FLASH_ACR_LATENCY;
         FLASH->ACR |= FLASH_ACR_LATENCY_2; // FOR 72MHZ
