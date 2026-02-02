@@ -1,9 +1,68 @@
 #if !defined(__RCC)
 #define __RCC
 #include "/home/jeff/STM32/stm32F1xx_headers/stm32f1xx.h"
+// RCC_CFGR
+#define PLLMUL2 (0 << 18)
+#define PLLMUL3 (1 << 18)
+#define PLLMUL4 (2 << 18)
+#define PLLMUL5 (3 << 18)
+#define PLLMUL6 (4 << 18)
+#define PLLMUL7 (5 << 18)
+#define PLLMUL8 (6 << 18)
+#define PLLMUL9 (7 << 18)
+#define PLLMUL10 (8 << 18)
+#define PLLMUL11 (9 << 18)
+#define PLLMUL12 (10 << 18)
+#define PLLMUL13 (11 << 18)
+#define PLLMUL14 (12 << 18)
+#define PLLMUL15 (13 << 18)
+#define PLLMUL16_L (14 << 18)
+#define PLLMUL16_H (15 << 18)
 
-#define FREQ_72MHZ ()
+#define HSE2PLL_DIV0 (0 << 17) // PLLXTPRE
+#define HSE2PLL_DIV2 (1 << 16)
 
+#define PLL_SRC_HSE (1 << 16)
+#define PLL_SRC_HSI (1 << 16)
+
+#define PPRE2_APB_DIV0 (1 << 11)
+#define PPRE2_APB_DIV2 (4 << 11)
+#define PPRE2_APB_DIV4 (5 << 11)
+#define PPRE2_APB_DIV8 (6 << 11)
+#define PPRE2_APB_DIV16 (7 << 11)
+
+#define PPRE1_APB_DIV0 (0 << 8)
+#define PPRE1_APB_DIV2 (4 << 8)
+#define PPRE1_APB_DIV4 (5 << 8)
+#define PPRE1_APB_DIV8 (6 << 8)
+#define PPRE1_APB_DIV16 (7 << 8)
+
+#define HPRE_AHB_PRESC_DIV0 (0 << 4)
+#define HPRE_AHB_PRESC_DIV2 (8 << 4)
+#define HPRE_AHB_PRESC_DIV4 (9 << 4)
+#define HPRE_AHB_PRESC_DIV8 (10 << 4)
+#define HPRE_AHB_PRESC_DIV16 (11 << 4)
+#define HPRE_AHB_PRESC_DIV64 (12 << 4)
+#define HPRE_AHB_PRESC_DIV128 (13 << 4)
+#define HPRE_AHB_PRESC_DIV256 (14 << 4)
+#define HPRE_AHB_PRESC_DIV512 (15 << 4)
+
+#define SWS_HSI_STATUS (0 << 2)//SWS sysclk switch status
+#define SWS_HSE_STATUS (1 << 2)
+#define SWS_PLL_STATUS (3 << 2)
+
+#define SYSCLK_SRC_HSI 0//SW
+#define SYSCLK_SRC_HSE 1
+#define SYSCLK_SRC_PLL 2
+//
+//RCC_CR
+#define PLL_READY (1 << 25)
+#define PLL_ON (1 << 24)
+#define CSS_ON (1 << 19) // 1: Clock detector ON if external 1-25 MHz oscillator is ready.
+#define HSERDY_FLAG (1 << 17)
+#define HSE_ON (1 << 16)
+
+//
 void pllInit()
 {
         /*
@@ -31,10 +90,10 @@ void pllInit()
         // RCC->CFGR &= ~RCC_CFGR_HPRE; DIV AHB SYSCLK DIV (2,4,8,16,64,128,256,512)
         RCC->CFGR &= ~RCC_CFGR_PLLXTPRE_HSE; // HSE div fosc or fosc/2
         RCC->CFGR |= RCC_CFGR_PLLSRC;        // HSE as pll entry src--8mhz
-        RCC->CFGR = RCC_CFGR_PLLMULL9;       // 1-HSE  0-hsi/2 (2......16) MULTI
+        RCC->CFGR = RCC_CFGR_PLLMULL2;       // 1-HSE  0-hsi/2 (2......16) MULTI  {8mhz xmulti= 16mhz }
 
-        RCC->CFGR |= RCC_CFGR_PPRE2_DIV1; // 72mhz (**RCC_CFGR_PLLXTPRE_HSE**) (2 4 8 16) DIV
-        RCC->CFGR |= RCC_CFGR_PPRE1_DIV2; // apb1=36mhz (2 4 8 16) DIV
+        RCC->CFGR |= RCC_CFGR_PPRE2_DIV1; // 16mhz (**RCC_CFGR_PLLXTPRE_HSE**) (2 4 8 16) DIV
+        RCC->CFGR |= RCC_CFGR_PPRE1_DIV1; // apb1=36mhz (2 4 8 16) DIV
 
         RCC->CR |= RCC_CR_PLLON;
         while (!(RCC->CR & RCC_CR_PLLRDY))
@@ -91,6 +150,7 @@ void rcc_init(void)
         while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL)
                 ;
 }
+
 void SysTick_Init(void)
 {
         SysTick->CTRL = 0;

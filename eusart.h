@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <string.h>
+#include <ctype.h>
+#include <fcntl.h>
 #include <math.h>
 #include "gpio.h"
 
@@ -44,7 +47,7 @@ baud=fclk/16*(USARTDIV)
 USARTDIV=fclk/(baudx16)
 */
 //
-#define USART_FCLK 72000000
+#define USART_FCLK 8000000
 #define U9600 9600
 #define U19200 19200
 #define U38400 38400
@@ -113,6 +116,7 @@ void eusart_init(uint32_t bauds)
     USART1->CR1 |= USART_CR1_TE;
     USART1->DR = 0;
 }
+
 uint8_t eusart_io(uint8_t val)
 {
     // tc   wr usart-dr
@@ -120,9 +124,9 @@ uint8_t eusart_io(uint8_t val)
     // rxne rd usart-dr
     // idle rd usart-sr then rd usart-dr
     USART1->DR = val;
-    while ((USART1->SR & USART_SR_TXE) != USART_SR_TXE) // 0 not-ready 2 tx
-        ;
-    while ((USART1->SR & USART_SR_TC) != USART_SR_TC) // 0 not txed
+    // while ((USART1->SR & USART_SR_TXE) != USART_SR_TXE) // 0 not-ready 1 tx
+    //     ;
+    while (((USART1->SR & USART_SR_TC) != USART_SR_TC) & ((USART1->SR & USART_SR_TXE) != USART_SR_TXE)) // 0 not txed
         ;
     rdVal = USART1->DR;
 
@@ -134,6 +138,30 @@ uint8_t eusart_io(uint8_t val)
     {
         rdVal = USART1->DR;
     }
+    return rdVal;
+}
+void eusartString(char *mesg, uint16_t size)
+{
+    char buff[size];
+    strcpy(buff, mesg);
+    for (uint8_t i = 0; i < strlen(mesg); i++)
+    {
+        eusart_io(buff[i]);
+    }
+}
+
+//
+uint8_t eusart_rd()
+{
+    while ((USART1->SR & USART_SR_FE) != USART_SR_FE)
+        ;
+    if ((USART1->SR & USART_SR_NE) != USART_SR_NE)
+    {
+        dummy = USART1->DR;
+    }
+    while ((USART1->SR & USART_SR_RXNE) != USART_SR_RXNE)
+        ;
+    rdVal = USART1->DR;
     return rdVal;
 }
 uint8_t eusart_read()
@@ -148,6 +176,11 @@ uint8_t eusart_read()
         rdVal = USART1->DR;
     }
     return rdVal;
+}
+
+void eusart_close()
+{
+    USART1->CR1 = 0;
 }
 //
 //

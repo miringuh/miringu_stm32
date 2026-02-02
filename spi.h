@@ -18,11 +18,11 @@ uint16_t spi_rd = 0;
 #define BAUD_FCLK_64 (SPI_CR1_BR_0 | SPI_CR1_BR_2)  //| ((SPI_CR1_BR_1) & 0X00)
 #define BAUD_FCLK_128 (SPI_CR1_BR_1 | SPI_CR1_BR_2) //| ((SPI_CR1_BR_0) & 0X00)
 #define BAUD_FCLK_256 (SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_BR_2)
-//
+// PB5
 #define mosi 5 // B5
 #define miso 4 // B4
 #define sck 3  // B3
-#define ss  15   // A15
+#define ss 15  // A15
 #define latch 0
 /*
 SPI1->CR2 |= SPI_CR2_SSOE;//ss-out 1-en 0-noEnable
@@ -30,6 +30,15 @@ SPI1->CR1 |= SPI_CR1_SSM;//1-software 0-hardware (management)
 
 NSS-OUT_EN (ssm=0,ssoe=1) >(ONLY ON MASTER MODE)
 NSS-OUT NOT_EN (ssm=0,ssoe=0)>(multiMstr Mode // if slave (NSS acts input)if NSS-low the slave is activates )
+
+    RCC->APB2ENR |=RCC_APB2ENR_SPI1EN
+    GPIOB->CRL = (AF_P_P2MHZ << mosi);  // MOSI
+    GPIOB->CRL |= (AF_P_P2MHZ << miso); // MISO INP-PP
+    GPIOB->CRL |= (AF_P_P2MHZ << sck);  // SCK
+    GPIOA->CRH = (AF_P_P2MHZ << ss);    // SS
+    GPIOA->CRL = (PA0_OUT_2MHZ);        // latch
+
+    spiInit();
 
 */
 volatile uint8_t *buff;
@@ -54,61 +63,49 @@ void SPI1_IRQHandler(void)
 }
 void latch1()
 {
-    GPIOA->BSRR = GPIO_BSRR_BS4; // LATCH
+    GPIOB->ODR = GPIO_ODR_ODR6;
     _delay_ms(100);
-    GPIOA->BSRR = GPIO_BSRR_BR4; // LATCH
+    GPIOB->ODR &= ~GPIO_ODR_ODR6;
     _delay_ms(100);
 }
 
-void spiInit()
+void spiInit(uint16_t baud)
 {
     // RCC->APB2ENR |= (RCC_APB2ENR_SPI1EN | RCC_APB2ENR_IOPAEN);
     SPI1->CR1 = 0;
     SPI1->CR2 = 0;
     SPI1->SR = 0;
-    // AFIO->MAPR = ~AFIO_MAPR_SPI1_REMAP;
-    // GPIOA->CRL = (AF_P_P2MHZ << mosi); // MOSI
-    // GPIOA->CRL |= (INP_PPULL << miso); // MISO INP-PP
-    // GPIOA->CRL |= (AF_P_P2MHZ << sck); // SCK
-    // GPIOA->CRL |= (P_P2MHZ << ss);     // SS
-    // GPIOA->CRL |= (P_P2MHZ << latch);  // latch
 
     // NVIC_EnableIRQ(SPI1_IRQn);
-    SPI1->CR1 = BAUD_FCLK_256;
-    SPI1->CR1 &= ~SPI_CR1_CPHA;    // 0-lead 1-lag
-    SPI1->CR1 &= ~SPI_CR1_CPOL;    // 0-low->high 1-high->low
+    SPI1->CR1 |= baud;
+    // SPI1->CR1 &= ~SPI_CR1_CPHA;    // 0-lead 1-lag
+    // SPI1->CR1 &= ~SPI_CR1_CPOL;    // 0-low->high 1-high->low
     SPI1->CR1 &= ~SPI_CR1_DFF;     // 0-8bit 1-16bit
     SPI1->CR1 |= SPI_CR1_LSBFIRST; // 0-msbFirst 1-lsbFirst
 
-    SPI1->CR1 &= ~SPI_CR1_BIDIMODE; // 0-2 line(UNIDIR) 1-1 line(BIDIR)
-    SPI1->CR1 |= SPI_CR1_BIDIOE;    // 0-rx mode 1-tx mode
-    SPI1->CR2 = SPI_CR2_TXEIE;      //| SPI_CR2_ERRIE;
-    SPI1->CR2 |= SPI_CR2_SSOE;      //
-    SPI1->CR1 |= SPI_CR1_MSTR;      // 0-slv 1-mstr
+    SPI1->CR1 |= SPI_CR1_BIDIMODE; // 0- 2-line(UNIDIR) 1 1-line(BIDIR)
+    SPI1->CR1 |= SPI_CR1_BIDIOE;   // 0-rx mode 1-tx mode
+
+    SPI1->CR2 = SPI_CR2_TXEIE | SPI_CR2_RXNEIE | SPI_CR2_ERRIE;
+    SPI1->CR2 |= SPI_CR2_SSOE; //
+    SPI1->CR1 |= SPI_CR1_MSTR; // 0-slv 1-mstr
     SPI1->CR1 |= SPI_CR1_SPE;
     // mosi-->>   miso<<--
-    // }
 }
 void spi_send(uint8_t val)
 {
-    // txe^ == pre -tx
     SPI1->DR = val;
-
     while ((SPI1->SR & SPI_SR_TXE) == SPI_SR_TXE) // 0=empty 1=Full
     {
     }
     spi_dummy = SPI1->DR;
-
-    GPIOA->BSRR = GPIO_BSRR_BS0;
-    _delay_ms(10000);
-    GPIOA->BSRR = GPIO_BSRR_BR0;
-    _delay_ms(10000);
 }
 
-void spiExit()
+void spiStop()
 {
     SPI1->CR1 &= ~SPI_CR1_SPE;
 }
+//
 #endif // __SPI_;
        /*
         // GPIOB->CRH = PB_H_2MHZ;

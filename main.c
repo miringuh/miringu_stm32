@@ -2,36 +2,38 @@
 
 #include "spi.h"
 // #include "timer6.h"
-// #include "eusart.h"
-#include "gpio.h"
-#include "rcc_conf.h"
+#include "eusart.h"
+// #include "gpio.h"
+// #include "rcc_conf.h"
 // #include "i2c.h"
 // #include "dma.h"
 int main()
 {
     pllInit();
     // hseInit();
-    rcc_init();
     SysTick_Init();
-    RCC->APB2ENR = (RCC_APB2ENR_IOPBEN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_IOPAEN);
-    // GPIOB->CRH = PB_H_2MHZ;
-    // AFIO->MAPR = ~AFIO_MAPR_SPI1_REMAP;
-    GPIOB->CRL = (AF_P_P2MHZ << mosi); // MOSI
-    GPIOB->CRL |= (AF_P_P2MHZ << miso); // MISO INP-PP
-    GPIOB->CRL |= (AF_P_P2MHZ << sck); // SCK
-    GPIOA->CRH = (AF_P_P2MHZ << ss);     // SS
-    GPIOA->CRL = (PA0_OUT_2MHZ);         // latch
-    spiInit();
-    
-    for (int i = 1; i < 255; i++)
+    RCC->APB2ENR = RCC_APB2ENR_IOPBEN | RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN;
+    //| RCC_APB2ENR_SPI1EN | RCC_APB2ENR_IOPAEN;
+
+    // GPIOB->CRL |= (AF_P_P2MHZ << mosi); // MOSI
+    // GPIOB->CRL |= (INP_PPULL << miso);  // MISO INP-PP
+    // GPIOB->CRL |= (AF_P_P2MHZ << sck);  // SCK
+    // GPIOA->CRH = (AF_P_P2MHZ << ss);    // SS
+
+    setAF_CRH();
+
+    eusart_init(U19200);
+    eusartString(" Welcome Again", 14);
+    for (uint8_t i = 0; i < 255; i++)
     {
-        spi_send(i);
-        // getRegB(i);
+        eusart_io(i);
+        _delay_ms(60);
     }
-    spiExit();
+    eusart_close();
     while (1)
     {
+        // eusart_io(eusart_rd());
+        // _delay_ms(6000);
     }
-
     return 0;
 }
