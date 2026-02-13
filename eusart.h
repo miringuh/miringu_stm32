@@ -59,11 +59,11 @@ USARTDIV=fclk/(baudx16)
 #define writebuf 1
 uint8_t dummy;
 volatile uint8_t rdVal;
-uint8_t euBuff[2];
 //
 // void USART1_IRQHandler()
 // {
-//
+//     USART1->SR &= !USART_SR_TC;
+//     dummy = USART1->DR;
 // }
 void u_baud(uint32_t baud)
 {
@@ -100,17 +100,18 @@ void u_baud(uint32_t baud)
 }
 void usart_pins_init()
 {
-    GPIOA->CRH = GPIO_CRH_CNF9_1 | GPIO_CRH_MODE9_1; // TX out PIN9 AF_PP
-    GPIOA->CRH |= GPIO_CRH_CNF10_1;                  // RX in PIN10 input P-P
+    // GPIOA->CRH = GPIO_CRH_CNF9_1 | GPIO_CRH_MODE9_1; // TX out PIN9 AF_PP
+    // GPIOA->CRH |= GPIO_CRH_CNF10_1;                  // RX in PIN10 input P-P
+    GPIOA->CRH = (GPIO_CRH_CNF9_1 | GPIO_CRH_MODE9_1) | (GPIO_CRH_CNF10_1 | GPIO_CRH_MODE10_1);
 }
 //
 void eusart_init(uint32_t bauds)
 {
-    RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
+    RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN;
+    usart_pins_init(); /// PINS
     // NVIC_EnableIRQ(USART1_IRQn);
     // NVIC_SetPriority(USART1_IRQn, 4);
     u_baud(bauds);
-    usart_pins_init(); /// PINS
     USART1->CR1 = (USART_CR1_TXEIE | USART_CR1_TCIE | USART_CR1_RXNEIE);
     USART1->CR1 |= (USART_CR1_RE | USART_CR1_UE);
     USART1->CR1 |= USART_CR1_TE;
@@ -119,14 +120,10 @@ void eusart_init(uint32_t bauds)
 
 uint8_t eusart_io(uint8_t val)
 {
-    // tc   wr usart-dr
-    // txe  wr usart-dr
-    // rxne rd usart-dr
-    // idle rd usart-sr then rd usart-dr
+    GPIOC->BSRR = GPIO_BSRR_BR13;
+
     USART1->DR = val;
-    // while ((USART1->SR & USART_SR_TXE) != USART_SR_TXE) // 0 not-ready 1 tx
-    //     ;
-    while (((USART1->SR & USART_SR_TC) != USART_SR_TC) & ((USART1->SR & USART_SR_TXE) != USART_SR_TXE)) // 0 not txed
+    while (((USART1->SR & USART_SR_TC) != USART_SR_TC) && ((USART1->SR & USART_SR_TXE) != USART_SR_TXE)) // 0 not txed
         ;
     rdVal = USART1->DR;
 
@@ -144,6 +141,8 @@ void eusartString(char *mesg, uint16_t size)
 {
     char buff[size];
     strcpy(buff, mesg);
+    eusart_io(' ');
+
     for (uint8_t i = 0; i < strlen(mesg); i++)
     {
         eusart_io(buff[i]);
@@ -182,15 +181,22 @@ void eusart_close()
 {
     USART1->CR1 = 0;
 }
-//
-//
 
-#endif // __EUSART
-       /*
-        eusart_init(U115200);
-       for (uint8_t i = 1; i < 255; i++){
-        // readReg(i, getRegA);
-        eusart_io(i);
-        _delay_ms(100000);
-       }
-        */
+/*                               \
+pllInit();                              \
+          // hseInit();                       \
+          SysTick_Init();                     \
+                                              \
+                                              \
+          eusart_init(U19200);                \
+          eusartString(" Welcome Again", 14); \
+          for (uint8_t i = 0; i < 255; i++)   \
+          {                                   \
+              eusart_io(i);                   \
+                                              \
+              _delay_ms(60);                  \
+          }                                   \
+          eusartString("End ", 4);            \
+          eusart_close();                     \
+              */
+#endif //

@@ -63,6 +63,53 @@
 #define HSE_ON (1 << 16)
 
 //
+/*
+SYSCLK = 40 MHz
+HCLK = 40 MHz
+APB1 = 20 MHz
+APB2 = 20 MHz
+*/
+void clock_init_20mhz_apb(void)
+{
+    /* 1. Enable HSE */
+    RCC->CR |= RCC_CR_HSEON;
+    while (!(RCC->CR & RCC_CR_HSERDY));
+
+    /* 2. Configure Flash wait states (40 MHz → 2 WS) */
+    FLASH->ACR |= FLASH_ACR_PRFTBE;
+    FLASH->ACR &= ~FLASH_ACR_LATENCY;
+    FLASH->ACR |= FLASH_ACR_LATENCY_1; // 2 wait states
+
+    /* 3. Set prescalers
+       AHB  = SYSCLK /1
+       APB1 = SYSCLK /2
+       APB2 = SYSCLK /2
+    */
+    RCC->CFGR &= ~(RCC_CFGR_HPRE |
+                   RCC_CFGR_PPRE1 |
+                   RCC_CFGR_PPRE2);
+
+    RCC->CFGR |= RCC_CFGR_PPRE1_DIV2;
+    RCC->CFGR |= RCC_CFGR_PPRE2_DIV2;
+
+    /* 4. Configure PLL
+       Source = HSE
+       Multiplier = x5 → 8 MHz × 5 = 40 MHz
+    */
+    RCC->CFGR &= ~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLMULL);
+    RCC->CFGR |= RCC_CFGR_PLLSRC;          // HSE as PLL source
+    RCC->CFGR |= RCC_CFGR_PLLMULL5;        // ×5
+
+    /* 5. Enable PLL */
+    RCC->CR |= RCC_CR_PLLON;
+    while (!(RCC->CR & RCC_CR_PLLRDY));
+
+    /* 6. Select PLL as SYSCLK */
+    RCC->CFGR &= ~RCC_CFGR_SW;
+    RCC->CFGR |= RCC_CFGR_SW_PLL;
+    while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
+}
+
 void pllInit()
 {
         /*
@@ -103,6 +150,7 @@ void pllInit()
         while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL)
                 ;
 }
+
 void hseInit()
 {
         RCC->CR = RCC_CR_HSEON;
@@ -120,6 +168,7 @@ void hseInit()
         while ((RCC->CFGR & RCC_CFGR_SWS_HSE) != RCC_CFGR_SWS_HSE)
                 ;
 }
+
 void hse_delay(uint32_t ms)
 {
         // uint32_t val = (ms);

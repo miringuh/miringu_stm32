@@ -2,38 +2,38 @@
 
 #include "spi.h"
 // #include "timer6.h"
-#include "eusart.h"
+// #include "eusart.h"
 // #include "gpio.h"
 // #include "rcc_conf.h"
 // #include "i2c.h"
 // #include "dma.h"
+
+
 int main()
 {
-    pllInit();
-    // hseInit();
+    clock_init_20mhz_apb();
+    // pllInit();
     SysTick_Init();
-    RCC->APB2ENR = RCC_APB2ENR_IOPBEN | RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN;
-    //| RCC_APB2ENR_SPI1EN | RCC_APB2ENR_IOPAEN;
 
-    // GPIOB->CRL |= (AF_P_P2MHZ << mosi); // MOSI
-    // GPIOB->CRL |= (INP_PPULL << miso);  // MISO INP-PP
-    // GPIOB->CRL |= (AF_P_P2MHZ << sck);  // SCK
-    // GPIOA->CRH = (AF_P_P2MHZ << ss);    // SS
+    // RCC->APB2RSTR = RCC_APB2RSTR_IOPARST | RCC_APB2RSTR_SPI1RST;
+    // RCC->APB2ENR = RCC_APB2ENR_IOPAEN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_AFIOEN; // | RCC_APB2ENR_IOPBEN;
 
-    setAF_CRH();
+    _delay_ms(100000);
 
-    eusart_init(U19200);
-    eusartString(" Welcome Again", 14);
+    spiInitA(BAUD_FCLK_32);
+
     for (uint8_t i = 0; i < 255; i++)
     {
-        eusart_io(i);
-        _delay_ms(60);
+
+        spi_send(i);
+        latch();
+;
     }
-    eusart_close();
+
+    spiStop();
+
     while (1)
     {
-        // eusart_io(eusart_rd());
-        // _delay_ms(6000);
     }
     return 0;
 }
