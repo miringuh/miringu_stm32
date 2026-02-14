@@ -95,7 +95,7 @@ void spiInitB(uint8_t baud)
     GPIOA->CRH = SS_A;
     GPIOA->CRL = LATCH;
 
-    // SPI1->CR1 = SPI_CR1_SSM | SPI_CR1_SSI;
+    SPI1->CR1 = SPI_CR1_SSM | SPI_CR1_SSI;
 
     SPI1->CR1 = SPI_CR1_MSTR | baud;
     SPI1->CR1 &= ~SPI_CR1_CPHA;     // 0-lead 1-lag

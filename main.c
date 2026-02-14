@@ -19,18 +19,13 @@ int main()
 
     eusart_init(U19200);
 
-    for (size_t i = 0; i < 255; i++)
-    {
-        eusart_io(i);
-        _delay_ms(60000);
-        // test_eusart();
-    }
-    // eusartString("Welcome home");
+    eusartString("Welcome home");
 
-    eusart_close();
+    // eusart_close();
 
     while (1)
     {
+        eusart_send(eusart_rd());
     }
     return 0;
 }

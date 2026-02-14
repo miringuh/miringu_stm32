@@ -17,7 +17,7 @@ DMA_CCRx   configuration register
 DMA_CCRx -modes(circular,direction,increment/decrement, interrupts etc)
 
     INTERRUPTS
-Half Transfer(HTIF)   ==>HTIE
+Half Transfer(HTIF)   ==>HTIEN
 Complete TX  (TCIF)   ==>TCIE
 DMA Transfer Error
 
@@ -42,7 +42,7 @@ DMA->CCRx (conf reg)
     < PINC >    peripheral INC
     < CIRC >    circular Mode
     < DIR >     Direction from 1-memory 0-peripheral
-    < TEIE >    TX  INTR enable
+    < TEIEN >    TX  INTR enable
     < HEIE >    half TX INTR enable
     < TCIE >    complete INTR enable
     < EN >      Channel enable
@@ -76,9 +76,9 @@ DMA->CMARx(31:0) memory addr reg
 #define PINC DMA_CCR_PINC
 #define CIRC DMA_CCR_CIRC
 #define DIR DMA_CCR_DIR // 0=READ 1=WRITE
-#define TEIE DMA_CCR_TEIE
-#define HTIE DMA_CCR_HTIE
-#define TCIE DMA_CCR_TCIE
+#define TEIEN DMA_CCR_TEIE
+#define HTIEN DMA_CCR_HTIE
+#define TCIEN DMA_CCR_TCIE
 #define DMAEN DMA_CCR_EN
 //
 // (DMA_CNDTRx)  DMA channel x number of data register
@@ -152,7 +152,7 @@ void channel1(uint32_t phaddr, uint32_t memaddr, uint16_t buffSize, uint8_t dir)
     DMA1_Channel1->CCR &= ~CIRC;       //**** */
     DMA1_Channel1->CCR = MEM2MEM;      //**** */
 
-    DMA1_Channel1->CCR |= TEIE | HTIE | TCIE;
+    DMA1_Channel1->CCR |= TEIEN | HTIEN | TCIEN;
     DMA1_Channel1->CCR = DMAEN;
 }
 void dma1set()
@@ -160,12 +160,12 @@ void dma1set()
 
     // DMA1->IFCR;
     // DMA1->ISR
-    while ((DMA1->ISR & DMA_ISR_TEIF1)) // tx error
-        ;
-    while ((DMA1->ISR & DMA_ISR_HTIF1)) // half txed
-        ;
-    while ((DMA1->ISR & DMA_ISR_TCIF1)) // tx complete
-        ;
+    // while ((DMA1->ISR & DMA_ISR_TEIF1)) // tx error
+    //     ;
+    // while ((DMA1->ISR & DMA_ISR_HTIF1)) // half txed
+    //     ;
+    // while ((DMA1->ISR & DMA_ISR_TCIF1)) // tx complete
+    //     ;
     while ((DMA1->ISR & DMA_ISR_GIF1)) // TE/TC/HT occured
     {
         if ((DMA1->ISR & DMA_ISR_TEIF1)) // tx error
@@ -181,6 +181,5 @@ void dma1set()
             DMA1->IFCR &= ~(DMA_IFCR_CTCIF1);
         }
     }
-    
 }
 #endif // __DMA
