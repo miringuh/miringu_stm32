@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include <math.h>
 #include "gpio.h"
+#include "rcc_conf.h"
+#include "dma.h"
 
 /*
 STATUS -- USART_SR
@@ -47,7 +49,7 @@ baud=fclk/16*(USARTDIV)
 USARTDIV=fclk/(baudx16)
 */
 //
-#define USART_FCLK 8000000
+#define USART_FCLK 20000000
 #define U9600 9600
 #define U19200 19200
 #define U38400 38400
@@ -59,12 +61,52 @@ USARTDIV=fclk/(baudx16)
 #define writebuf 1
 uint8_t dummy;
 volatile uint8_t rdVal;
+void test_eusart();
 //
 // void USART1_IRQHandler()
 // {
 //     USART1->SR &= !USART_SR_TC;
 //     dummy = USART1->DR;
 // }
+void channel1(uint32_t phaddr, uint32_t memaddr, uint16_t buffSize, uint8_t dir)
+{
+
+    DMA1_Channel1->CPAR = phaddr;
+    DMA1_Channel1->CMAR = memaddr;
+    DMA1_Channel1->CPAR = buffSize;
+
+    DMA1_Channel1->CCR = PL_MID; //*****
+    if (dir == 1)
+    {
+        DMA1_Channel1->CCR |= DIR; // 0=RD 1=WR
+    }
+    if (dir == 0)
+    {
+        DMA1_Channel1->CCR &= ~DIR; // 0=RD 1=WR
+    }
+    DMA1_Channel1->CCR = MEMSIZE_8BIT; //**** */
+    DMA1_Channel1->CCR = PSIZE_8BIT;   //**** */
+    DMA1_Channel1->CCR &= ~MINC;       //**** */
+    DMA1_Channel1->CCR &= ~PINC;       //**** */
+    DMA1_Channel1->CCR &= ~CIRC;       //**** */
+    DMA1_Channel1->CCR = MEM2MEM;      //**** */
+
+    DMA1_Channel1->CCR |= TEIE | HTIE | TCIE;
+    DMA1_Channel1->CCR = DMAEN;
+}
+void test_eusart()
+{
+    if (!(RCC->APB2ENR & RCC_APB2ENR_IOPCEN))
+    {
+        RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
+    }
+    if (!(GPIOC->CRH & GPIO_CRH_MODE13_1))
+    {
+        GPIOC->CRH = GPIO_CRH_MODE13_1; // 2MHZ P_P
+    }
+    GPIOC->ODR ^= GPIO_ODR_ODR13;
+    _delay_ms(60000);
+}
 void u_baud(uint32_t baud)
 {
     /*
@@ -100,14 +142,14 @@ void u_baud(uint32_t baud)
 }
 void usart_pins_init()
 {
-    // GPIOA->CRH = GPIO_CRH_CNF9_1 | GPIO_CRH_MODE9_1; // TX out PIN9 AF_PP
-    // GPIOA->CRH |= GPIO_CRH_CNF10_1;                  // RX in PIN10 input P-P
-    GPIOA->CRH = (GPIO_CRH_CNF9_1 | GPIO_CRH_MODE9_1) | (GPIO_CRH_CNF10_1 | GPIO_CRH_MODE10_1);
+    AFIO->MAPR &= ~(AFIO_MAPR_USART1_REMAP);
+    GPIOA->CRH = (GPIO_CRH_CNF9_1 | GPIO_CRH_MODE9_0); // tx 10mhz AF_P_P
+    GPIOA->CRH |= (GPIO_CRH_CNF10_0);                  // rx input FLOAT
 }
 //
-void eusart_init(uint32_t bauds)
+void eusart_init_dma(uint32_t bauds)
 {
-    RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN;
+    RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_AFIOEN;
     usart_pins_init(); /// PINS
     // NVIC_EnableIRQ(USART1_IRQn);
     // NVIC_SetPriority(USART1_IRQn, 4);
@@ -117,7 +159,19 @@ void eusart_init(uint32_t bauds)
     USART1->CR1 |= USART_CR1_TE;
     USART1->DR = 0;
 }
-
+void eusart_init(uint32_t bauds)
+{
+    RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_AFIOEN;
+    usart_pins_init(); /// PINS
+    // NVIC_EnableIRQ(USART1_IRQn);
+    // NVIC_SetPriority(USART1_IRQn, 4);
+    u_baud(bauds);
+    USART1->CR1 = (USART_CR1_TXEIE | USART_CR1_TCIE | USART_CR1_RXNEIE);
+    USART1->CR1 |= (USART_CR1_RE | USART_CR1_UE);
+    USART1->CR1 |= USART_CR1_TE;
+    USART1->DR = 0;
+}
+//
 uint8_t eusart_io(uint8_t val)
 {
     GPIOC->BSRR = GPIO_BSRR_BR13;
@@ -137,13 +191,13 @@ uint8_t eusart_io(uint8_t val)
     }
     return rdVal;
 }
-void eusartString(char *mesg, uint16_t size)
+void eusartString(char *mesg)
 {
-    char buff[size];
+    char buff[20];
     strcpy(buff, mesg);
     eusart_io(' ');
 
-    for (uint8_t i = 0; i < strlen(mesg); i++)
+    for (uint8_t i = 0; i < strlen(mesg) + 1; i++)
     {
         eusart_io(buff[i]);
     }

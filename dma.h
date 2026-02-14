@@ -79,7 +79,7 @@ DMA->CMARx(31:0) memory addr reg
 #define TEIE DMA_CCR_TEIE
 #define HTIE DMA_CCR_HTIE
 #define TCIE DMA_CCR_TCIE
-#define EN DMA_CCR_EN
+#define DMAEN DMA_CCR_EN
 //
 // (DMA_CNDTRx)  DMA channel x number of data register
 #define DATA_SIZE(REG, VAL) WRITE_REG(REG, VAL) // Number of data to transfer
@@ -109,34 +109,78 @@ channel 7== USART2_TX, I2C1_RX, TIM2_CH2, TIM2_CH4, TIM4_UP
 #define readMem 1
 uint32_t myvar = 0x10000000;
 uint32_t mymem = (0x10000000 + 128);
-struct setch1()
+typedef struct
 {
     uint32_t phaddr;
     uint32_t memaddr;
     uint16_t buffSize;
     uint8_t dir;
-};
+    uint32_t memsize;
+    uint32_t periphsize;
+    uint32_t mem2mem;
+    uint32_t minc;
+    uint32_t pinc;
+    uint32_t circ;
+} DMA1_SETUP;
 void DMA1_IRQHandler()
 {
 }
-typedef setch1 ch1;
-ch1 setChannel()
+void channel1_config()
 {
-    struct setch1 ch1;
-    // DMA->CCR1 = DMA_CCR_DIR;
-    ch1.dir = 2;
-
-    return ch1;
+    // DMA1_SETUP dma1;
 }
-
-void channel1()
+void channel1(uint32_t phaddr, uint32_t memaddr, uint16_t buffSize, uint8_t dir)
 {
-    // setChannel();
 
-    // PERIPH_ADDR(DMA1->CPAR1, phaddr);
-    // MEM_ADDR(DMA1->CMAR1, memaddr);
-    // DATA_SIZE(DMA1->CNDTR1, buffSize);
-    // DMA1->CCR1 = PL_MID;
+    DMA1_Channel1->CPAR = phaddr;
+    DMA1_Channel1->CMAR = memaddr;
+    DMA1_Channel1->CPAR = buffSize;
+
+    DMA1_Channel1->CCR = PL_MID; //*****
+    if (dir == 1)
+    {
+        DMA1_Channel1->CCR |= DIR; // 0=RD 1=WR
+    }
+    if (dir == 0)
+    {
+        DMA1_Channel1->CCR &= ~DIR; // 0=RD 1=WR
+    }
+    DMA1_Channel1->CCR = MEMSIZE_8BIT; //**** */
+    DMA1_Channel1->CCR = PSIZE_8BIT;   //**** */
+    DMA1_Channel1->CCR &= ~MINC;       //**** */
+    DMA1_Channel1->CCR &= ~PINC;       //**** */
+    DMA1_Channel1->CCR &= ~CIRC;       //**** */
+    DMA1_Channel1->CCR = MEM2MEM;      //**** */
+
+    DMA1_Channel1->CCR |= TEIE | HTIE | TCIE;
+    DMA1_Channel1->CCR = DMAEN;
 }
+void dma1set()
+{
 
+    // DMA1->IFCR;
+    // DMA1->ISR
+    while ((DMA1->ISR & DMA_ISR_TEIF1)) // tx error
+        ;
+    while ((DMA1->ISR & DMA_ISR_HTIF1)) // half txed
+        ;
+    while ((DMA1->ISR & DMA_ISR_TCIF1)) // tx complete
+        ;
+    while ((DMA1->ISR & DMA_ISR_GIF1)) // TE/TC/HT occured
+    {
+        if ((DMA1->ISR & DMA_ISR_TEIF1)) // tx error
+        {
+            DMA1->IFCR &= ~(DMA_IFCR_CTEIF1);
+        }
+        if ((DMA1->ISR & DMA_ISR_HTIF1)) // half txed
+        {
+            DMA1->IFCR &= ~(DMA_IFCR_CHTIF1);
+        }
+        if ((DMA1->ISR & DMA_ISR_TCIF1)) // tx complete
+        {
+            DMA1->IFCR &= ~(DMA_IFCR_CTCIF1);
+        }
+    }
+    
+}
 #endif // __DMA

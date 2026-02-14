@@ -2,7 +2,7 @@
 #define __RCC
 #include "/home/jeff/STM32/stm32F1xx_headers/stm32f1xx.h"
 // RCC_CFGR
-RCC->CFGR = RCC_CFGR_PLLMULL3
+// RCC->CFGR = RCC_CFGR_PLLMULL3
 #define PLLMUL2 RCC_CFGR_PLLMULL2
 #define PLLMUL3 RCC_CFGR_PLLMULL3
 #define PLLMUL4 RCC_CFGR_PLLMULL4
@@ -63,14 +63,14 @@ RCC->CFGR = RCC_CFGR_PLLMULL3
 #define HSERDY_FLAG (1 << 17)
 #define HSE_ON (1 << 16)
 
-    //
-    /*
-    SYSCLK = 40 MHz
-    HCLK = 40 MHz
-    APB1 = 20 MHz
-    APB2 = 20 MHz
-    */
-    void clock_init_20mhz_apb(void)
+//
+/*
+SYSCLK = 40 MHz
+HCLK = 40 MHz
+APB1 = 20 MHz
+APB2 = 20 MHz
+*/
+void clock_init_20mhz_apb(void)
 {
         /* 1. Enable HSE */
         RCC->CR |= RCC_CR_HSEON;
