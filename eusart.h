@@ -68,32 +68,6 @@ void test_eusart();
 //     USART1->SR &= !USART_SR_TC;
 //     dummy = USART1->DR;
 // }
-void channel1(uint32_t phaddr, uint32_t memaddr, uint16_t buffSize, uint8_t dir)
-{
-
-    DMA1_Channel1->CPAR = phaddr;
-    DMA1_Channel1->CMAR = memaddr;
-    DMA1_Channel1->CPAR = buffSize;
-
-    DMA1_Channel1->CCR = PL_MID; //*****
-    if (dir == 1)
-    {
-        DMA1_Channel1->CCR |= DIR; // 0=RD 1=WR
-    }
-    if (dir == 0)
-    {
-        DMA1_Channel1->CCR &= ~DIR; // 0=RD 1=WR
-    }
-    DMA1_Channel1->CCR = MEMSIZE_8BIT; //**** */
-    DMA1_Channel1->CCR = PSIZE_8BIT;   //**** */
-    DMA1_Channel1->CCR &= ~MINC;       //**** */
-    DMA1_Channel1->CCR &= ~PINC;       //**** */
-    DMA1_Channel1->CCR &= ~CIRC;       //**** */
-    DMA1_Channel1->CCR = MEM2MEM;      //**** */
-
-    DMA1_Channel1->CCR |= TEIE | HTIE | TCIE;
-    DMA1_Channel1->CCR = DMAEN;
-}
 void test_eusart()
 {
     if (!(RCC->APB2ENR & RCC_APB2ENR_IOPCEN))
@@ -107,6 +81,7 @@ void test_eusart()
     GPIOC->ODR ^= GPIO_ODR_ODR13;
     _delay_ms(60000);
 }
+
 void u_baud(uint32_t baud)
 {
     /*
@@ -146,7 +121,34 @@ void usart_pins_init()
     GPIOA->CRH = (GPIO_CRH_CNF9_1 | GPIO_CRH_MODE9_0); // tx 10mhz AF_P_P
     GPIOA->CRH |= (GPIO_CRH_CNF10_0);                  // rx input FLOAT
 }
-//
+////////////
+void dma_Tx_ch3(uint32_t phaddr, uint32_t memaddr, uint16_t buffSize, uint8_t dir)
+{
+    RCC->APB2ENR |= RCC_AHBENR_DMA1EN;
+    // dir 0==read from periph  1==rd from mem
+    DMA1_Channel3->CPAR = phaddr;
+    DMA1_Channel3->CMAR = memaddr;
+    DMA1_Channel3->CPAR = buffSize;
+
+    DMA1_Channel3->CCR = PL_MID; //*****
+    if (dir == 1)
+    {
+        DMA1_Channel3->CCR |= DIR; // 0=RD 1=WR
+    }
+    if (dir == 0)
+    {
+        DMA1_Channel3->CCR &= ~DIR; // 0=RD 1=WR
+    }
+    DMA1_Channel3->CCR |= MEMSIZE_8BIT; //**** */
+    DMA1_Channel3->CCR |= PSIZE_8BIT;   //**** */
+    DMA1_Channel3->CCR &= ~MINC;       //**** */
+    DMA1_Channel3->CCR &= ~PINC;       //**** */
+    DMA1_Channel3->CCR &= ~CIRC;       //**** */
+    DMA1_Channel3->CCR |= MEM2MEM;      //**** */
+
+    DMA1_Channel3->CCR |= TEIE | HTIE | TCIE;
+    DMA1_Channel3->CCR |= DMAEN;
+}
 void eusart_init_dma(uint32_t bauds)
 {
     RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_AFIOEN;
@@ -154,21 +156,27 @@ void eusart_init_dma(uint32_t bauds)
     // NVIC_EnableIRQ(USART1_IRQn);
     // NVIC_SetPriority(USART1_IRQn, 4);
     u_baud(bauds);
-    USART1->CR1 = (USART_CR1_TXEIE | USART_CR1_TCIE | USART_CR1_RXNEIE);
+    USART1->CR1 |= (USART_CR1_TXEIE | USART_CR1_TCIE | USART_CR1_RXNEIE);
     USART1->CR1 |= (USART_CR1_RE | USART_CR1_UE);
+    //
+    USART1->CR3 = USART_CR3_DMAT; // EN TX
+    // USART->CR3 = USART_CR3_DMAR; // EN RX
+
+    //
     USART1->CR1 |= USART_CR1_TE;
     USART1->DR = 0;
 }
+//////////////
 void eusart_init(uint32_t bauds)
 {
     RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_AFIOEN;
     usart_pins_init(); /// PINS
-    // NVIC_EnableIRQ(USART1_IRQn);
-    // NVIC_SetPriority(USART1_IRQn, 4);
     u_baud(bauds);
-    USART1->CR1 = (USART_CR1_TXEIE | USART_CR1_TCIE | USART_CR1_RXNEIE);
+    USART1->CR1 |= (USART_CR1_TXEIE | USART_CR1_TCIE | USART_CR1_RXNEIE);
     USART1->CR1 |= (USART_CR1_RE | USART_CR1_UE);
     USART1->CR1 |= USART_CR1_TE;
+    // NVIC_EnableIRQ(USART1_IRQn);
+    // NVIC_SetPriority(USART1_IRQn, 4);
     USART1->DR = 0;
 }
 //
