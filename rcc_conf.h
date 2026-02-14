@@ -2,20 +2,21 @@
 #define __RCC
 #include "/home/jeff/STM32/stm32F1xx_headers/stm32f1xx.h"
 // RCC_CFGR
-#define PLLMUL2 (0 << 18)
-#define PLLMUL3 (1 << 18)
-#define PLLMUL4 (2 << 18)
-#define PLLMUL5 (3 << 18)
-#define PLLMUL6 (4 << 18)
-#define PLLMUL7 (5 << 18)
-#define PLLMUL8 (6 << 18)
-#define PLLMUL9 (7 << 18)
-#define PLLMUL10 (8 << 18)
-#define PLLMUL11 (9 << 18)
-#define PLLMUL12 (10 << 18)
-#define PLLMUL13 (11 << 18)
-#define PLLMUL14 (12 << 18)
-#define PLLMUL15 (13 << 18)
+RCC->CFGR = RCC_CFGR_PLLMULL3
+#define PLLMUL2 RCC_CFGR_PLLMULL2
+#define PLLMUL3 RCC_CFGR_PLLMULL3
+#define PLLMUL4 RCC_CFGR_PLLMULL4
+#define PLLMUL5 RCC_CFGR_PLLMULL5
+#define PLLMUL6 RCC_CFGR_PLLMULL6
+#define PLLMUL7 RCC_CFGR_PLLMULL7
+#define PLLMUL8 RCC_CFGR_PLLMULL8
+#define PLLMUL9 RCC_CFGR_PLLMULL9
+#define PLLMUL10 RCC_CFGR_PLLMULL10
+#define PLLMUL11 RCC_CFGR_PLLMULL11
+#define PLLMUL12 RCC_CFGR_PLLMULL12
+#define PLLMUL13 RCC_CFGR_PLLMULL13
+#define PLLMUL14 RCC_CFGR_PLLMULL14
+#define PLLMUL15 RCC_CFGR_PLLMULL15
 #define PLLMUL16_L (14 << 18)
 #define PLLMUL16_H (15 << 18)
 
@@ -47,67 +48,70 @@
 #define HPRE_AHB_PRESC_DIV256 (14 << 4)
 #define HPRE_AHB_PRESC_DIV512 (15 << 4)
 
-#define SWS_HSI_STATUS (0 << 2)//SWS sysclk switch status
+#define SWS_HSI_STATUS (0 << 2) // SWS sysclk switch status
 #define SWS_HSE_STATUS (1 << 2)
 #define SWS_PLL_STATUS (3 << 2)
 
-#define SYSCLK_SRC_HSI 0//SW
+#define SYSCLK_SRC_HSI 0 // SW
 #define SYSCLK_SRC_HSE 1
 #define SYSCLK_SRC_PLL 2
 //
-//RCC_CR
+// RCC_CR
 #define PLL_READY (1 << 25)
 #define PLL_ON (1 << 24)
 #define CSS_ON (1 << 19) // 1: Clock detector ON if external 1-25 MHz oscillator is ready.
 #define HSERDY_FLAG (1 << 17)
 #define HSE_ON (1 << 16)
 
-//
-/*
-SYSCLK = 40 MHz
-HCLK = 40 MHz
-APB1 = 20 MHz
-APB2 = 20 MHz
-*/
-void clock_init_20mhz_apb(void)
+    //
+    /*
+    SYSCLK = 40 MHz
+    HCLK = 40 MHz
+    APB1 = 20 MHz
+    APB2 = 20 MHz
+    */
+    void clock_init_20mhz_apb(void)
 {
-    /* 1. Enable HSE */
-    RCC->CR |= RCC_CR_HSEON;
-    while (!(RCC->CR & RCC_CR_HSERDY));
+        /* 1. Enable HSE */
+        RCC->CR |= RCC_CR_HSEON;
+        while (!(RCC->CR & RCC_CR_HSERDY))
+                ;
 
-    /* 2. Configure Flash wait states (40 MHz → 2 WS) */
-    FLASH->ACR |= FLASH_ACR_PRFTBE;
-    FLASH->ACR &= ~FLASH_ACR_LATENCY;
-    FLASH->ACR |= FLASH_ACR_LATENCY_1; // 2 wait states
+        /* 2. Configure Flash wait states (40 MHz → 2 WS) */
+        FLASH->ACR |= FLASH_ACR_PRFTBE;
+        FLASH->ACR &= ~FLASH_ACR_LATENCY;
+        FLASH->ACR |= FLASH_ACR_LATENCY_1; // 2 wait states
 
-    /* 3. Set prescalers
-       AHB  = SYSCLK /1
-       APB1 = SYSCLK /2
-       APB2 = SYSCLK /2
-    */
-    RCC->CFGR &= ~(RCC_CFGR_HPRE |
-                   RCC_CFGR_PPRE1 |
-                   RCC_CFGR_PPRE2);
+        /* 3. Set prescalers
+           AHB  = SYSCLK /1
+           APB1 = SYSCLK /2
+           APB2 = SYSCLK /2
+        */
+        RCC->CFGR &= ~(RCC_CFGR_HPRE |
+                       RCC_CFGR_PPRE1 |
+                       RCC_CFGR_PPRE2);
 
-    RCC->CFGR |= RCC_CFGR_PPRE1_DIV2;
-    RCC->CFGR |= RCC_CFGR_PPRE2_DIV2;
+        RCC->CFGR |= RCC_CFGR_PPRE1_DIV2;
+        RCC->CFGR |= RCC_CFGR_PPRE2_DIV2;
 
-    /* 4. Configure PLL
-       Source = HSE
-       Multiplier = x5 → 8 MHz × 5 = 40 MHz
-    */
-    RCC->CFGR &= ~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLMULL);
-    RCC->CFGR |= RCC_CFGR_PLLSRC;          // HSE as PLL source
-    RCC->CFGR |= RCC_CFGR_PLLMULL5;        // ×5
+        /* 4. Configure PLL
+           Source = HSE
+           Multiplier = x5 → 8 MHz × 5 = 40 MHz
+        */
+        RCC->CFGR &= ~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLMULL);
+        RCC->CFGR |= RCC_CFGR_PLLSRC;   // HSE as PLL source
+        RCC->CFGR |= RCC_CFGR_PLLMULL5; // ×5
 
-    /* 5. Enable PLL */
-    RCC->CR |= RCC_CR_PLLON;
-    while (!(RCC->CR & RCC_CR_PLLRDY));
+        /* 5. Enable PLL */
+        RCC->CR |= RCC_CR_PLLON;
+        while (!(RCC->CR & RCC_CR_PLLRDY))
+                ;
 
-    /* 6. Select PLL as SYSCLK */
-    RCC->CFGR &= ~RCC_CFGR_SW;
-    RCC->CFGR |= RCC_CFGR_SW_PLL;
-    while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
+        /* 6. Select PLL as SYSCLK */
+        RCC->CFGR &= ~RCC_CFGR_SW;
+        RCC->CFGR |= RCC_CFGR_SW_PLL;
+        while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL)
+                ;
 }
 
 void pllInit()

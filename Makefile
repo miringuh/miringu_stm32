@@ -62,6 +62,7 @@ clean:
 # STM32 flash
 fts:
 #	TX A10 RX A9
+	make clean
 	make
 	stm32flash -w $(TARGET).elf -v -g 0x08000000  /dev/ttyUSB0
 # 	stm32flash -n 4 -R -v -w $(TARGET).bin -s 0x08000000 /dev/ttyUSB0
