@@ -76,7 +76,6 @@ void clock_init_20mhz_apb(void)
         RCC->CR |= RCC_CR_HSEON;
         while (!(RCC->CR & RCC_CR_HSERDY))
                 ;
-
         /* 2. Configure Flash wait states (40 MHz → 2 WS) */
         FLASH->ACR |= FLASH_ACR_PRFTBE;
         FLASH->ACR &= ~FLASH_ACR_LATENCY;

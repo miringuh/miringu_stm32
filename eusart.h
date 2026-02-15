@@ -88,14 +88,15 @@ USARTDIV=fclk/(baudx16)
 #define CPHA USART_CR2_CPHA
 //
 //  USART_CR3 Control register 3
-//
+// An interrupt is generated whenever CTS=1
 #define CTSIE USART_CR3_CTSIE
 // data is only transmitted when the CTS input is asserted (tied to 0).***
-#define CTSE USART_CR3_CTSE
+#define CTSE USART_CR3_CTSE // CTSE
 // The RTS output is asserted (tied to 0) when a data can be received.
 #define RTSE USART_CR3_RTSE
-#define DMAT USART_CR3_DMAT
-#define DMAR USART_CR3_DMAR
+//
+#define DMAEN_TX USART_CR3_DMAT
+#define DMAEN_RX USART_CR3_DMAR
 //
 #define USART_FCLK 20000000
 #define U9600 9600
@@ -109,28 +110,35 @@ USARTDIV=fclk/(baudx16)
 #define writebuf 1
 uint8_t dummy;
 volatile uint8_t rdVal;
-void eusart_send(uint8_t val);
+uint8_t eusart_send(uint8_t val);
 void test_eusart();
 //
 void USART1_IRQHandler()
 {
+    if (((USART1->SR & ORE_FLAG)))
+    {
+        rdVal = USART1->SR;
+        rdVal = USART1->DR;
+    }
     if (((USART1->SR & TC_FLAG))) // 0 not txed
     {
-        USART1->SR &= ~TC_FLAG;
+        rdVal = USART1->SR;
+        rdVal = USART1->DR;
     }
     if ((USART1->SR & RXNE_FLAG))
     {
-        USART1->SR &= ~RXNE_FLAG;
+        // rdVal = USART1->SR;
+        // rdVal = USART1->DR;
     }
     if ((USART1->SR & FE_FLAG))
     {
-        USART1->SR &= ~FE_FLAG;
+        rdVal = USART1->SR;
+        rdVal = USART1->DR;
     }
-    rdVal = USART1->SR;
-    rdVal = USART1->DR;
 }
 void test_eusart()
 {
+
     if (!(RCC->APB2ENR & RCC_APB2ENR_IOPCEN))
     {
         RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
@@ -183,50 +191,63 @@ void usart_pins_init()
     GPIOA->CRH |= (GPIO_CRH_CNF10_0);                    // rx input FLOAT
 }
 ///// DMA ///////
-void eusart_init_dma(uint32_t bauds)
+void eusart_dma_init(uint32_t bauds)
 {
-    RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_AFIOEN;
     usart_pins_init(); /// PINS
     u_baud(bauds);
     USART1->CR2 = STOP_1;
     USART1->CR1 &= ~M_SIZE;
-
     USART1->CR1 &= ~(TXEIE | TCIE | RXNEIE | RXEN | USART_CR1_UE | TXEN | EU);
-
-    USART1->CR1 = (TXEIE | TCIE | RXNEIE);
-    USART1->CR1 |= (RXEN | USART_CR1_UE | TXEN);
+    USART1->CR1 |= TXEIE | TCIE | RXNEIE;
+    USART1->CR1 |= TXEN | USART_CR1_UE | RXEN;
+    DMA1_Channel5->CCR |= DMAEN;
     USART1->CR1 |= EU;
-    // NVIC_EnableIRQ(USART1_IRQn);
-    // NVIC_SetPriority(USART1_IRQn, 3);
-    USART1->DR = 0;
 }
-void dma_Tx_ch3(uint32_t phaddr, uint32_t memaddr, uint16_t buffSize, uint8_t dir)
+void uart_dma1set()
+{
+    // DMA1->IFCR;
+    // DMA1->ISR;
+
+    while ((DMA1->ISR & DMA_ISR_GIF1)) // TE/TC/HT occured
+    {
+        if ((DMA1->ISR & DMA_ISR_TEIF1)) // tx error
+        {
+            DMA1->IFCR &= ~(DMA_IFCR_CTEIF1);
+        }
+        if ((DMA1->ISR & DMA_ISR_HTIF1)) // half txed
+        {
+            DMA1->IFCR &= ~(DMA_IFCR_CHTIF1);
+        }
+        if ((DMA1->ISR & DMA_ISR_TCIF1)) // tx complete
+        {
+            DMA1->IFCR &= ~(DMA_IFCR_CTCIF1);
+        }
+    }
+}
+void dma_Rx_ch5(uint32_t phaddr, uint32_t memaddr, uint16_t buffSize)
 {
     RCC->APB2ENR |= RCC_AHBENR_DMA1EN;
-    // dir 0==read from periph  1==rd from mem
-    DMA1_Channel3->CPAR = phaddr;
-    DMA1_Channel3->CMAR = memaddr;
-    DMA1_Channel3->CPAR = buffSize;
+    DMA1_Channel5->CPAR = phaddr;
+    DMA1_Channel5->CMAR = memaddr;
+    DMA1_Channel5->CPAR = buffSize;
+    USART1->CR3 |= DMAEN_RX; // usart1 Tx channel=5
 
-    DMA1_Channel3->CCR = PL_MID; //*****
-    if (dir == 1)
-    {
-        DMA1_Channel3->CCR |= DIR; // 0=RD 1=WR
-    }
-    if (dir == 0)
-    {
-        DMA1_Channel3->CCR &= ~DIR; // 0=RD 1=WR
-    }
-    DMA1_Channel3->CCR |= MEMSIZE_8BIT; //**** */
-    DMA1_Channel3->CCR |= PSIZE_8BIT;   //**** */
-    DMA1_Channel3->CCR &= ~MINC;        //**** */
-    DMA1_Channel3->CCR &= ~PINC;        //**** */
-    DMA1_Channel3->CCR = CIRC;          //**** */
-    DMA1_Channel3->CCR &= ~MEM2MEM;     //**** */
-    DMA1_Channel3->CCR |= TEIEN | HTIEN | TCIE;
-    DMA1_Channel3->CCR |= DMAEN;
+    DMA1_Channel5->CCR = DIR;          // 0=RD-peri 1=Rd mem
+    DMA1_Channel5->CCR |= MEMSIZE_8BIT; //**** */
+    DMA1_Channel5->CCR |= PSIZE_8BIT;   //**** */
+    DMA1_Channel5->CCR |= MINC;         //**** */
+    DMA1_Channel5->CCR &= ~PINC;        //**** */
+    DMA1_Channel5->CCR |= CIRC;         //**** */
+    // DMA1_Channel5->CCR |= MEM2MEM;     //**** */
+
+    DMA1_Channel5->CCR |= TEIEN | HTIEN | TCIE;
+    //
+    // USART1->CR1 |= TXEIE | TCIE | RXNEIE;
+    // USART1->CR1 |= TXEN | USART_CR1_UE | RXEN;
+    // DMA1_Channel5->CCR |= DMAEN;
+    // USART1->CR1 |= EU;
 }
-
+//////////////
 //////////////
 void eusart_init(uint32_t bauds)
 {
@@ -242,12 +263,13 @@ void eusart_init(uint32_t bauds)
     // NVIC_SetPriority(USART1_IRQn, 3);
     // NVIC_EnableIRQ(USART1_IRQn);
 }
-void eusart_send(uint8_t val)
+uint8_t eusart_send(uint8_t val)
 {
     USART1->DR = val;
     while ((!(USART1->SR & TC_FLAG))) // 0 not txed
         ;
     rdVal = USART1->DR;
+    return rdVal;
 }
 void eusartString(char *mesg)
 {
@@ -271,6 +293,50 @@ uint8_t eusart_rd()
     rdVal = USART1->DR;
     return rdVal;
 }
+//////////////////////
+//////////////////////
+void eusart_cntrl_init(uint32_t bauds)
+{
+    usart_pins_init(); /// PINS
+    u_baud(bauds);
+    USART1->CR2 = STOP_1;
+    USART1->CR1 &= ~M_SIZE;
+    USART1->CR1 &= ~(TXEIE | TCIE | RXNEIE | RXEN | USART_CR1_UE | TXEN | EU);
+    USART1->CR3 |= CTSIE | CTSE | RTSE; //
+    USART1->CR1 |= TXEIE | TCIE | RXNEIE;
+    USART1->CR1 |= TXEN | USART_CR1_UE | RXEN;
+    USART1->CR1 |= EU;
+    // NVIC_SetPriority(USART1_IRQn, 3);
+    // NVIC_EnableIRQ(USART1_IRQn);
+}
+void eusart_cntrl_send(uint8_t val)
+{
+    while (!(USART1->SR & CTS_FLAG)) // 1==change 0==no change
+        ;
+
+    USART1->DR = val;
+    while ((!(USART1->SR & TC_FLAG))) // 0 not txed
+        ;
+    rdVal = USART1->DR;
+}
+uint8_t eusart_cntrl_rd()
+{
+    USART1->CR3 = RTSE; // 1==>RTS=0
+    dummy = USART1->DR;
+    dummy = USART1->SR;
+    while ((USART1->SR & ORE_FLAG))
+        ;
+    while (!(USART1->SR & RXNE_FLAG))
+        ;
+    while ((USART1->SR & FE_FLAG))
+        ;
+    rdVal = USART1->DR;
+
+    USART1->CR3 &= ~RTSE; // 0==>RTS=1
+
+    return rdVal;
+}
+//////////////////////
 /////////////
 
 void eusart_close()

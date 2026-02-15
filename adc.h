@@ -16,7 +16,7 @@
 #define CONV_ENDJ_FLAG ADC_SR_JEOC
 // Watchdog flag 1==voltage range crossed set by ADC_LTR & ADC_HTR
 #define CONV_AWD_FLAG ADC_SR_AWD
-
+//
 // ADC->CR1
 #define WDT_EN ADC_CR1_AWDEN   // 1==WDT en
 #define JWDT_EN ADC_CR1_JAWDEN // 1==JWDT en
@@ -86,13 +86,6 @@ trigger event by the JEXTSEL[2:0] bits
 // Channel x Sample time selection
 #define SMPX2(REG, BIT, CHANNEL) (SET_BIT(REG, BIT) << CHANNEL) // 000 ADC->SMPR2
 //
-
 //
-void testADC()
-{
-    // SET_BIT(ADC1->CR1,ADC_CR1_AWDCH);
-    DISC_CH_NUM(ADC1->CR1, ADC_CR1_AWDCH);
-    INTREN(ADC1->CR1, ADC_CR1_EOCIE);
-    
-}
+
 #endif // __ADC
