@@ -41,18 +41,28 @@
 #define AUTO_RELOAD(REG, VAL) WRITE_REG(REG, VAL) // ARR[15:0]
 // 25HZ=8892 50HZ=4446 100HZ=2223
 //
-#define _100HZ 2223 // 10ms
-#define _50HZ 4446  // 20ms
-#define _25HZ 8892  // 40ms
+#define _204800HZ 1   // 3us
+#define _102400HZ 2   // 6us
+#define _51200HZ 5    // 11us
+#define _25600HZ 9    // 41us
+#define _12800HZ 17   // 82us
+#define _6400HZ 34    // 163us
+#define _3200HZ 68    // 325us
+#define _1600HZ 139   // 650us
+#define _800HZ 278    // 1.25ms
+#define _400HZ 556    // 2.5ms
+#define _200HZ 1112   // 5ms
+#define _100HZ 2223   // 10ms
+#define _50HZ 4446    // 20ms
+#define _25HZ 8892    // 40ms
+#define _12_5HZ 17784 // 80ms
 //
 void TIM_IRQHandler(void)
 {
     // TIMx_SR (UIF flag)
-    CLEAR_BIT(TIM1->SR, TIM_SR_UIF);
+    TIM1->SR &= ~TIM_SR_UIF;
 };
-//
 
-//
 void timer6_init()
 {
     RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;

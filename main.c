@@ -18,14 +18,9 @@ int main()
     _delay_ms(1000000);
     eusart_init(U19200);
     timer6_init();
-
-
     while (1)
     {
-        // test_tim6(2223); // 100HZ
-        // test_tim6(4446); // 50HZ
-        // test_tim6(8892); // 25HZ
-        test_tim6(17784); // 12.5HZ
+        test_tim6(_100HZ);
     }
     return 0;
 }
