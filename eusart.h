@@ -13,41 +13,6 @@
 #include "rcc_conf.h"
 #include "dma.h"
 
-/*
-STATUS -- USART_SR
-DATA-REG --USART_DR
-BAUDRATE --USART_BRR
-Tx/ Rx baud =fCK/16*USARTDIV)
-USARTDIV===USART_BRR register.
-Input clock to the peripheral (PCLK1 for USART2, 3, 4, 5 or PCLK2 for USART1)
-
-TX Procedure:
-1.Enable the USART by writing the UE bit in USART_CR1 register to 1.
-2.Program the M bit in USART_CR1 to define the word length.
-3.Program the number of stop bits in USART_CR2.
-4.Select DMA enable (DMAT) in USART_CR3 if Multi euBuffer Communication is to take
-place. Configure the DMA register as explained in multi-euBuffer communication.
-5.Set the TE bit in USART_CR1 to send an idle frame as first transmission.
-6.Select the desired baud rate using the USART_BRR register.
-7.Write the data to send in the USART_DR register (this clears the TXE bit). Repeat this
-for each data to be transmitted in case of single euBuffer.
-//
-TXIE-->TXE (a write to USART_DR-->>TXE)==set
-TCIE-->TC transmission complete)==set can be clrd by tc= 0
-
-RX Procedure:
-1.Enable the USART by writing the UE bit in USART_CR1 register to 1.
-2.Program the M bit in USART_CR1 to define the word length.
-3.Program the number of stop bits in USART_CR2.
-4.Select DMA enable (DMAT) in USART2_CR3 if Multi-euBuffer Communication is to take
-place. Configure the DMA register as explained in multi-euBuffer communication. STEP 3
-5.Select the desired baud rate using the baud rate register USART_BRR
-6.Set the RE bit USART_CR1. This enables the receiver which begins searching for a
-start bit.
-
-baud=fclk/16*(USARTDIV)
-USARTDIV=fclk/(baudx16)
-*/
 //
 // USART_SR Status register
 //
@@ -136,6 +101,7 @@ void USART1_IRQHandler()
         rdVal = USART1->DR;
     }
 }
+
 void test_eusart()
 {
 
@@ -183,17 +149,54 @@ void u_baud(uint32_t baud)
         break;
     }
 }
-void usart_pins_init()
+
+void usart1_pins_remap0() // tx-PA9 rx-PA10
 {
     RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_AFIOEN;
     AFIO->MAPR &= ~(AFIO_MAPR_USART1_REMAP);
     GPIOA->CRH = (GPIO_CRH_CNF9_1 | GPIO_CRH_MODE9_Msk); // tx 50mhz AF_P_P
     GPIOA->CRH |= (GPIO_CRH_CNF10_0);                    // rx input FLOAT
 }
+void usart1_pins_remap1() // tx-PB6  rx-PB7
+{
+    RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPBEN | RCC_APB2ENR_AFIOEN;
+    AFIO->MAPR |= AFIO_MAPR_USART1_REMAP;
+    GPIOB->CRL = (GPIO_CRL_CNF6_1 | GPIO_CRL_MODE6_Msk); // tx 50mhz AF_P_P
+    GPIOB->CRL |= (GPIO_CRL_CNF7_0);                     // rx input FLOAT
+}
+/*
+     (master)  TX----->RX (slave)
+     (master)  RX<-----TX (slave)
+     (master) RTS----->CTS (slave) if rts=0 send rts=1 read
+     (master) CTS<-----RTS (slave) if cts=0 read cts=1 send
+*/
+void usart2_pins_remap0() // tx-PA2  rx-PA3 cts-PA0 rts-PA1
+{
+
+    RCC->APB2ENR |= RCC_APB2ENR_IOPAEN | RCC_APB2ENR_AFIOEN;
+    RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
+    AFIO->MAPR &= ~AFIO_MAPR_USART2_REMAP;
+
+    GPIOA->CRL = (GPIO_CRL_CNF2_1 | GPIO_CRL_MODE2_Msk); // tx 50mhz AF_P_P
+    GPIOA->CRL |= (GPIO_CRL_MODE1_Msk);                  // rts 50mhz P_P
+    GPIOA->CRL |= (GPIO_CRL_CNF3_0);                     // rx input FLOAT
+    GPIOA->CRL |= (GPIO_CRL_CNF0_0);                     // cts input FLOAT
+}
+void usart3_pins_remap0() // tx-PB10  rx-PB11 cts-PB13 rts-PB14
+{
+    RCC->APB2ENR |= RCC_APB2ENR_IOPBEN | RCC_APB2ENR_AFIOEN;
+    RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
+    AFIO->MAPR &= ~AFIO_MAPR_USART2_REMAP;
+    GPIOB->CRH = (GPIO_CRH_CNF10_1 | GPIO_CRH_MODE10_Msk); // tx 50mhz AF_P_P
+    GPIOB->CRH |= (GPIO_CRH_MODE14_Msk);                   // rts 50mhz P_P
+    GPIOB->CRH |= (GPIO_CRH_CNF11_0);                      // rx input FLOAT
+    GPIOB->CRH |= (GPIO_CRH_CNF13_0);                      // cts input FLOAT
+}
+/////////////////
 ///// DMA ///////
 void eusart_dma_init(uint32_t bauds)
 {
-    usart_pins_init(); /// PINS
+    usart1_pins_remap0(); /// PINS
     u_baud(bauds);
     USART1->CR2 = STOP_1;
     USART1->CR1 &= ~M_SIZE;
@@ -232,7 +235,7 @@ void dma_Rx_ch5(uint32_t phaddr, uint32_t memaddr, uint16_t buffSize)
     DMA1_Channel5->CPAR = buffSize;
     USART1->CR3 |= DMAEN_RX; // usart1 Tx channel=5
 
-    DMA1_Channel5->CCR = DIR;          // 0=RD-peri 1=Rd mem
+    DMA1_Channel5->CCR = DIR;           // 0=RD-peri 1=Rd mem
     DMA1_Channel5->CCR |= MEMSIZE_8BIT; //**** */
     DMA1_Channel5->CCR |= PSIZE_8BIT;   //**** */
     DMA1_Channel5->CCR |= MINC;         //**** */
@@ -247,18 +250,18 @@ void dma_Rx_ch5(uint32_t phaddr, uint32_t memaddr, uint16_t buffSize)
     // DMA1_Channel5->CCR |= DMAEN;
     // USART1->CR1 |= EU;
 }
-//////////////
-//////////////
+///////////////////////
+////// USART1_0 ////////
 void eusart_init(uint32_t bauds)
 {
-    usart_pins_init(); /// PINS
+    usart1_pins_remap0(); /// PINS
     u_baud(bauds);
     USART1->CR2 = STOP_1;
     USART1->CR1 &= ~M_SIZE;
     USART1->CR1 &= ~(TXEIE | TCIE | RXNEIE | RXEN | USART_CR1_UE | TXEN | EU);
 
     USART1->CR1 |= TXEIE | TCIE | RXNEIE;
-    USART1->CR1 |= TXEN | USART_CR1_UE | RXEN;
+    USART1->CR1 |= TXEN | RXEN;
     USART1->CR1 |= EU;
     // NVIC_SetPriority(USART1_IRQn, 3);
     // NVIC_EnableIRQ(USART1_IRQn);
@@ -293,73 +296,243 @@ uint8_t eusart_rd()
     rdVal = USART1->DR;
     return rdVal;
 }
-//////////////////////
-//////////////////////
-void eusart_cntrl_init(uint32_t bauds)
+//////////////////////////
+//////// USART1_1 ////////
+void eusart_init_1(uint32_t bauds)
 {
-    usart_pins_init(); /// PINS
+    usart1_pins_remap1(); /// PINS
     u_baud(bauds);
     USART1->CR2 = STOP_1;
     USART1->CR1 &= ~M_SIZE;
     USART1->CR1 &= ~(TXEIE | TCIE | RXNEIE | RXEN | USART_CR1_UE | TXEN | EU);
-    USART1->CR3 |= CTSIE | CTSE | RTSE; //
+
     USART1->CR1 |= TXEIE | TCIE | RXNEIE;
-    USART1->CR1 |= TXEN | USART_CR1_UE | RXEN;
+    USART1->CR1 |= TXEN | RXEN;
     USART1->CR1 |= EU;
     // NVIC_SetPriority(USART1_IRQn, 3);
     // NVIC_EnableIRQ(USART1_IRQn);
 }
-void eusart_cntrl_send(uint8_t val)
+uint8_t eusart_send_1(uint8_t val)
 {
-    while (!(USART1->SR & CTS_FLAG)) // 1==change 0==no change
-        ;
-
-    USART1->DR = val;
-    while ((!(USART1->SR & TC_FLAG))) // 0 not txed
-        ;
-    rdVal = USART1->DR;
+    return eusart_send(val);
 }
-uint8_t eusart_cntrl_rd()
+void eusartString_1(char *mesg)
 {
-    USART1->CR3 = RTSE; // 1==>RTS=0
-    dummy = USART1->DR;
-    dummy = USART1->SR;
-    while ((USART1->SR & ORE_FLAG))
+    eusartString(mesg);
+}
+void eusart_rd1()
+{
+    eusart_rd();
+}
+////////////////
+////// USART 2 //////////
+void u_baud2(uint32_t baud)
+{
+    /*
+    USARTDIV
+           fraction = 16x0.nn
+        div_mantisa = val //whole num
+                BRR = (div_mantissa<<4|(16x0.nn) )
+    */
+    float div = ((USART_FCLK / (baud * 16.0)));
+    float div1 = ((USART_FCLK / (baud * 16)));
+    float div_frac = (16 * (div - div1));
+    uint32_t mantissa = (uint32_t)div1;
+    switch (baud)
+    {
+    case U9600:
+        USART2->BRR = ((mantissa << 4) + (uint32_t)div_frac);
+        break;
+    case U19200:
+        USART2->BRR = ((mantissa << 4) + (uint32_t)div_frac);
+        break;
+    case U38400:
+        USART2->BRR = ((mantissa << 4) + (uint32_t)div_frac);
+        break;
+    case U57600:
+        USART2->BRR = ((mantissa << 4) + (uint32_t)div_frac);
+        break;
+    case U115200:
+        USART2->BRR = ((mantissa << 4) + (uint32_t)div_frac);
+        break;
+    default:
+        break;
+    }
+}
+void eusart_init_2(uint32_t bauds)
+{
+    usart2_pins_remap0(); /// PINS
+    u_baud2(bauds);
+    USART2->CR2 = STOP_1;
+    USART2->CR1 &= ~(TXEIE | TCIE | RXNEIE | RXEN | TXEN | EU | M_SIZE);
+    USART2->CR3 &= ~(CTSIE | CTSE | RTSE);
+    //
+    USART2->CR1 |= TXEIE | TCIE | RXNEIE;
+    //
+    USART2->CR3 = CTSIE | CTSE | RTSE;
+    //
+    USART2->CR1 |= TXEN | RXEN;
+    USART2->CR1 |= EU;
+    // NVIC_SetPriority(USART1_IRQn, 3);
+    // NVIC_EnableIRQ(USART1_IRQn);
+}
+uint8_t eusart_send_2(uint8_t val)
+{
+    USART2->DR = val;
+    while ((!(USART2->SR & TC_FLAG)))
         ;
-    while (!(USART1->SR & RXNE_FLAG))
-        ;
-    while ((USART1->SR & FE_FLAG))
-        ;
-    rdVal = USART1->DR;
-
-    USART1->CR3 &= ~RTSE; // 0==>RTS=1
-
+    rdVal = USART2->DR;
     return rdVal;
 }
-//////////////////////
-/////////////
+uint8_t eusart_rd_2()
+{
+    dummy = USART2->DR;
+    dummy = USART2->SR;
+    while (!(USART2->SR & RXNE_FLAG))
+        ;
+    while ((USART2->SR & FE_FLAG))
+        ;
+    rdVal = USART2->DR;
+    return rdVal;
+}
+void eusartString_2(char *mesg)
+{
+    char buff[20];
+    strcpy(buff, mesg);
+    eusart_send_2(' ');
+    for (uint8_t i = 0; i < strlen(mesg) + 1; i++)
+    {
+        eusart_send_2(buff[i]);
+    }
+}
+//************
+void eusart_cntrl_2(uint8_t val)
+{
+    if (!(USART2->SR & USART_SR_CTS)) // CTS if 1-send if 0-read
+    {
+        goto read;
+    }
+    if ((USART2->SR & USART_SR_CTS)) // CTS if 1-send if 0-read
+    {
+        goto send;
+    }
 
+read:
+    GPIOA->ODR &= ~GPIO_ODR_ODR1; // rts=0 wr
+    eusart_send_2(eusart_rd_2());
+    GPIOA->ODR = GPIO_ODR_ODR1; // rts=1 rd
+send:
+    GPIOA->ODR = GPIO_ODR_ODR1; // rts=1 rd
+    eusart_send_2(val);
+    GPIOA->ODR &= ~GPIO_ODR_ODR1; // rts=0 wr
+}
+/////////////////////////
+/////// USART 3 /////////
+void u_baud3(uint32_t baud)
+{
+    /*
+    USARTDIV
+           fraction = 16x0.nn
+        div_mantisa = val //whole num
+                BRR = (div_mantissa<<4|(16x0.nn) )
+    */
+    float div = ((USART_FCLK / (baud * 16.0)));
+    float div1 = ((USART_FCLK / (baud * 16)));
+    float div_frac = (16 * (div - div1));
+    uint32_t mantissa = (uint32_t)div1;
+    switch (baud)
+    {
+    case U9600:
+        USART3->BRR = ((mantissa << 4) + (uint32_t)div_frac);
+        break;
+    case U19200:
+        USART3->BRR = ((mantissa << 4) + (uint32_t)div_frac);
+        break;
+    case U38400:
+        USART3->BRR = ((mantissa << 4) + (uint32_t)div_frac);
+        break;
+    case U57600:
+        USART3->BRR = ((mantissa << 4) + (uint32_t)div_frac);
+        break;
+    case U115200:
+        USART3->BRR = ((mantissa << 4) + (uint32_t)div_frac);
+        break;
+    default:
+        break;
+    }
+}
+void eusart_init_3(uint32_t bauds)
+{
+    usart3_pins_remap0(); /// PINS
+    u_baud3(bauds);
+    USART3->CR2 = STOP_1;
+    USART3->CR1 &= ~(TXEIE | TCIE | RXNEIE | RXEN | TXEN | EU | M_SIZE);
+    USART3->CR3 &= ~(CTSIE | CTSE | RTSE);
+    //
+    USART3->CR1 |= TXEIE | TCIE | RXNEIE;
+    //
+    USART3->CR3 = CTSIE | CTSE | RTSE;
+    //
+    USART3->CR1 |= TXEN | RXEN;
+    USART3->CR1 |= EU;
+    // NVIC_SetPriority(USART1_IRQn, 3);
+    // NVIC_EnableIRQ(USART1_IRQn);
+}
+uint8_t eusart_send_3(uint8_t val)
+{
+    USART3->DR = val;
+    while ((!(USART3->SR & TC_FLAG)))
+        ;
+    rdVal = USART3->DR;
+    return rdVal;
+}
+uint8_t eusart_rd_3()
+{
+    dummy = USART3->DR;
+    dummy = USART3->SR;
+    while (!(USART3->SR & RXNE_FLAG))
+        ;
+    while ((USART3->SR & FE_FLAG))
+        ;
+    rdVal = USART3->DR;
+    return rdVal;
+}
+void eusartString_3(char *mesg)
+{
+    char buff[20];
+    strcpy(buff, mesg);
+    eusart_send_3(' ');
+    for (uint8_t i = 0; i < strlen(mesg) + 1; i++)
+    {
+        eusart_send_3(buff[i]);
+    }
+}
+//************
+void eusart_cntrl_3(uint8_t val)
+{
+    // GPIOA->ODR &= ~GPIO_ODR_ODR1; // rts=0 wr
+    // GPIOA->ODR = GPIO_ODR_IDR1;   // rts=1 rd
+    if (!(USART3->SR & USART_SR_CTS)) // CTS if 1-send if 0-read
+    {
+        goto read;
+    }
+    if ((USART3->SR & USART_SR_CTS)) // CTS if 1-send if 0-read
+    {
+        goto send;
+    }
+read:
+    GPIOA->ODR &= ~GPIO_ODR_ODR1; // rts=0 wr
+    eusart_send_3(eusart_rd_3());
+    GPIOA->ODR = GPIO_ODR_ODR1; // rts=1 rd
+send:
+    GPIOA->ODR = GPIO_ODR_ODR1; // rts=1 rd
+    eusart_send_3(val);
+    GPIOA->ODR &= ~GPIO_ODR_ODR1; // rts=0 wr
+}
+///////////
 void eusart_close()
 {
     USART1->CR1 = 0;
     RCC->APB2ENR &= ~(RCC_APB2ENR_USART1EN);
 }
-
-/*                               \
-pllInit();                              \
-          // hseInit();                       \
-          SysTick_Init();                     \
-                                              \
-                                              \
-          eusart_init(U19200);                \
-          eusartString(" Welcome Again", 14); \
-          for (uint8_t i = 0; i < 255; i++)   \
-          {                                   \
-              eusart_send(i);                   \
-                                              \
-              _delay_ms(60);                  \
-          }                                   \
-          eusartString("End ", 4);            \
-          eusart_close();                     \
-              */
 #endif //

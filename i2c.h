@@ -6,7 +6,6 @@
 #include <unistd.h>
 #include <math.h>
 #include "gpio.h"
-
 /*
 Setting the START bit while the BUSY bit is cleared generates a Start condition and switch to Master mode (M/SL bit set)
 
@@ -39,14 +38,86 @@ If TxE is set and DR reg. was not written before the end of the last data TX, BT
 
 STOP bit is set by software to generate a Stop condition
 */
+//
+//  (I2C_CR1) Control register 1
+// used to reinitialize the peripheral after an error or a locked state
+#define SWRST I2C_CR1_SWRST // if the BUSY bit is set and remains locked
+/* This bit is set and cleared by software, and cleared by hardware when PEC is transferred or
+by a START or Stop condition or when PE = 0*/
+#define PEC I2C_CR1_PEC
+// Acknowledge/PEC Position (for data reception)
+#define POS I2C_CR1_PEC
+// This bit is set and cleared by software and cleared by hardware when PE=0
+#define ACK I2C_CR1_ACK // Acknowledge enable
+//
+#define STOP I2C_CR1_STOP
+#define START I2C_CR1_START
+// This bit is used to disable clock stretching in slave mode when ADDR or BTF flag is se
+#define NOSTRETCH ~(I2C_CR1_NOSTRETCH)
+#define ENGC I2C_CR1_ENGC   // general call enable
+#define ENPEC I2C_CR1_ENPEC // pec enable
+#define PE I2C_CR1_PE       // peripheral enable
+
+//   (I2C_CR2)   Control register 2
+//
+#define ITBUFEN I2C_CR2_ITBUFEN // Buffer interrupt enable
+/*
+SB = 1 (Master)
+ADDR = 1 (Master/Slave)
+ADD10= 1 (Master)
+STOPF = 1 (Slave)
+BTF = 1 with no TxE or RxNE event
+TxE event to 1 if ITBUFEN = 1
+RxNE event to 1if ITBUFEN = 1
+*/
+#define ITEVTEN I2C_CR2_ITEVTEN // Event interrupt enable
+/*
+BERR = 1
+ARLO = 1
+AF = 1
+OVR = 1
+PECERR = 1
+TIMEOUT = 1
+SMBALERT = 1
+*/
+#define ITERREN I2C_CR2_ITERREN // Error interrupt enable
+/*
+The minimum allowed frequency is 2 MHz,
+the maximum frequency is limited by the maximum APB frequency and cannot exceed
+50 MHz
+*/
+#define FREQ(REG, VAL) WRITE_REG(REG, VAL) //[5:0] 2=2MHZ......50MHZ=0X32 or 50
+//
+//  (I2C_OAR1)  Own address register 1
+// Addressing mode(slave mode)
+#define ADDMODE I2C_OAR1_ADDMODE              // 0==7-bit slave 1==10bit_slave
+#define ADD10_H(REG, VAL) WRITE_REG(REG, VAL) //[9:8] 10-bit addr
+#define ADD7_L(REG, VAL) WRITE_REG(REG, VAL)  //[7:1] 7-bit addr <<1
+#define ADD10_L I2C_OAR1_ADD0                 // 10-bit addr
+//
+//       (I2C_OAR2)  Own address register 2
+//[7:1] bits 7:1 of address in dual addressing mode
+#define ADD2(REG, VAL) WRITE_REG(REG, VAL) 
+//
+//0==only 7bit from OAR1 is recognised 1==OAR1 & OAR2 7bit are recognised
+#define ENDUAL I2C_OAR2_ENDUAL
+//
+//    (I2C_DR)  Data register
+#define I2C_DR(REG,VAL) WRITE_REG(REG,VAL)// 8 Bit Register
+//
+//  (I2C_SR1)  Status register 1
+#define TIMEOUT I2C_SR1_TIMEOUT // Timeout or Tlow error
+#define PECERR ~(I2C_SR1_PECERR )  // PEC Error in reception
+//
+#define OVR I2C_SR1_OVR // Overrun/Underrun
+
+//
 void setI2cPins()
 {
     GPIOB->CRL = (GPIO_CRL_CNF6_1 | GPIO_CRL_MODE6_1); // sda
     GPIOB->CRL = (GPIO_CRL_CNF7_1 | GPIO_CRL_MODE7_1); // clk
 }
-/*
 
-*/
 void i2c_init()
 {
     // RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
