@@ -27,7 +27,7 @@ int main()
     // eusartString_3("Hello from STM32...");
     while (1)
     {
-        eusart_cntrl_3(0);
+        // eusart_cntrl_3(0);
     }
     return 0;
 }
