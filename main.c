@@ -17,17 +17,14 @@ int main()
 
     _delay_ms(1000000);
 
-    eusart_init_3(U19200);
+    eusart_init(U19200);
+    for (int i = 0; i < 255; i++)
+    {
+        eusart_send(USART1->SR);
+    }
 
-    // for (int i = 0; i < 255; i++)
-    // {
-    //     eusart_send_3(i);
-    // }
-
-    // eusartString_3("Hello from STM32...");
     while (1)
     {
-        // eusart_cntrl_3(0);
     }
     return 0;
 }

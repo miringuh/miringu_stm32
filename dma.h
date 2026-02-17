@@ -52,30 +52,23 @@ DMA->CNDTRx (15:0) number of data to transfer
 DMA->CPARx(31:0) peripheral addr reg
 DMA->CMARx(31:0) memory addr reg
     */
-// DMA->ISR DMA interrupt status register
-//   cleared by software writing 1 DMA_IFCR register.
+//       DMA->ISR DMA interrupt status register
 //[ TEIFx HTIFx TCIFx xGIF7 ]
-#define CHANNEL_FLAGS(REG, CHN, POS) ((READ_REG(REG) << CHN) << POS)
+#define CHANNEL_FLAGS(REG, POS) (READ_REG(REG)  << POS))
 //
-//  (DMA_IFCR) DMA interrupt flag clear register
+//      (DMA_IFCR) DMA interrupt flag clear register
 //[ TEIFx HTIFx TCIFx xGIF7 ]
 #define CHANNEL_FLAG_CLR(REG, BIT, POS) (SET_BIT(REG, BIT) << POS)
 //
-//(DMA_CCRx) DMA channel x configuration register
+//      (DMA_CCRx) DMA channel x configuration register
 #define MEM2MEM DMA_CCR_MEM2MEM
-#define PL_LOW DMA_CCR_PL_0
-#define PL_MID DMA_CCR_PL_1
-#define PL_HIGH DMA_CCR_PL_Msk
-#define MEMSIZE_8BIT DMA_CCR_MSIZE
-#define MEMSIZE_16BIT DMA_CCR_MSIZE_0
-#define MEMSIZE_32BIT DMA_CCR_MSIZE_1
-#define PSIZE_8BIT DMA_CCR_PSIZE
-#define PSIZE_16BIT DMA_CCR_PSIZE_0
-#define PSIZE_32BIT DMA_CCR_PSIZE_1
+#define PL(REG, VAL) SET_BIT(REG, VAL)      // 00-low 01-mid 10-high 11-very high
+#define MEMSIZE(REG, VAL) SET_BIT(REG, VAL) // 00-8bit 01-16bit 10-32bit
+#define PSIZE(REG, VAL) SET_BIT(REG, VAL)   // 00-8bit 01-16bit 10-32bit
 #define MINC DMA_CCR_MINC
 #define PINC DMA_CCR_PINC
 #define CIRC DMA_CCR_CIRC
-#define DIR DMA_CCR_DIR // 0=READ 1=WRITE
+#define DIR DMA_CCR_DIR // 0=peri READ 1=mem READ
 #define TEIEN DMA_CCR_TEIE
 #define HTIEN DMA_CCR_HTIE
 #define TCIEN DMA_CCR_TCIE
@@ -104,50 +97,27 @@ channel 7== USART2_TX, I2C1_RX, TIM2_CH2, TIM2_CH4, TIM4_UP
 */
 // DMA2 has 5 channels
 //
-//
 
-typedef struct
-{
-    uint32_t phaddr;
-    uint32_t memaddr;
-    uint16_t buffSize;
-    uint8_t dir;
-    uint32_t memsize;
-    uint32_t periphsize;
-    uint32_t mem2mem;
-    uint32_t minc;
-    uint32_t pinc;
-    uint32_t circ;
-} DMA1_SETUP;
 void DMA1_IRQHandler()
 {
 }
-void channel1_config()
-{
-    // DMA1_SETUP dma1;
-}
-void channel1(uint32_t phaddr, uint32_t memaddr, uint16_t buffSize, uint8_t dir)
+
+void channel1(uint32_t phaddr, uint32_t memaddr, uint16_t buffSize)
 {
 
     DMA1_Channel1->CPAR = phaddr;
     DMA1_Channel1->CMAR = memaddr;
     DMA1_Channel1->CPAR = buffSize;
 
-    DMA1_Channel1->CCR = PL_MID; //*****
-    if (dir == 1)
-    {
-        DMA1_Channel1->CCR |= DIR; // 0=RD-PERIPH 1=RD-MEM
-    }
-    if (dir == 0)
-    {
-        DMA1_Channel1->CCR &= ~DIR; //
-    }
-    DMA1_Channel1->CCR = MEMSIZE_8BIT; //**** */
-    DMA1_Channel1->CCR = PSIZE_8BIT;   //**** */
-    DMA1_Channel1->CCR &= ~MINC;       //**** */
-    DMA1_Channel1->CCR &= ~PINC;       //**** */
-    DMA1_Channel1->CCR &= ~CIRC;       //**** */
-    DMA1_Channel1->CCR = MEM2MEM;      //**** */
+    PL(DMA1_Channel1->CCR, DMA_CCR_PL_0); //*****
+
+    DMA1_Channel1->CCR |= DIR; // 0=peri READ 1=mem READ
+
+    MEMSIZE(DMA1_Channel1->CCR, DMA_CCR_MSIZE); //**** */
+    PSIZE(DMA1_Channel1->CCR,0);                  
+    DMA1_Channel1->CCR &= ~MINC;                //**** */
+    DMA1_Channel1->CCR &= ~PINC;                //**** */
+    DMA1_Channel1->CCR &= ~CIRC;                //**** */
 
     DMA1_Channel1->CCR |= TEIEN | HTIEN | TCIEN;
     DMA1_Channel1->CCR = DMAEN;
@@ -158,19 +128,19 @@ void dma1set()
     // DMA1->ISR
 
     //     ;
-    while ((DMA1->ISR & DMA_ISR_GIF1)) // TE/TC/HT occured
+    while ((DMA1->ISR & DMA_ISR_GIF5)) // TE/TC/HT occured
     {
-        if ((DMA1->ISR & DMA_ISR_TEIF1)) // tx error
+        if ((DMA1->ISR & DMA_ISR_TEIF5)) // tx error
         {
-            DMA1->IFCR &= ~(DMA_IFCR_CTEIF1);
+            DMA1->IFCR &= ~(DMA_IFCR_CTEIF5);
         }
-        if ((DMA1->ISR & DMA_ISR_HTIF1)) // half txed
+        if ((DMA1->ISR & DMA_ISR_HTIF5)) // half txed
         {
-            DMA1->IFCR &= ~(DMA_IFCR_CHTIF1);
+            DMA1->IFCR &= ~(DMA_IFCR_CHTIF5);
         }
-        if ((DMA1->ISR & DMA_ISR_TCIF1)) // tx complete
+        if ((DMA1->ISR & DMA_ISR_TCIF5)) // tx complete
         {
-            DMA1->IFCR &= ~(DMA_IFCR_CTCIF1);
+            DMA1->IFCR &= ~(DMA_IFCR_CTCIF5);
         }
     }
 }
