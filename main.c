@@ -18,10 +18,16 @@ int main()
     _delay_ms(1000000);
 
     eusart_init(U19200);
+    spi1_init(BAUD_FCLK_64);
+
     for (int i = 0; i < 255; i++)
     {
-        eusart_send(USART1->SR);
+        spi0_send(i);
+        latch();
     }
+    SPI1->CR1 &= ~SPE;
+    SPI2->CR1 &= ~SPE;
+    GPIOC->ODR = 0;
 
     while (1)
     {

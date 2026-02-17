@@ -34,9 +34,9 @@
 #define M_SIZE USART_CR1_M  // Word length 0==8 1==9
 #define WAKE USART_CR1_WAKE // Wake 0==8 1==9
 #define PEIE USART_CR1_PEIE
-#define TXEIE USART_CR1_TXEIE
+#define USART_TXEIE USART_CR1_TXEIE
 #define TCIE USART_CR1_TCIE
-#define RXNEIE USART_CR1_RXNEIE
+#define USART_RXNEIE USART_CR1_RXNEIE
 #define TXEN USART_CR1_TE
 #define RXEN USART_CR1_RE
 #define SBKEN USART_CR1_SBK // send break
@@ -49,8 +49,8 @@
 #define STOP_2 USART_CR2_STOP_1
 #define STOP_1_5 USART_CR2_STOP_Msk
 #define CLKEN USART_CR2_CLKEN
-#define CPOL USART_CR2_CPOL
-#define CPHA USART_CR2_CPHA
+#define USART_CPOL USART_CR2_CPOL
+#define USART_CPHA USART_CR2_CPHA
 //
 //  USART_CR3 Control register 3
 // An interrupt is generated whenever CTS=1
@@ -182,9 +182,9 @@ void eusart_init(uint32_t bauds)
     u_baud(bauds);
     USART1->CR2 = STOP_1;
     USART1->CR1 &= ~M_SIZE;
-    USART1->CR1 &= ~(TXEIE | TCIE | RXNEIE | RXEN | TXEN | EU);
+    USART1->CR1 &= ~(USART_TXEIE | TCIE | USART_RXNEIE | RXEN | TXEN | EU);
 
-    USART1->CR1 |= TXEIE | TCIE | RXNEIE;
+    USART1->CR1 |= USART_TXEIE | TCIE | USART_RXNEIE;
     USART1->CR1 |= TXEN | RXEN;
     USART1->CR1 |= EU;
     // NVIC_SetPriority(USART1_IRQn, 3);
@@ -193,8 +193,8 @@ void eusart_init(uint32_t bauds)
 uint8_t eusart_send(uint8_t val)
 {
     USART1->DR = val;
-    // while ((!(USART1->SR & TXE_FLAG))) // 0 not txed
-    //     ;                             // txe
+    while ((!(USART1->SR & TXE_FLAG))) // 0 not txed
+        ;                             // txe
     while ((!(USART1->SR & TC_FLAG))) // 0 not txed
         ;
     rdVal = USART1->DR;
@@ -228,9 +228,9 @@ void eusart_init_1(uint32_t bauds)
     u_baud(bauds);
     USART1->CR2 = STOP_1;
     USART1->CR1 &= ~M_SIZE;
-    USART1->CR1 &= ~(TXEIE | TCIE | RXNEIE | RXEN | USART_CR1_UE | TXEN | EU);
+    USART1->CR1 &= ~(USART_TXEIE | TCIE | USART_RXNEIE | RXEN | USART_CR1_UE | TXEN | EU);
 
-    USART1->CR1 |= TXEIE | TCIE | RXNEIE;
+    USART1->CR1 |= USART_TXEIE | TCIE | USART_RXNEIE;
     USART1->CR1 |= TXEN | RXEN;
     USART1->CR1 |= EU;
     // NVIC_SetPriority(USART1_IRQn, 3);
@@ -288,10 +288,10 @@ void eusart_init_2(uint32_t bauds)
     usart2_pins_remap0(); /// PINS
     u_baud2(bauds);
     USART2->CR2 = STOP_1;
-    USART2->CR1 &= ~(TXEIE | TCIE | RXNEIE | RXEN | TXEN | EU | M_SIZE);
+    USART2->CR1 &= ~(USART_TXEIE | TCIE | USART_RXNEIE | RXEN | TXEN | EU | M_SIZE);
     USART2->CR3 &= ~(CTSIE | CTSE | RTSE);
     //
-    USART2->CR1 |= TXEIE | TCIE | RXNEIE;
+    USART2->CR1 |= USART_TXEIE | TCIE | USART_RXNEIE;
     //
     USART2->CR3 = CTSIE | CTSE | RTSE;
     //
@@ -390,10 +390,10 @@ void eusart_init_3(uint32_t bauds)
     usart3_pins_remap0(); /// PINS
     u_baud3(bauds);
     USART3->CR2 = STOP_1;
-    USART3->CR1 &= ~(TXEIE | TCIE | RXNEIE | RXEN | TXEN | EU | M_SIZE);
+    USART3->CR1 &= ~(USART_TXEIE | TCIE | USART_RXNEIE | RXEN | TXEN | EU | M_SIZE);
     USART3->CR3 &= ~(CTSIE | CTSE | RTSE);
     //
-    USART3->CR1 |= TXEIE | TCIE | RXNEIE;
+    USART3->CR1 |= USART_TXEIE | TCIE | USART_RXNEIE;
     //
     USART3->CR3 = CTSIE | CTSE | RTSE;
     //
@@ -485,8 +485,8 @@ void eusart_dma_init(uint32_t bauds)
     u_baud(bauds);
     USART1->CR2 = STOP_1;
     USART1->CR1 &= ~M_SIZE;
-    USART1->CR1 &= ~(TXEIE | TCIE | RXNEIE | RXEN | TXEN | EU);
-    USART1->CR1 |= TXEIE | TCIE | RXNEIE;
+    USART1->CR1 &= ~(USART_TXEIE | TCIE | USART_RXNEIE | RXEN | TXEN | EU);
+    USART1->CR1 |= USART_TXEIE | TCIE | USART_RXNEIE;
     USART1->CR1 |= TXEN | USART_CR1_UE | RXEN;
     DMA1_Channel4->CCR |= DMAEN; // USART1_TX
     USART1->CR1 |= EU;
