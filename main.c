@@ -1,6 +1,6 @@
 #include "/home/jeff/STM32/stm32F1xx_headers/stm32f1xx.h"
 
-// #include "spi.h"
+#include "spi.h"
 // #include "timer6.h"
 // #include "adc.h"
 #include "eusart.h"

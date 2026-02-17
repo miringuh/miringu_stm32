@@ -4,7 +4,68 @@
 #include "rcc_conf.h"
 #include "eusart.h"
 #include "gpio.h"
+//
+//  (SPI_CR1)
+#define BIDIMODE SPI_CR1_BIDIMODE // 0: 2-line uni-DIR 1: 1-line BIDIR
+#define BIDIOE SPI_CR1_BIDIOE     // 0 RX-only mode  1 TX only Mode
+#define CRCEN SPI_CR1_CRCEN       // 1- ENabled
+/*
+This bit has to be written as soon as the last data wriTE into the SPI_DR register
+*/
+#define CRCNEXT SPI_CR1_CRCNEXT // 1- ENabled
+#define DFF SPI_CR1_DFF         // 0-8BIT 1-16BITS
+#define RXONLY SPI_CR1_RXONLY   // 1-full Duplex TX/RX  0-RX-only
+/*
+When the SSM bit is set, the NSS pin input is replaced with the value from the SSI bit.
+SSM=1 SS-PIN==SSI bit
+*/
+#define SSM SPI_CR1_SSM // Software slave management
+/*
+The value of this bit is forced onto the NSS pin
+and the I/O value of the NSS pin is ignored.
+*/
+#define SSI SPI_CR1_SSI
+#define LSBFIRST SPI_CR1_LSBFIRST    // 0-MSB 1-LSB
+#define SPE SPI_CR1_SPE              // 0-DISABLED  1-ENABLED
+#define BR(REG, VAL) WRITE(REG, VAL) // Baud Rate Control
+#define MSTR SPI_CR1_MSTR            // 0-SLAVE  1-MASTER
+#define CPOL SPI_CR1_CPOL            // clk polarity
+#define CPHA SPI_CR1_CPHA            // clk phase  0-(1st-clk) 1-(2nd-clk)
+//
 
+//******  (SPI_CR2)
+#define TXEIE SPI_CR2_TXEIE   // Tx buffer empty interrupt enable
+#define RXNEIE SPI_CR2_RXNEIE // RX buffer not empty interrupt enable
+// This bit controls the gen of an interrupt when an error condition occurs (CRCERR, OVR, MODF
+#define ERRIE SPI_CR2_ERRIE
+// 0: SS output is disabled in master mode
+#define SSOE SPI_CR2_SSOE       // SS Output Enable
+#define TXDMAEN SPI_CR2_TXDMAEN // TX DMA Enable
+#define RXDMAEN SPI_CR2_RXDMAEN // RX DMA Enable
+//
+
+//****** (SPI_SR)
+// This flag is set and reset by hardware.
+#define BSY SPI_SR_BSY // 1 SPI-BUSY  0 SPI-NOT BUSY
+// This flag is set by hardware and reset by a software sequence
+#define OVR SPI_SR_OVR // 0: No Overrun occur 1: Overrun occur
+// This flag is set by hardware and reset by a software sequence
+#define MODF SPI_SR_MODF // 1: Mode fault occurred
+// CRC error flag This bit is only used in full-duplex mode.
+#define CRCERR SPI_SR_CRCERR // 1: CRC value rXed does not match
+#define TXE SPI_SR_TXE       // 1-EMPTY 0-FULL
+#define RXNE SPI_SR_RXNE       // 1-FULL 0-EMPTY
+//
+
+//  (SPI_DR)
+#define DATA_REG(REG,VAL) WRITE_REG(REG,VAL)
+//  (SPI_CRCPR)
+#define CRC_POLY(REG, VAL) WRITE_REG(REG, VAL)
+//  (SPI_RXCRCR)
+#define RXCRC(REG, VAL) WRITE_REG(REG, VAL)
+//  (SPI_RXCRCR)
+#define TXCRC(REG, VAL) WRITE_REG(REG, VAL)
+//
 volatile uint8_t spi_dummy = 0;
 uint16_t spi_error = 0;
 volatile uint8_t spi_rd = 0;
@@ -135,7 +196,7 @@ void spiInitA(uint8_t baud)
     GPIOA->CRL |= MOSI_A | MISO_A | SCK_A | SS_A | LATCH;
 
     SPI1->CR1 |= SPI_CR1_MSTR | baud;
-    SPI1->CR1 |= SPI_CR1_CPHA;    // 0-lead 1-lag
+    SPI1->CR1 |= SPI_CR1_CPHA;     // 0-lead 1-lag
     SPI1->CR1 &= ~SPI_CR1_CPOL;    // 0-low->high 1-high->low
     SPI1->CR1 &= ~SPI_CR1_DFF;     // 0-8bit 1-16bit
     SPI1->CR1 |= SPI_CR1_LSBFIRST; // 0-msbFirst 1-lsbFirst
@@ -153,7 +214,6 @@ void spiInitA(uint8_t baud)
 ////////////////
 uint8_t spi_send(uint8_t val)
 {
-
     while (!(SPI1->SR & SPI_SR_TXE)) // 1=empty 0=Full
         ;
     SPI1->DR = val;
@@ -197,7 +257,7 @@ void latch()
 void spiStop()
 {
     // NVIC_DisableIRQ(SPI1_IRQn);
-;
+    ;
     GPIOC->BSRR &= ~GPIO_BSRR_BR0;
     GPIOA->ODR = 0;
     SPI1->CR1 = 0;
