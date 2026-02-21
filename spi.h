@@ -95,6 +95,7 @@ and the I/O value of the NSS pin is ignored.
 volatile uint8_t spi_dummy = 0;
 uint16_t spi_error = 0;
 volatile uint8_t spi_rd = 0;
+volatile uint8_t sdata;
 
 void latch() // PC13
 {
@@ -114,26 +115,23 @@ void latch() // PC13
 ////////////
 void SPI1_IRQHandler(void)
 {
-    // eusart_send(SPI1->SR);
-    if (SPI1->SR & TXE)
+    spi_dummy = SPI1->DR;
+    if ((SPI1->SR & TXE))
     {
-        spi_dummy = SPI1->SR;
-        SPI1->DR = 0;
-    }
-    if (SPI1->SR & RXNE)
-    {
-        spi_dummy = SPI1->SR;
         spi_rd = SPI1->DR;
     }
-    if (SPI1->SR & BSY)
+    if ((SPI1->SR & RXNE))
     {
-        SPI1->DR = 0;
-        // spi_dummy = SPI1->SR;
+        spi_rd = SPI1->DR;
     }
-    // test();
-    // NVIC_DisableIRQ(SPI1_IRQn);
+    if ((SPI1->SR & BSY))
+    {
+        // spi_dummy = SPI1->DR;
+        // SPI1->DR = (uint8_t)&sdata;
+    }
+    eusart_send(SPI1->SR);
+    // eusart_send(sdata);
 }
-
 void spi0_setup()
 { // mosi - PA7 miso - PA6 sck - PA5 ss - PA4 50MHZ
     RCC->APB2ENR |= RCC_APB2ENR_AFIOEN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_IOPAEN;
@@ -153,6 +151,7 @@ void spi2_setup()
     AFIO->MAPR |= (AFIO_MAPR_SWJ_CFG_JTAGDISABLE);
     AFIO->MAPR &= ~(AFIO_MAPR_SPI1_REMAP);
 }
+/////////
 /////////
 void spi0_init(uint8_t baud)
 { // mosi - PA7 miso - PA6 sck - PA5 ss - PA4 50MHZ
@@ -204,6 +203,7 @@ void spi1_init(uint8_t baud)
 // }
 ///////////
 //// SEND/READ ///////
+
 uint8_t spi0_send(uint8_t val)
 {
     while ((SPI1->SR & BSY))

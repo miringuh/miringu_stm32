@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include "gpio.h"
-
+// #include "eusart.h"
 /*
 usart1Tx-channel4(mem2mem)
 usart1Rx-channel5(mem2mem)
@@ -58,7 +58,7 @@ DMA->CMARx(31:0) memory addr reg
 //
 //      (DMA_IFCR) DMA interrupt flag clear register
 //[ TEIFx HTIFx TCIFx xGIF7 ]
-#define CHANNEL_FLAG_CLR(REG, BIT, POS) (SET_BIT(REG, BIT) << POS)
+#define CHANNEL_FLAG_CLR(REG, BIT) SET_BIT(REG, BIT)
 //
 //      (DMA_CCRx) DMA channel x configuration register
 #define MEM2MEM DMA_CCR_MEM2MEM
@@ -98,29 +98,28 @@ channel 7== USART2_TX, I2C1_RX, TIM2_CH2, TIM2_CH4, TIM4_UP
 // DMA2 has 5 channels
 //
 
-void DMA1_IRQHandler()
-{
-}
+// void DMA1_IRQHandler()
+// {
+// }
 
 void channel1(uint32_t phaddr, uint32_t memaddr, uint16_t buffSize)
 {
+    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
 
-    DMA1_Channel1->CPAR = phaddr;
-    DMA1_Channel1->CMAR = memaddr;
-    DMA1_Channel1->CPAR = buffSize;
+    DMA1_Channel1->CCR &= ~DMAEN;
 
-    PL(DMA1_Channel1->CCR, DMA_CCR_PL_0); //*****
-
-    DMA1_Channel1->CCR |= DIR; // 0=peri READ 1=mem READ
-
-    MEMSIZE(DMA1_Channel1->CCR, DMA_CCR_MSIZE); //**** */
-    PSIZE(DMA1_Channel1->CCR,0);                  
-    DMA1_Channel1->CCR &= ~MINC;                //**** */
-    DMA1_Channel1->CCR &= ~PINC;                //**** */
-    DMA1_Channel1->CCR &= ~CIRC;                //**** */
-
-    DMA1_Channel1->CCR |= TEIEN | HTIEN | TCIEN;
-    DMA1_Channel1->CCR = DMAEN;
+    DMA1_Channel1->CPAR = (uint32_t)phaddr;
+    DMA1_Channel1->CMAR = (uint32_t)memaddr;
+    DMA1_Channel1->CNDTR = buffSize;
+    DMA1_Channel1->CCR |= DMA_CCR_PL_0;    // priority
+    DMA1_Channel1->CCR |= DIR;             // 0=peri READ 1=mem READ
+    DMA1_Channel1->CCR |= DMA_CCR_MSIZE_0; // 8BIT
+    DMA1_Channel1->CCR |= DMA_CCR_PSIZE_0; // 8BIT
+    DMA1_Channel1->CCR |= MINC;            // mem incr
+    DMA1_Channel1->CCR &= ~PINC;           // periph no incr
+    DMA1_Channel1->CCR &= ~CIRC;           // 1-circ
+    // DMA1_Channel1->CCR |= TEIEN | HTIEN | TCIEN;
+    DMA1_Channel1->CCR |= DMAEN;
 }
 void dma1set()
 {
