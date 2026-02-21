@@ -1,7 +1,7 @@
 #include "/home/jeff/STM32/stm32F1xx_headers/stm32f1xx.h"
 
 // #include "spi.h"
-// #include "timer6.h"
+#include "tim1.h"
 #include "adc.h"
 #include "eusart.h"
 // #include "gpio.h"
@@ -17,15 +17,15 @@ int main()
     // pllInit();
     SysTick_Init();
     _delay_ms(1000000);
-
     // eusart_dma_tx(U19200);
-
-    eusart_dma_tx_init(U19200);
-    uart_dma1set("welcome");
-
+    // eusart_dma_tx_init(U19200);
+    // uart_dma1set("welcome");
+    timer1_init();
 
     while (1)
     {
+        test_tim6();
+        tim_del(_100HZ);
     }
     return 0;
 }
