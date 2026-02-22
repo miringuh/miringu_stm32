@@ -82,11 +82,20 @@ uint8_t eusart_send(uint8_t val);
 void uart_dma1set();
 void test_eusart();
 //
-void DMA1_IRQHandler()
+void USART1_IRQHandler()
 {
+    if ((USART1->SR & TXE_FLAG)) // 1 DR-->>reg
+    {
+        // USART1->DR = (uint32_t)&wrVal;
+        dummy = USART1->DR;
+        USART1->SR &= ~TXE_FLAG;
+    }
+    if ((USART1->SR & TC_FLAG)) // 1- txed
+    {
 
-    dummy = USART1->DR;
-    eusart_send(DMA1_Channel4->CNDTR);
+        USART1->DR = (uint32_t)&wrVal;
+        USART1->SR &= ~TC_FLAG;
+    }
 }
 
 void test_eusart()
@@ -186,18 +195,18 @@ void eusart_init(uint32_t bauds)
     usart1_pins_remap0(); /// PINS
     u_baud(bauds);
     USART1->CR2 = STOP_1;
-    USART1->CR1 &= ~M_SIZE;
-    USART1->CR1 &= ~(USART_TXEIE | TCIE | USART_RXNEIE | RXEN | TXEN | EU);
+    USART1->CR1 = 0;
 
-    USART1->CR3 = EIE;
-    USART1->CR1 |= USART_TXEIE | TCIE | USART_RXNEIE;
+    // USART1->CR3 = EIE;
+    USART1->CR1 |= USART_TXEIE | TCIE; //| USART_RXNEIE;
     USART1->CR1 |= TXEN | RXEN;
     // NVIC_SetPriority(USART1_IRQn, 2);
     // NVIC_EnableIRQ(USART1_IRQn);
     USART1->CR1 |= EU;
 }
-uint8_t eusart_send(uint8_t val)
+uint8_t eusart_send(volatile uint8_t val)
 {
+    // wrVal = val;
     USART1->DR = val;
     while (!(USART1->SR & TXE_FLAG)) // 1 DR-->>reg
     {
@@ -205,8 +214,7 @@ uint8_t eusart_send(uint8_t val)
     while (!(USART1->SR & TC_FLAG)) // 1- txed
     {
     }
-    rdVal = USART1->DR;
-    return rdVal;
+    return USART1->DR;
 }
 void eusartString(char *mesg)
 {
@@ -484,66 +492,60 @@ void eusart_close()
 }
 /////////////////
 ///// DMA ///////
+void DMA1_Channel4_IRQHandler()
+{
+
+    if ((DMA1->ISR & DMA_ISR_HTIF4)) // half txed
+    {
+        DMA1->IFCR &= ~(DMA_IFCR_CHTIF4);
+    }
+    if ((DMA1->ISR & DMA_ISR_TCIF4)) // tx complete
+    {
+        DMA1->IFCR &= ~(DMA_IFCR_CTCIF4);
+    }
+    if ((DMA1->ISR & DMA_ISR_TEIF4)) // tx error
+    {
+        DMA1->IFCR &= ~(DMA_IFCR_CTEIF4);
+    }
+    DMA1_Channel4->CCR &= ~DMAEN;
+}
 uint8_t valData;
 char buff[20];
-char *messg;
-void eusart_dma_tx_init(uint32_t baud)
+void eusart_dma_tx_init(uint32_t baud, char *msg)
 {
+    strcpy(buff, msg);
+
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
     usart1_pins_remap0();
+    u_baud(baud);
+    USART1->CR1 = 0;
+    USART1->CR2 = STOP_1;
+
     DMA1_Channel4->CPAR = (uint32_t)&USART1->DR;
     DMA1_Channel4->CMAR = (uint32_t)buff;
-    DMA1_Channel4->CNDTR = strlen(messg);
+    DMA1_Channel4->CNDTR = strlen(msg) * 2;
     DMA1_Channel4->CCR |= CIRC; // 1-circ
     // DMA1_Channel4->CCR |= MEM2MEM;         //
-    DMA1_Channel4->CCR |= MINC;            // mem incr
-    DMA1_Channel4->CCR &= ~PINC;           // periph no incr
-    DMA1_Channel4->CCR |= DIR;             // 0=peri READ 1=mem READ
-    DMA1_Channel4->CCR |= DMA_CCR_MSIZE_0; // 8BIT
-    DMA1_Channel4->CCR |= DMA_CCR_PSIZE_0; // 8BIT
-    DMA1_Channel4->CCR |= DMA_CCR_PL_Msk;  // V-H priority
-    USART1->CR3 |= DMAT;                   // usart1 Tx channel=4
-    u_baud(baud);
-    USART1->CR2 = STOP_1;
-    USART1->CR1 &= ~M_SIZE;
-    USART1->CR1 &= ~(USART_TXEIE | TCIE | TXEN | EU | USART_RXNEIE | RXEN);
+    DMA1_Channel4->CCR |= MINC;  // mem incr
+    DMA1_Channel4->CCR &= ~PINC; // periph no incr
+    DMA1_Channel4->CCR |= DIR;   // 0=peri READ 1=mem READ
+    // DMA1_Channel4->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem size
+    DMA1_Channel4->CCR |= DMA_CCR_PL_0; // high prioty
+    USART1->CR3 |= DMAT;                // usart1 Tx channel=4
 
-    USART1->CR3 |= EIE;
-    DMA1_Channel4->CCR = TEIEN | HTIEN | TCIEN;
+    // USART1->CR3 |= EIE;
+    DMA1_Channel4->CCR |= TEIEN | HTIEN | TCIEN;
     USART1->CR1 |= USART_TXEIE | TCIE;
-    USART1->CR1 |= TXEN;
 
     NVIC_SetPriority(DMA1_Channel4_IRQn, 2);
     NVIC_EnableIRQ(DMA1_Channel4_IRQn);
 
-    DMA1_Channel4->CCR |= DMAEN;
+    USART1->CR1 |= TXEN;
     USART1->CR1 |= EU;
-    eusart_send(0);
+    DMA1_Channel4->CCR |= DMAEN;
 }
 //
-void uart_dma1set(char *mesg)
+void eusart_dma_rx_init(uint32_t baud, char *msg)
 {
-    strcpy(buff, mesg);
-    messg = mesg;
-    // eusart_send((uint8_t)((DMA1_Channel4->CMAR & 0xFF0000) >> 16));
-    // eusart_send((uint8_t)((DMA1_Channel4->CMAR & 0x00FF00) >> 8));
-    // eusart_send((uint8_t)((DMA1_Channel4->CMAR & 0x0000FF)));
-
-    while ((DMA1->ISR & DMA_ISR_GIF4)) // TE/TC/HT occured
-    {
-        if ((DMA1->ISR & DMA_ISR_TEIF4)) // tx error
-        {
-            DMA1->IFCR &= ~(DMA_IFCR_CTEIF4);
-        }
-        if ((DMA1->ISR & DMA_ISR_HTIF4)) // half txed
-        {
-            DMA1->IFCR &= ~(DMA_IFCR_CHTIF4);
-        }
-        if ((DMA1->ISR & DMA_ISR_TCIF4)) // tx complete
-        {
-            DMA1->IFCR &= ~(DMA_IFCR_CTCIF4);
-        }
-    }
-    eusart_send((uint8_t)USART1->DR);
 }
 #endif //

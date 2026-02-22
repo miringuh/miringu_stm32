@@ -17,15 +17,17 @@ int main()
     // pllInit();
     SysTick_Init();
     _delay_ms(1000000);
-    // eusart_dma_tx(U19200);
-    // eusart_dma_tx_init(U19200);
-    // uart_dma1set("welcome");
-    timer1_init();
 
+    // eusart_init(U19200);
+    eusart_dma_tx_init(U19200, "Welcome");
+    // timer1_init();
+    // eusartString("welcome");
+ 
     while (1)
     {
-        test_tim6();
-        tim_del(_100HZ);
+        // eusart_read
+        // test_tim6();
+        // tim_del(_100HZ);
     }
     return 0;
 }
