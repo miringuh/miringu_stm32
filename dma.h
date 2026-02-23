@@ -101,13 +101,10 @@ channel 7== USART2_TX, I2C1_RX, TIM2_CH2, TIM2_CH4, TIM4_UP
 // void DMA1_IRQHandler()
 // {
 // }
-
 void channel1(uint32_t phaddr, uint32_t memaddr, uint16_t buffSize)
 {
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-
     DMA1_Channel1->CCR &= ~DMAEN;
-
     DMA1_Channel1->CPAR = (uint32_t)phaddr;
     DMA1_Channel1->CMAR = (uint32_t)memaddr;
     DMA1_Channel1->CNDTR = buffSize;
@@ -118,7 +115,7 @@ void channel1(uint32_t phaddr, uint32_t memaddr, uint16_t buffSize)
     DMA1_Channel1->CCR |= MINC;            // mem incr
     DMA1_Channel1->CCR &= ~PINC;           // periph no incr
     DMA1_Channel1->CCR &= ~CIRC;           // 1-circ
-    // DMA1_Channel1->CCR |= TEIEN | HTIEN | TCIEN;
+    DMA1_Channel1->CCR |= TEIEN | HTIEN | TCIEN;
     DMA1_Channel1->CCR |= DMAEN;
 }
 void dma1set()

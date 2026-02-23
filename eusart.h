@@ -72,7 +72,6 @@
 #define U57600 57600
 #define U115200 115200
 //
-
 #define readbuf 0
 #define writebuf 1
 volatile uint8_t dummy;
@@ -500,107 +499,149 @@ usart2- RX=channel 6
 usart3- TX=channel 2
 usart3- RX=channel 3
 */
+uint8_t valData;
+char buff[20];
+volatile uint8_t state;
+//
 void DMA1_Channel4_IRQHandler()
 {
-
     if ((DMA1->ISR & DMA_ISR_HTIF4)) // half txed
     {
-        DMA1->IFCR &= ~(DMA_IFCR_CHTIF4);
+        DMA1->IFCR |= DMA_IFCR_CHTIF4;
     }
     if ((DMA1->ISR & DMA_ISR_TCIF4)) // tx complete
     {
-        DMA1->IFCR &= ~(DMA_IFCR_CTCIF4);
+        DMA1->IFCR |= DMA_IFCR_CTCIF4;
     }
     if ((DMA1->ISR & DMA_ISR_TEIF4)) // tx error
     {
-        DMA1->IFCR &= ~(DMA_IFCR_CTEIF4);
+        DMA1->IFCR |= DMA_IFCR_CTEIF4;
     }
     DMA1_Channel4->CCR &= ~DMAEN;
 }
 void DMA1_Channel5_IRQHandler()
 {
-
-    if ((DMA1->ISR & DMA_ISR_HTIF4)) // half txed
+    if ((DMA1->ISR & DMA_ISR_TCIF5)) // tx complete
     {
-        DMA1->IFCR &= ~(DMA_IFCR_CHTIF4);
+        state = 1;
+        DMA1->IFCR |= DMA_IFCR_CTCIF5;
     }
-    if ((DMA1->ISR & DMA_ISR_TCIF4)) // tx complete
-    {
-        DMA1->IFCR &= ~(DMA_IFCR_CTCIF4);
-    }
-    if ((DMA1->ISR & DMA_ISR_TEIF4)) // tx error
-    {
-        DMA1->IFCR &= ~(DMA_IFCR_CTEIF4);
-    }
-    DMA1_Channel5->CCR &= ~DMAEN;
 }
-
-uint8_t valData;
-char buff[20];
-void eusart_dma_tx_init(uint32_t baud, char *msg)
+//
+void eusart_dma_tx_init(uint32_t baud, const char *msg)
 {
     strcpy(buff, msg);
-
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
     usart1_pins_remap0();
     u_baud(baud);
     USART1->CR1 = 0;
     USART1->CR2 = STOP_1;
-
     DMA1_Channel4->CPAR = (uint32_t)&USART1->DR;
     DMA1_Channel4->CMAR = (uint32_t)buff;
-    DMA1_Channel4->CNDTR = strlen(msg) * 2;
-    DMA1_Channel4->CCR |= CIRC; // 1-circ
-    // DMA1_Channel4->CCR |= MEM2MEM;         //
-    DMA1_Channel4->CCR |= MINC;  // mem incr
-    DMA1_Channel4->CCR &= ~PINC; // periph no incr
-    DMA1_Channel4->CCR |= DIR;   // 0=peri READ 1=mem READ
-    // DMA1_Channel4->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem size
-    DMA1_Channel4->CCR |= DMA_CCR_PL_0; // high prioty
-    USART1->CR3 |= DMAT;                // usart1 Tx channel=4
+    DMA1_Channel4->CNDTR = (strlen(msg) * 2);
+    DMA1_Channel4->CCR |= CIRC;                                     // 1-circ
+    DMA1_Channel4->CCR |= MINC;                                     // mem incr
+    DMA1_Channel4->CCR &= ~PINC;                                    // periph no incr
+    DMA1_Channel4->CCR |= DIR;                                      // 0=peri READ 1=mem READ
+    DMA1_Channel4->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem size
+    DMA1_Channel4->CCR |= DMA_CCR_PL_0;                             // high prioty
+    USART1->CR3 |= DMAT;                                            // usart1 Tx channel=4
 
-    // USART1->CR3 |= EIE;
     DMA1_Channel4->CCR |= TEIEN | HTIEN | TCIEN;
-    // USART1->CR1 |= USART_TXEIE | TCIE;
-
     NVIC_SetPriority(DMA1_Channel4_IRQn, 2);
     NVIC_EnableIRQ(DMA1_Channel4_IRQn);
 
-    USART1->CR1 |= TXEN;
-    USART1->CR1 |= EU;
-    DMA1_Channel4->CCR |= DMA_CCR_EN;
+    USART1->CR1 |= TXEN | EU;
+    DMA1_Channel4->CCR |= DMAEN;
 }
-//
-void eusart_dma_rx_init(uint32_t baud, volatile uint8_t data[])
+// eusart_buff[i] = i | 0x30;
+void eusart_dma_tx2_init(uint32_t baud,char msg[])
 {
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
     usart1_pins_remap0();
     u_baud(baud);
     USART1->CR1 = 0;
     USART1->CR2 = STOP_1;
+    DMA1_Channel4->CPAR = (uint32_t)&USART1->DR;
+    DMA1_Channel4->CMAR = (uint32_t)msg;
+    DMA1_Channel4->CNDTR = (strlen(msg) * 2);
+    DMA1_Channel4->CCR |= CIRC;                                     // 1-circ
+    DMA1_Channel4->CCR |= MINC;                                     // mem incr
+    DMA1_Channel4->CCR &= ~PINC;                                    // periph no incr
+    DMA1_Channel4->CCR |= DIR;                                      // 0=peri READ 1=mem READ
+    DMA1_Channel4->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem size
+    DMA1_Channel4->CCR |= DMA_CCR_PL_0;                             // high prioty
+    USART1->CR3 |= DMAT;                                            // usart1 Tx channel=4
 
+    DMA1_Channel4->CCR |= TEIEN | HTIEN | TCIEN;
+    NVIC_SetPriority(DMA1_Channel4_IRQn, 2);
+    NVIC_EnableIRQ(DMA1_Channel4_IRQn);
+
+    USART1->CR1 |= TXEN | EU;
+    DMA1_Channel4->CCR |= DMAEN;
+}
+
+void eusart_dma_rx_init(uint32_t bauds, char msg[], uint16_t size)
+{
+    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+    usart1_pins_remap0(); /// PINS
+    u_baud(bauds);
+    USART1->CR2 = STOP_1;
+    USART1->CR1 = 0;
+    USART1->CR1 |= USART_TXEIE | TCIE | USART_RXNEIE;
+    USART1->CR1 |= RXEN | TXEN | USART_CR1_UE;
+    USART1->CR3 |= DMAR; // usart1 Rx channel=5
+
+    DMA1_Channel5->CCR = 0;
+
+    DMA1_Channel5->CCR &= ~DMAEN;
     DMA1_Channel5->CPAR = (uint32_t)&USART1->DR;
-    DMA1_Channel5->CMAR = (uint32_t)&data;
-    DMA1_Channel5->CNDTR = 10;
-    DMA1_Channel5->CCR |= CIRC; // 1-circ
-    // DMA1_Channel5->CCR |= MEM2MEM;         //
+    DMA1_Channel5->CMAR = (uint32_t)msg;
+    DMA1_Channel5->CNDTR = size;
+    DMA1_Channel5->CCR |= DMA_CCR_PL_1; // priority HIGH
+    DMA1_Channel5->CCR &= ~DIR;         // 0=peri READ 1=mem READ
+    DMA1_Channel5->CCR &= ~(DMA_CCR_MSIZE_Msk| DMA_CCR_PSIZE_Msk); // 8BIT
     DMA1_Channel5->CCR |= MINC;  // mem incr
     DMA1_Channel5->CCR &= ~PINC; // periph no incr
-    DMA1_Channel5->CCR &= ~DIR;  // 0=peri READ 1=mem READ
-    // DMA1_Channel5->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem size
-    DMA1_Channel5->CCR |= DMA_CCR_PL_0; // high prioty
-
-    // USART1->CR3 |= EIE;
-    DMA1_Channel5->CCR |= TEIEN | HTIEN | TCIEN;
-    USART1->CR1 |= USART_TXEIE | TCIE | USART_RXNEIE;
-
-    USART1->CR3 |= DMAR; // usart1 Rx channel=5
+    DMA1_Channel5->CCR |= CIRC;  // 1-circ
+    DMA1_Channel5->CCR |= TCIEN;
+    state = 0;
+    DMA1_Channel5->CCR |= DMAEN;
     NVIC_SetPriority(DMA1_Channel5_IRQn, 2);
     NVIC_EnableIRQ(DMA1_Channel5_IRQn);
-
-    USART1->CR1 |= RXEN;
-    USART1->CR1 |= EU;
-    DMA1_Channel5->CCR |= DMA_CCR_EN;
-    // eusart_send(0x55);
 }
-#endif //
+//
+
+//
+#endif
+/*
+#define txBuffSize 12
+char eusart_buff[txBuffSize];
+uint8_t cnt = 0;
+int main()
+{
+    clock_init_20mhz_apb();
+    // pllInit();
+    SysTick_Init();
+    _delay_ms(1000000);
+    // eusart_init(U19200);
+    eusart_dma_rx_init(U19200, eusart_buff, 12);
+    eusart_dma_tx_init(U19200, "welcome Home");
+
+    while (1)
+    {
+        if (state)
+        {
+            USART1->CR1 |= USART_CR1_UE;
+            state = 0;
+            for (int i = 0; i < txBuffSize; i++)
+            {
+                eusart_send(eusart_buff[i]);
+            }
+        }
+
+    }
+    return 0;
+}
+
+*/
