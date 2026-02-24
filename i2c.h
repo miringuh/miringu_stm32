@@ -40,82 +40,159 @@ STOP bit is set by software to generate a Stop condition
 */
 //
 //  (I2C_CR1) Control register 1
-// used to reinitialize the peripheral after an error or a locked state
-#define SWRST I2C_CR1_SWRST // if the BUSY bit is set and remains locked
-/* This bit is set and cleared by software, and cleared by hardware when PEC is transferred or
-by a START or Stop condition or when PE = 0*/
+// Software Reset
+#define SWRST I2C_CR1_SWRST
+// Packet Error Checking.
 #define PEC I2C_CR1_PEC
 // Acknowledge/PEC Position (for data reception)
 #define POS I2C_CR1_PEC
-// This bit is set and cleared by software and cleared by hardware when PE=0
 #define ACK I2C_CR1_ACK // Acknowledge enable
-//
+// In Master mode, the BTF bit of the I2C_SR1 register must be cleared
 #define STOP I2C_CR1_STOP
+// Start Generation
 #define START I2C_CR1_START
-// This bit is used to disable clock stretching in slave mode when ADDR or BTF flag is se
+// Clock Stretching Disable (Slave mode)
 #define NOSTRETCH ~(I2C_CR1_NOSTRETCH)
-#define ENGC I2C_CR1_ENGC   // general call enable
-#define ENPEC I2C_CR1_ENPEC // pec enable
-#define PE I2C_CR1_PE       // peripheral enable
+// General Call Enable
+#define ENGC I2C_CR1_ENGC // general call enable
+// pec enable
+#define ENPEC I2C_CR1_ENPEC
+#define I2CPEN I2C_CR1_PE // peripheral enable
 
 //   (I2C_CR2)   Control register 2
-//
+/*
+0: TxE = 1 or RxNE = 1 does not generate any interrupt.
+1:TxE = 1 or RxNE = 1 generates Event Interrupt (whatever the state of
+DMAEN)
+*/
 #define ITBUFEN I2C_CR2_ITBUFEN // Buffer interrupt enable
 /*
-SB = 1 (Master)
-ADDR = 1 (Master/Slave)
-ADD10= 1 (Master)
-STOPF = 1 (Slave)
-BTF = 1 with no TxE or RxNE event
-TxE event to 1 if ITBUFEN = 1
-RxNE event to 1if ITBUFEN = 1
+– SB = 1 (Master)
+– ADDR = 1 (Master/Slave)
+– ADD10= 1 (Master)
+– STOPF = 1 (Slave)
+– BTF = 1 with no TxE or RxNE event
+– TxE event to 1 if ITBUFEN = 1
+– RxNE event to 1if ITBUFEN = 1
 */
 #define ITEVTEN I2C_CR2_ITEVTEN // Event interrupt enable
 /*
-BERR = 1
-ARLO = 1
-AF = 1
-OVR = 1
-PECERR = 1
-TIMEOUT = 1
-SMBALERT = 1
+– BERR = 1
+– ARLO = 1
+– AF = 1
+– OVR = 1
+– PECERR = 1
+– TIMEOUT = 1
+– SMBAlert = 1
 */
 #define ITERREN I2C_CR2_ITERREN // Error interrupt enable
 /*
 The minimum allowed frequency is 2 MHz,
-the maximum frequency is limited by the maximum APB frequency and cannot exceed
-50 MHz
+the maximum frequency is limited by the maximum APB frequency 50 MHz
 */
 #define FREQ(REG, VAL) WRITE_REG(REG, VAL) //[5:0] 2=2MHZ......50MHZ=0X32 or 50
 //
-//  (I2C_OAR1)  Own address register 1
+//    (I2C_OAR1)  Own address register 1
 // Addressing mode(slave mode)
 #define ADDMODE I2C_OAR1_ADDMODE              // 0==7-bit slave 1==10bit_slave
 #define ADD10_H(REG, VAL) WRITE_REG(REG, VAL) //[9:8] 10-bit addr
 #define ADD7_L(REG, VAL) WRITE_REG(REG, VAL)  //[7:1] 7-bit addr <<1
-#define ADD10_L I2C_OAR1_ADD0                 // 10-bit addr
+// 1==10-bit addressing mode: bit 0 of address
+#define ADD10_0 I2C_OAR1_ADD0
 //
-//       (I2C_OAR2)  Own address register 2
+//    (I2C_OAR2)  Own address register 2
 //[7:1] bits 7:1 of address in dual addressing mode
-#define ADD2(REG, VAL) WRITE_REG(REG, VAL) 
-//
-//0==only 7bit from OAR1 is recognised 1==OAR1 & OAR2 7bit are recognised
+#define ADD2(REG, VAL) WRITE_REG(REG, VAL) //
+// 0==only 7bit from OAR1 is recognised 1==OAR1 & OAR2 7bit are recognised
 #define ENDUAL I2C_OAR2_ENDUAL
 //
 //    (I2C_DR)  Data register
-#define I2C_DR(REG,VAL) WRITE_REG(REG,VAL)// 8 Bit Register
+#define I2C_DR(REG, VAL) WRITE_REG(REG, VAL) // 8 Bit Register
 //
-//  (I2C_SR1)  Status register 1
-#define TIMEOUT I2C_SR1_TIMEOUT // Timeout or Tlow error
-#define PECERR ~(I2C_SR1_PECERR )  // PEC Error in reception
+//    (I2C_SR1)  Status register 1
+#define TIMEOUT_Flag I2C_SR1_TIMEOUT  // Timeout or Tlow error
+#define PECERR_Flag ~(I2C_SR1_PECERR) // PEC Error in reception
+#define OVR_Flag I2C_SR1_OVR          // Overrun/Underrun
+// Acknowledge Failure. 1-NACK 0-ACK
+#define AF_Flag ~(I2C_SR1_AF)
+/* Arbitration Lost (master mode) 1=error 0-no arbitration After an ARLO event the interface switches back automatically to Slave mode
+ */
+#define ARLO_Flag I2C_SR1_ARLO
+// Set by hardware when the interface detects a misplaced Start or Stop condition
+#define BERR_Flag I2C_SR1_BERR // BUS ERROR
+/*
+0-data full 1-empty reg
+TxE is not set if either a NACK is received, or if next byte to be transmitted is PEC (PEC=1)
+*/
+#define TxE_Flag I2C_SR1_TXE
+/*
+0-Empty 1-full
+Cleared by software reading or writing the DR register or by hardware when PE=0.
+*/
+#define RxNE_Flag I2C_SR1_RXNE
+/*
+10-bit header sent (Master mode)
+Set by hardware when the master has sent the first byte in 10-bit address mode.
+Cleared by software reading the SR1 register followed by a write in the DR register of
+*/
+#define ADD10_Flag I2C_SR1_ADD10
+/*
+0=Not txed 1=not txed
+In transmission when a new byte should be sent and DR has not been written yet (TxE=1)
+*/
+#define BTF_Flag I2C_SR1_BTF
+// Start Bit (Master mode). 1=Start is generated
+#define SB_Flag I2C_SR1_SB
 //
-#define OVR I2C_SR1_OVR // Overrun/Underrun
+//   (I2C_SR1)  Status register 1
+// Packet Error Checking Register [7:0] when ENPEC=1.
+#define PEC_Flag I2C_SR1_SB//7:0 
+//0==RXED  1==TXED
+#define TRA_Flag I2C_SR1_SB // Transmitter/Receiver
+// 0==Free  1==busy
+#define BUSY_Flag I2C_SR1_BUSY 
+//0==SLAVE 1==MASTER
+#define MSL_FLAG I2C_SR1_MSL//PERIPH MODE
+//
+//   (I2C_CCR)  Clock control register
+//0==std-i2c-mode 1==fast i2c-mode
+#define F_SModes I2C_CCR_F //
 
 //
-void setI2cPins()
+/*
+rcc->apb1enr I2C2EN
+rcc->apb1enr I2C1EN
+rcc->apb2enr AFIOEN
+//
+    AFIO_MAPR
+I2C1_REMAP 0==scl-PB6 sda-pb7
+I2C1_REMAP 1==scl-PB8 sda-pb9
+//
+i2c1-sda-b9
+i2c1-scl-b8
+//
+i2c1-sda-b7
+i2c1-scl-b6
+//
+i2c2-sda-b11
+i2c2-scl-b10
+*/
+void setI2c2Pins() // 1==scl-PB8 sda-pb9
 {
-    GPIOB->CRL = (GPIO_CRL_CNF6_1 | GPIO_CRL_MODE6_1); // sda
-    GPIOB->CRL = (GPIO_CRL_CNF7_1 | GPIO_CRL_MODE7_1); // clk
+    RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
+    RCC->APB2ENR |= RCC_APB1ENR_AFIOEN;
+    GPIOB->CRH = (GPIO_CRH_CNF9_1 | GPIO_CRH_MODE9_1); // sda pb9
+    GPIOB->CRH = (GPIO_CRH_CNF8_1 | GPIO_CRH_MODE8_1); // clk pb8
+    AFIO->MAPR |= AFIO_MAPR_I2C1_REMAP;
+    AFIO->MAPR &= ~(AFIO_MAPR_SWJ_CFG_MSK);
+}
+void setI2c2Pins() // 0==scl-PB6 sda-pb7
+{
+    RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
+    RCC->APB2ENR |= RCC_APB1ENR_AFIOEN;
+    GPIOB->CRL = (GPIO_CRL_CNF7_1 | GPIO_CRL_MODE7_1); // sda pb7
+    GPIOB->CRL = (GPIO_CRL_CNF6_1 | GPIO_CRL_MODE6_1); // clk pb6
+    AFIO->MAPR &= ~(AFIO_MAPR_I2C1_REMAP | AFIO_MAPR_SWJ_CFG_MSK);
 }
 
 void i2c_init()

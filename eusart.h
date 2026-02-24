@@ -494,10 +494,13 @@ void eusart_close()
 /* DMA TX OR RX
 usart1- TX=channel 4
 usart1- RX=channel 5
+
 usart2- TX=channel 7
 usart2- RX=channel 6
+
 usart3- TX=channel 2
 usart3- RX=channel 3
+
 */
 uint8_t valData;
 char buff[20];
