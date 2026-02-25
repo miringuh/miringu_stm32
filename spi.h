@@ -107,31 +107,12 @@ void latch() // PC13
     {
         GPIOC->CRH = GPIO_CRH_MODE13_1; // 2MHZ P_P
     }
-    GPIOC->ODR |= GPIO_ODR_ODR13;
-    _delay_ms(60000);
     GPIOC->ODR &= ~GPIO_ODR_ODR13;
+    _delay_ms(60000);
+    GPIOC->ODR |= GPIO_ODR_ODR13;
     _delay_ms(60000);
 }
 ////////////
-void SPI1_IRQHandler(void)
-{
-    spi_dummy = SPI1->DR;
-    if ((SPI1->SR & TXE))
-    {
-        spi_rd = SPI1->DR;
-    }
-    if ((SPI1->SR & RXNE))
-    {
-        spi_rd = SPI1->DR;
-    }
-    if ((SPI1->SR & BSY))
-    {
-        // spi_dummy = SPI1->DR;
-        // SPI1->DR = (uint8_t)&sdata;
-    }
-    eusart_send(SPI1->SR);
-    // eusart_send(sdata);
-}
 void spi0_setup()
 { // mosi - PA7 miso - PA6 sck - PA5 ss - PA4 50MHZ
     RCC->APB2ENR |= RCC_APB2ENR_AFIOEN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_IOPAEN;
@@ -152,9 +133,44 @@ void spi2_setup()
     AFIO->MAPR &= ~(AFIO_MAPR_SPI1_REMAP);
 }
 /////////
-/////////
+void SPI1_IRQHandler(void)
+{
+    // eusart_send(SPI1->DR);
+
+    if (SPI1->SR & SPI_SR_RXNE) // 0-empty 1-full
+    {
+        spi_rd = SPI1->DR;
+    }
+    if (SPI1->SR & SPI_SR_OVR) // 0-no ovr 1-ovr
+    {
+        SPI1->SR &= ~SPI_SR_OVR;
+    }
+    if (SPI1->SR & SPI_SR_MODF) // 0-no fault 1-fault
+    {
+        SPI1->SR &= ~SPI_SR_MODF;
+    }
+}
+void SPI2_IRQHandler(void)
+{
+    // eusart_send(SPI1->DR);
+
+    if (SPI2->SR & SPI_SR_RXNE) // 0-empty 1-full
+    {
+        spi_rd = SPI2->DR;
+    }
+    if (SPI2->SR & SPI_SR_OVR) // 0-no ovr 1-ovr
+    {
+        SPI2->SR &= ~SPI_SR_OVR;
+    }
+    if (SPI2->SR & SPI_SR_MODF) // 0-no fault 1-fault
+    {
+        SPI2->SR &= ~SPI_SR_MODF;
+    }
+}
+/////////////////
+////// SPI0 /////
 void spi0_init(uint8_t baud)
-{ // mosi - PA7 miso - PA6 sck - PA5 ss - PA4 50MHZ
+{ // mosi-PA7  miso-PA6  sck-PA5 ss - PA4 50MHZ
     spi0_setup();
     GPIOA->CRL = (MOSI_0 | MISO_0 | SCKL_0 | SS_0);
     SPI1->CR1 = 0;
@@ -163,13 +179,35 @@ void spi0_init(uint8_t baud)
     SPI1->CR1 = baud;
     SPI1->CR1 |= SSM | MSTR | SSI;
 
-    SPI1->CR2 = TXEIE | RXNEIE | ERRIE | SSOE;
+    SPI1->CR2 = RXNEIE | ERRIE | SSOE; // | TXEIE;
+    NVIC_SetPriority(SPI1_IRQn, 2);
+    NVIC_EnableIRQ(SPI1_IRQn);
     SPI1->CR1 |= SPE;
-    // NVIC_EnableIRQ(SPI1_IRQn);
-    while ((SPI1->SR & SPI_SR_MODF))
-        ;
 }
-////////
+uint8_t spi0_send(uint8_t val)
+{
+    while (!(SPI1->SR & SPI_SR_TXE)) // 0-Full 1-empty
+        ;
+    SPI1->DR = val;
+    while ((SPI1->SR & SPI_SR_BSY)) // 0-free 1-bsy
+        ;
+    spi_rd = SPI1->DR;
+    return (uint8_t)(spi_rd);
+}
+void spi0_buffer(char buff[], uint16_t size)
+{
+    for (uint8_t i = 0; i < size; i++)
+    {
+        spi0_send(buff[i]);
+    }
+}
+void spi0_stop()
+{
+    NVIC_DisableIRQ(SPI1_IRQn);
+    SPI1->CR1 &= ~SPE;
+}
+/////////////////
+////// SPI1 /////
 void spi1_init(uint8_t baud)
 { // mosi pb5 miso pb4 sck-pb3 ss-pa15 50mhz
     spi1_setup();
@@ -179,53 +217,70 @@ void spi1_init(uint8_t baud)
     SPI1->CR2 = 0;
 
     SPI1->CR1 = baud;
+    SPI1->CR1 |= SPI_CR1_LSBFIRST;
     SPI1->CR1 |= SSM | MSTR | SSI;
 
-    SPI1->CR2 = TXEIE | RXNEIE | ERRIE | SSOE;
+    SPI1->CR2 = RXNEIE | ERRIE | SSOE; // | TXEIE;
+    NVIC_SetPriority(SPI1_IRQn, 2);
+    NVIC_EnableIRQ(SPI1_IRQn);
     SPI1->CR1 |= SPE;
-    while ((SPI1->SR & SPI_SR_MODF))
-        ;
 }
-//////////
-// void spi2_init(uint8_t baud)
-// { // mosi pb15 miso pb14 sck-pb13 ss-pb12 50mhz
-//     spi2_setup();
-//     GPIOB->CRL = MOSI_2 | MISO_2 | SCKL_2;
-//     GPIOA->CRH = SS_2;
-//     SPI2->CR1 = 0;
-//     SPI2->CR2 = 0;
-//     SPI2->CR1 = baud;
-//     SPI2->CR1 |= SSM | MSTR | SSI;
-//     SPI2->CR2 = TXEIE | RXNEIE | ERRIE | SSOE;
-//     SPI2->CR1 |= SPE;
-//     while ((SPI2->SR & SPI_SR_MODF))
-//         ;
-// }
-///////////
-//// SEND/READ ///////
-
-uint8_t spi0_send(uint8_t val)
+uint8_t spi1_send(uint8_t val)
 {
-    while ((SPI1->SR & BSY))
-        ;
-    SPI1->DR = val;
-    while ((SPI1->SR & TXE))
-        ;
-    while (!(SPI1->SR & RXNE))
-        ;
-    spi_rd = SPI1->DR;
-    return (uint8_t)(SPI1->DR & 0xFF);
+    return spi0_send(val);
 }
-//
-// uint8_t spi2_send(uint8_t val)
-// {
-//     while ((SPI2->SR & BSY))
-//         ;
-//     SPI2->DR = val;
-//     while ((SPI2->SR & TXE))
-//         ;
-//     while ((SPI2->SR & RXNE))
-//         ;
-//     return (uint8_t)(SPI2->DR & 0xFF);
-// }
+void spi1_buffer(char buff[], uint16_t size)
+{
+    for (uint8_t i = 0; i < size; i++)
+    {
+        spi1_send(buff[i]);
+    }
+}
+void spi1_stop()
+{
+    spi0_stop();
+}
+/////////////////
+////// SPI2 /////
+void spi2_init(uint8_t baud)
+{ // mosi pb15 miso pb14 sck-pb13 ss-pb12 50mhz
+    spi2_setup();
+    GPIOB->CRH = MOSI_2 | MISO_2 | SCKL_2;
+    GPIOA->CRH = SS_2;
+    SPI2->CR1 = 0;
+    SPI2->CR2 = 0;
+    SPI2->CR1 = baud;
+    SPI2->CR1 |= SSM | MSTR | SSI;
+
+    SPI2->CR2 = RXNEIE | ERRIE | SSOE; // | TXEIE;
+    NVIC_SetPriority(SPI2_IRQn, 2);
+    NVIC_EnableIRQ(SPI2_IRQn);
+    SPI2->CR1 |= SPE;
+}
+uint8_t spi2_send(uint8_t val)
+{
+    while (!(SPI2->SR & SPI_SR_TXE)) // 0-Full 1-empty
+        ;
+    SPI2->DR = val;
+    while ((SPI2->SR & SPI_SR_BSY)) // 0-free 1-bsy
+        ;
+    spi_rd = SPI2->DR;
+    return (uint8_t)(spi_rd);
+}
+void spi2_buffer(char buff[], uint16_t size)
+{
+    for (uint8_t i = 0; i < size; i++)
+    {
+        spi2_send(buff[i]);
+    }
+}
+void spi2_stop()
+{
+    NVIC_DisableIRQ(SPI2_IRQn);
+    SPI2->CR1 &= ~SPE;
+}
+//////////////
+//// DMA TX//////////
+
+
 #endif // _SSPI
