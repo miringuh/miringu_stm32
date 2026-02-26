@@ -290,7 +290,30 @@ SPI2-TX Channel5
 SPI2-RX Channel4
 */
 char spi_buff[10];
-
+void DMA1_Channel2_IRQHandler()
+{
+    if ((DMA1->ISR & DMA_ISR_HTIF2)) // half txed
+    {
+        DMA1->IFCR |= DMA_IFCR_CHTIF2;
+    }
+    if ((DMA1->ISR & DMA_ISR_TCIF2)) // tx complete
+    {
+        DMA1->IFCR |= DMA_IFCR_CTCIF2;
+    }
+    if ((DMA1->ISR & DMA_ISR_TEIF2)) // tx error
+    {
+        DMA1->IFCR |= DMA_IFCR_CTEIF2;
+    }
+    DMA1_Channel2->CCR &= ~DMAEN;
+}
+void DMA1_Channel3_IRQHandler()
+{
+    if ((DMA1->ISR & DMA_ISR_TCIF3)) // tx complete
+    {
+        state = 1;
+        DMA1->IFCR |= DMA_IFCR_CTCIF3;
+    }
+}
 void spi1_dma_tx_init(uint32_t baud, const char *msg)//SPI1-TX
 {
     strcpy(spi_buff, msg);

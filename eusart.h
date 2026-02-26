@@ -192,7 +192,7 @@ void eusart_init(uint32_t bauds)
     // USART1->CR3 = EIE;
     USART1->CR1 |= TCIE; //| USART_RXNEIE;
     USART1->CR1 |= TXEN | RXEN;
-    NVIC_SetPriority(USART1_IRQn, 2);
+    NVIC_SetPriority(USART1_IRQn, 4);
     NVIC_EnableIRQ(USART1_IRQn);
     USART1->CR1 |= EU;
 }
@@ -549,6 +549,8 @@ void eusart_dma_tx_init(uint32_t baud, const char *msg)
     USART1->CR1 |= TXEN | EU;
     DMA1_Channel4->CCR |= DMAEN;
 }
+
+
 // eusart_buff[i] = i | 0x30;
 void eusart_dma_tx2_init(uint32_t baud, char msg[])
 {
@@ -602,7 +604,7 @@ void eusart_dma_rx_init(uint32_t bauds, char msg[], uint16_t size)
     DMA1_Channel5->CCR |= TCIEN;
     state = 0;
     DMA1_Channel5->CCR |= DMAEN;
-    NVIC_SetPriority(DMA1_Channel5_IRQn, 2);
+    NVIC_SetPriority(DMA1_Channel5_IRQn, 3);
     NVIC_EnableIRQ(DMA1_Channel5_IRQn);
 }
 //

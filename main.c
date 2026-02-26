@@ -22,18 +22,17 @@ int main()
     SysTick_Init();
     _delay_ms(1000000);
 
-    // eusart_init(U19200);
-    // spi0_init(BAUD_FCLK_64);
-
-    spi1_dma_tx_init(BAUD_FCLK_64, "0123456789ABCDEF");
-    for (uint8_t i = 0; i < 15; i++)
+    eusart_init(U19200);
+    char *values = "0123456789ABCDEFGHIJKLMN";
+    dma_i2cTx_init(values);
+    // i2c1_send_address(SLA_W);
+    for (uint8_t i = 0; i < strlen(values); i++)
     {
-        spi0_send(spi_buff[i]);
-        latch();
-        _delay_ms(1000);
+        eusart_send(i2c_buff[i]);
+        _delay_ms(60000);
     }
 
-    spi2_stop();
+    i2c1_stop();
     // i2c1_init();
     // for (uint8_t i = 255; i > 0; i--)
     // {
