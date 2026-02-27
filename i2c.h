@@ -339,6 +339,8 @@ i2c2-scl-b10
 volatile uint32_t i2cdummy;
 volatile uint32_t i2cVal;
 volatile uint32_t i2cdata;
+uint8_t on = 1;
+uint8_t off = 0;
 #define SLA_W 0X4E
 #define SLA_R 0X4F
 void i2c1_stop(void);
@@ -355,9 +357,10 @@ void setI2c1Pins_mapr1() // 1==scl-PB8 sda-pb9
 void setI2c1Pins_mapr0() // 0==scl-PB6 sda-pb7
 {
     RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
-    RCC->APB2ENR |= RCC_APB2ENR_AFIOEN | RCC_APB2ENR_IOPBEN;
-    GPIOB->CRL = (GPIO_CRL_CNF7_1 | GPIO_CRL_MODE7_0);  // sda pb7
-    GPIOB->CRL |= (GPIO_CRL_CNF6_1 | GPIO_CRL_MODE6_0); // clk pb6
+    RCC->APB2ENR |= RCC_APB2ENR_AFIOEN | RCC_APB2ENR_IOPBEN | RCC_APB2ENR_IOPCEN;
+    GPIOB->CRL = (GPIO_CRL_CNF7_Msk | GPIO_CRL_MODE7_0);  // sda pb7
+    GPIOB->CRL |= (GPIO_CRL_CNF6_Msk | GPIO_CRL_MODE6_0); // clk pb6
+    GPIOC->CRH = (P_P10MHZ << GPIO_CRH_CNF13_Pos);
     AFIO->MAPR &= ~(AFIO_MAPR_I2C1_REMAP | AFIO_MAPR_SWJ_CFG_Msk);
 }
 /*
@@ -370,35 +373,34 @@ void I2C1_EV_IRQHandler()
 
     eusart_send((uint8_t)(I2C1->SR1) >> 8);
     eusart_send((uint8_t)(I2C1->SR1));
-
     if ((I2C1->SR1 & I2C_SR1_SB))
     {
         i2cdummy = I2C1->SR1;
-        I2C1->DR = (uint32_t)&i2cdata;
     }
-    if ((I2C1->SR1 & I2C_SR1_BTF))
-    {
-        I2C1->DR = (uint32_t)&i2cdata;
-    }
-    if ((I2C1->SR1 & I2C_SR1_RXNE))
-    {
-        i2cVal = I2C1->DR;
-    }
-    if ((I2C1->SR1 & I2C_SR1_TXE))
-    {
-        I2C1->DR = (uint32_t)&i2cdata;
-    }
-    if ((I2C1->SR1 & I2C_SR1_STOPF))
+    if ((I2C1->SR1 & I2C_SR1_ADDR))
     {
         i2cdummy = I2C1->SR1;
+        i2cdummy = I2C1->SR2;
     }
+    // if ((I2C1->SR1 & I2C_SR1_BTF))
+    // {
+    //     I2C1->DR = (uint32_t)&i2cdata;
+    // }
+    // if ((I2C1->SR1 & I2C_SR1_RXNE))
+    // {
+    //     i2cVal = I2C1->DR;
+    // }
+    // if ((I2C1->SR1 & I2C_SR1_TXE))
+    // {
+    //     I2C1->DR = (uint32_t)&i2cdata;
+    // }
+    // if ((I2C1->SR1 & I2C_SR1_STOPF))
+    // {
+    //     i2cdummy = I2C1->SR1;
+    // }
 }
 void I2C1_ER_IRQHandler()
 {
-    i2cdummy = I2C1->SR1;
-    i2cdummy = I2C1->SR2;
-    // eusart_send((uint8_t)(I2C1->SR1) >> 8);
-    // eusart_send((uint8_t)(I2C1->SR1));
 
     if ((I2C1->SR1 & TIMEOUT_Flag))
     {
@@ -420,9 +422,30 @@ void I2C1_ER_IRQHandler()
     {
         I2C1->SR1 &= ~OVR_Flag;
     }
+    // eusart_send((uint8_t)(I2C1->SR1) >> 8);
+    // eusart_send((uint8_t)(I2C1->SR1));
 }
 //
-
+void i2c_chipSel(uint8_t state)
+{
+    if (!(RCC->APB2ENR & RCC_APB2ENR_IOPCEN))
+    {
+        RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
+    }
+    if (!(GPIOC->CRH & GPIO_CRH_MODE13_1))
+    {
+        GPIOC->CRH = GPIO_CRH_MODE13_1; // 2MHZ P_P
+    }
+    if (state == on)
+    {
+        GPIOC->ODR = GPIO_ODR_ODR13;
+    }
+    if (state == off)
+    {
+        GPIOC->ODR &= ~GPIO_ODR_ODR13;
+    }
+    _delay_ms(600000);
+}
 void i2c1_init() // scl-PB6 sda-pb7
 {
     setI2c1Pins_mapr0();
@@ -435,106 +458,100 @@ void i2c1_init() // scl-PB6 sda-pb7
     I2C1->CR2 = (I2C_CR2_FREQ_Msk & 20);
     I2C1->CR1 &= ~(I2C_CR1_ENPEC) | (I2C_CR1_ENARP);
     // CCR = (APB1 clock) / (2 * SCL clock)
-    I2C1->CCR |= I2C_CCR_CCR_Msk & 100;
+    I2C1->CCR = I2C_CCR_CCR_Msk & 100;
     I2C1->CCR &= ~(I2C_CCR_DUTY | I2C_CCR_FS);
     I2C1->TRISE = (I2C_TRISE_TRISE_Msk & 21);
 
+    // i2c_chipSel(off);
+    // i2c_chipSel(on);
+    // I2C1->CR2 |= ITEVTEN; // SB ADDR ADDR10,STOPF BTF
+    // I2C1->CR2 |= ITBUFEN; // ITEVFEN + TxE RxNE
+    // I2C1->CR2 |= ITERREN; // BERR ARLO AF OVR PECERR TIMEOUT SMBALERT
+
+    // NVIC_SetPriority(I2C1_EV_IRQn, 2);
+    // NVIC_EnableIRQ(I2C1_EV_IRQn);
+    // NVIC_SetPriority(I2C1_ER_IRQn, 3);
+    // NVIC_EnableIRQ(I2C1_ER_IRQn);
     I2C1->CR1 |= I2C_CR1_ACK;
     I2C1->CR1 |= I2C_CR1_PE;
-    if ((I2C1->SR2 & I2C_SR2_BUSY))
+
+    while ((I2C1->SR2 & I2C_SR2_BUSY))
     {
-        I2C1->CR1 |= I2C_CR1_SWRST;
-        _delay_ms(20000);
+        I2C1->CR1 = I2C_CR1_SWRST;
+        _delay_ms(200000);
         I2C1->CR1 &= ~I2C_CR1_SWRST;
+
+        // Trise = (APB1 clock / 1000000) + 1
         I2C1->CR2 = (I2C_CR2_FREQ_Msk & 20);
         I2C1->CR1 &= ~(I2C_CR1_ENPEC) | (I2C_CR1_ENARP);
         // CCR = (APB1 clock) / (2 * SCL clock)
-        I2C1->CCR |= I2C_CCR_CCR_Msk & 100;
+        I2C1->CCR = I2C_CCR_CCR_Msk & 100;
         I2C1->CCR &= ~(I2C_CCR_DUTY | I2C_CCR_FS);
         I2C1->TRISE = (I2C_TRISE_TRISE_Msk & 21);
 
-        // I2C1->CR2 |= ITEVTEN;   // SB ADDR ADDR10,STOPF BTF
+        // i2c_chipSel(off);
+        // i2c_chipSel(on);
+        // I2C1->CR2 |= ITEVTEN; // SB ADDR ADDR10,STOPF BTF
         // I2C1->CR2 |= ITBUFEN; // ITEVFEN + TxE RxNE
-        I2C1->CR2 |= ITERREN; // BERR ARLO AF OVR PECERR TIMEOUT SMBALERT
+        // I2C1->CR2 |= ITERREN; // BERR ARLO AF OVR PECERR TIMEOUT SMBALERT
 
         // NVIC_SetPriority(I2C1_EV_IRQn, 2);
-        // NVIC_SetPriority(I2C1_ER_IRQn, 2);
         // NVIC_EnableIRQ(I2C1_EV_IRQn);
+        // NVIC_SetPriority(I2C1_ER_IRQn, 3);
         // NVIC_EnableIRQ(I2C1_ER_IRQn);
-
-        I2C1->CR1 |= I2C_CR1_ACK;
-        I2C1->CR1 |= I2C_CR1_PE;
+        I2C1->CR1 |= I2C_CR1_ACK | I2C_CR1_PE;
     }
-    // eusart_send((I2C1->CR1 & 0xFF00) >> 8);
-    // eusart_send((I2C1->CR1 & 0x00FF));
-    // eusart_send((I2C1->CR2 & 0xFF00) >> 8);
-    // eusart_send((I2C1->CR2 & 0x00FF));
-    // eusart_send((I2C1->SR1 & 0xFF00) >> 8);
-    // eusart_send((I2C1->SR1 & 0x00FF));
-    // eusart_send((I2C1->SR2 & 0xFF00) >> 8);
-    // eusart_send((I2C1->SR2 & 0x00FF));
 }
 void i2cStart()
 {
 
-    I2C1->CR1 |= I2C_CR1_START;
-    while (!(I2C1->CR1 & I2C_CR1_START))
-        ;
-    _delay_ms(10000);
-    // eusart_send(0x02);
-
-    // while (!(I2C1->SR1 & I2C_SR1_SB))
-    //     ;
-}
-void getAddress(uint8_t address)
-{
-
-    I2C1->CR1 |= I2C_CR1_PE;
-    i2cStart();
-    I2C1->DR = address;
-
-    while ((I2C1->SR1 & I2C_SR1_AF))
+    if ((I2C1->SR1 & I2C_SR1_SB)) // 0-nostrt 1-strt
     {
+        i2cdummy = I2C1->SR1;
+        I2C1->DR = 0;
     }
 
-    eusart_send(address);
+    I2C1->CR1 |= I2C_CR1_START;
+    while (!(I2C1->SR1 & I2C_SR1_SB)) // 0-nostrt 1-strt
+        ;
+    i2cdummy = I2C1->SR2;
+    i2cdummy = I2C1->SR1;
 }
 void i2c1_send_address(uint8_t address)
 {
-
-    // i2cdummy = I2C1->DR;
-    i2cdummy = I2C1->SR1;
-    i2cdummy = I2C1->SR2;
     I2C1->DR = address;
-
-    // eusart_send(0x00);
-    while ((I2C1->SR1 & I2C_SR1_ADDR))
+    while (!(I2C1->SR1 & I2C_SR1_ADDR)) // addr 0-not txed 1-txed
         ;
-    // eusart_send(0x01);
+    i2cdummy = I2C1->SR2;
+
 }
 
 void i2c1_write(uint8_t data)
 {
-    if ((I2C1->SR2 & I2C_SR2_BUSY)) // 0-free 1-busy
-    {
-        I2C1->CR1 |= I2C_CR1_SWRST;
-        _delay_ms(20000);
-        I2C1->CR1 &= ~I2C_CR1_SWRST;
-        I2C1->CR1 |= I2C_CR1_ACK;
-        I2C1->CR1 |= I2C_CR1_PE;
-    }
+    /*
+    TXE----BTF
+    TRA--BUSY--MSL
+    */
     I2C1->DR = data;
-    while ((I2C1->SR1 & I2C_SR1_TXE)) // 0-full 1-empty
+    while (!(I2C1->SR1 & I2C_SR1_TXE)) // 0-full 1-empty
         ;
-    while ((I2C1->SR1 & I2C_SR1_AF)) // 0-ack 1-nack
+    while (!(I2C1->SR1 & I2C_SR1_BTF)) // 0-not Txed 1-txed
         ;
-    eusart_send(I2C1->DR);
-    while (!(I2C1->SR1 & I2C_SR1_RXNE)) // 0-empty 1-full
+    while (!(I2C1->SR2 & I2C_SR2_TRA)) // 0-not txed 1-txed
         ;
-    i2cVal = I2C1->DR;
-    // eusart_send(0x01);
-
-    eusart_send(I2C1->DR);
+    while (!(I2C1->SR2 & I2C_SR2_BUSY)) // 0-free 1-busy
+        ;
+    while (!(I2C1->SR2 & I2C_SR2_MSL)) // 0-slv 1-master
+        ;
+    if ((I2C1->SR1 & I2C_SR1_RXNE))//0-Empty 1-full
+    {
+        i2cVal = I2C1->DR;
+    }
+    if (!(I2C1->SR1 & I2C_SR1_RXNE)) // 0-Empty 1-full
+    {
+        i2cVal = I2C1->DR;
+    }
+    eusart_send(i2cVal);
 }
 
 void i2c_read_init()
@@ -545,13 +562,14 @@ void i2c_read_init()
 void i2c1_stop(void)
 {
     // Generate stop condition
-    I2C1->CR1 &= ~I2C_CR1_PE;
+    // I2C1->CR1 &= ~I2C_CR1_PE;
     I2C1->CR1 |= I2C_CR1_STOP;
 
     // Wait for stop to be cleared (bus free)
     while (!(I2C1->CR1 & I2C_CR1_STOP))
         ;
-    eusart_send(0xfe);
+    // eusart_send(0xfe);
+    i2c_chipSel(off);
 }
 /////////////////
 /////// DMA /////////
@@ -562,7 +580,10 @@ I2C_1- RX=channel 7
 I2C_2- TX=channel 4
 I2C_2- RX=channel 5
 */
-char i2c_buff[20];
+char i2c_buff[255];
+char rd_buff[255];
+volatile uint8_t i2c_state;
+
 void start();
 void sendAddr(uint8_t address);
 
@@ -586,18 +607,20 @@ void DMA1_Channel7_IRQHandler()
 {
     if ((DMA1->ISR & DMA_ISR_TCIF7)) // tx complete
     {
-        state = 1;
+        i2c_state = 1;
         DMA1->IFCR |= DMA_IFCR_CTCIF7;
     }
 }
-
-void dma_i2cTx_init(char *msg)
+/////////////////////
+void dma_i2cTx_init(char *msg, uint16_t size)
 {
     strcpy(i2c_buff, msg);
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
     setI2c1Pins_mapr0();
     I2C1->CR1 = 0;
     I2C1->CR2 = 0;
+    i2c_chipSel(off);
+    i2c_chipSel(on);
     // Trise = (APB1 clock / 1000000) + 1
     I2C1->CR2 = (I2C_CR2_FREQ_Msk & 20);
     I2C1->CR1 &= ~(I2C_CR1_ENPEC) | (I2C_CR1_ENARP);
@@ -608,7 +631,7 @@ void dma_i2cTx_init(char *msg)
 
     DMA1_Channel6->CPAR = (uint32_t)&I2C1->DR;
     DMA1_Channel6->CMAR = (uint32_t)buff;
-    DMA1_Channel6->CNDTR = (strlen(msg) * 2);
+    DMA1_Channel6->CNDTR = size;
     DMA1_Channel6->CCR |= CIRC;  // 1-circ
     DMA1_Channel6->CCR |= MINC;  // mem incr
     DMA1_Channel6->CCR &= ~PINC; // periph no incr
@@ -646,6 +669,8 @@ void dma_i2cRx_init(uint16_t size)
     setI2c1Pins_mapr0();
     I2C1->CR1 = 0;
     I2C1->CR2 = 0;
+    i2c_chipSel(off);
+    i2c_chipSel(on);
     // Trise = (APB1 clock / 1000000) + 1
     I2C1->CR2 = (I2C_CR2_FREQ_Msk & 20);
     I2C1->CR1 &= ~(I2C_CR1_ENPEC) | (I2C_CR1_ENARP);
@@ -655,7 +680,7 @@ void dma_i2cRx_init(uint16_t size)
     I2C1->TRISE = (I2C_TRISE_TRISE_Msk & 21);
 
     DMA1_Channel7->CPAR = (uint32_t)&I2C1->DR;
-    DMA1_Channel7->CMAR = (uint32_t)buff;
+    DMA1_Channel7->CMAR = (uint32_t)rd_buff;
     DMA1_Channel7->CNDTR = size;
     DMA1_Channel7->CCR |= CIRC;  // 1-circ
     DMA1_Channel7->CCR |= MINC;  // mem incr
@@ -664,7 +689,7 @@ void dma_i2cRx_init(uint16_t size)
 
     DMA1_Channel7->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem size
     DMA1_Channel7->CCR |= DMA_CCR_PL_0;                             // high prioty
-
+    i2c_state = 0;
     DMA1_Channel7->CCR |= TCIEN; // | TEIEN | HTIEN;
     NVIC_SetPriority(DMA1_Channel7_IRQn, 2);
     NVIC_EnableIRQ(DMA1_Channel7_IRQn);

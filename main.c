@@ -23,27 +23,23 @@ int main()
     _delay_ms(1000000);
 
     eusart_init(U19200);
-    char *values = "0123456789ABCDEFGHIJKLMN";
-    dma_i2cTx_init(values);
-    // i2c1_send_address(SLA_W);
-    for (uint8_t i = 0; i < strlen(values); i++)
+
+    // char *values = "0123456789ABCDEFGHIJKLMN";
+    // dma_i2cRx_init(strlen(values));
+
+    i2c1_init();
+    i2cStart();
+    i2c1_send_address(SLA_W);
+    for (uint8_t i = 1; i < 255; i++)
     {
-        eusart_send(i2c_buff[i]);
-        _delay_ms(60000);
+        i2c1_write(i);
+        _delay_ms(20000);
     }
 
     i2c1_stop();
-    // i2c1_init();
-    // for (uint8_t i = 255; i > 0; i--)
-    // {
-    //     i2c1_send_address(i);
-    //     i2c1_stop();
-    //     i2cStart();
-    //     _delay_ms(100);
-    // }
-    // i2c1_stop();
     while (1)
     {
+        // eusart_send(eusart_rd());
     }
     return 0;
 }
