@@ -87,6 +87,10 @@ void USART1_IRQHandler()
     {
         USART1->SR &= ~TC_FLAG;
     }
+    if ((USART1->SR & RXNE_FLAG)) // 1- txed
+    {
+        USART1->SR &= ~RXNE_FLAG;
+    }
 }
 
 void test_eusart()
@@ -101,7 +105,7 @@ void test_eusart()
         GPIOC->CRH = GPIO_CRH_MODE13_1; // 2MHZ P_P
     }
     GPIOC->ODR ^= GPIO_ODR_ODR13;
-    _delay_ms(60000);
+    _delay_ms(600000);
 }
 void u_baud(uint32_t baud)
 {
@@ -190,7 +194,7 @@ void eusart_init(uint32_t bauds)
     USART1->CR1 = 0;
 
     // USART1->CR3 = EIE;
-    USART1->CR1 |= TCIE; //| USART_RXNEIE;
+    USART1->CR1 |= TCIE | USART_RXNEIE;
     USART1->CR1 |= TXEN | RXEN;
     NVIC_SetPriority(USART1_IRQn, 4);
     NVIC_EnableIRQ(USART1_IRQn);
@@ -215,17 +219,17 @@ void eusartString(char *mesg)
         eusart_send(buff[i]);
     }
 }
+
 uint8_t eusart_rd()
 {
-    rdVal = USART1->DR;
+    dummy = USART1->SR;
+    // dummy = USART1->DR;
+
     while (!(USART1->SR & RXNE_FLAG))
         ;
-    // while (!(USART1->SR & USART_SR_FE))
-    //     ;
-    // while (!(USART1->SR & USART_SR_NE))
-    //     ;
-    // while (!(USART1->SR & USART_SR_ORE))
-    //     ;
+    while ((USART1->SR & FE_FLAG))
+        ;
+    rdVal = USART1->DR;
     return rdVal;
 }
 //////////////////////////
@@ -549,7 +553,6 @@ void eusart_dma_tx_init(uint32_t baud, const char *msg)
     USART1->CR1 |= TXEN | EU;
     DMA1_Channel4->CCR |= DMAEN;
 }
-
 
 // eusart_buff[i] = i | 0x30;
 void eusart_dma_tx2_init(uint32_t baud, char msg[])
