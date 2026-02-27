@@ -303,6 +303,7 @@ void i2c_chipSel(uint8_t state)
     }
     _delay_ms(600000);
 }
+
 void i2c1_init() // scl-PB6 sda-pb7
 {
     i2c_chipSel(off);
