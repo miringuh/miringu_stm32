@@ -42,150 +42,6 @@ STOP bit is set by software to generate a Stop condition
 //
 /*@{*/
 /* Master */
-/** \ingroup util_twi
-    \def TW_START
-    start condition transmitted */
-#define TW_START 0x08
-
-/** \ingroup util_twi
-    \def TW_REP_START
-    repeated start condition transmitted */
-#define TW_REP_START 0x10
-
-/* Master Transmitter */
-/** \ingroup util_twi
-    \def TW_MT_SLA_ACK
-    SLA+W transmitted, ACK received */
-#define TW_MT_SLA_ACK 0x18
-
-/** \ingroup util_twi
-    \def TW_MT_SLA_NACK
-    SLA+W transmitted, NACK received */
-#define TW_MT_SLA_NACK 0x20
-
-/** \ingroup util_twi
-    \def TW_MT_DATA_ACK
-    data transmitted, ACK received */
-#define TW_MT_DATA_ACK 0x28
-
-/** \ingroup util_twi
-    \def TW_MT_DATA_NACK
-    data transmitted, NACK received */
-#define TW_MT_DATA_NACK 0x30
-
-/** \ingroup util_twi
-    \def TW_MT_ARB_LOST
-    arbitration lost in SLA+W or data */
-#define TW_MT_ARB_LOST 0x38
-
-/* Master Receiver */
-/** \ingroup util_twi
-    \def TW_MR_ARB_LOST
-    arbitration lost in SLA+R or NACK */
-#define TW_MR_ARB_LOST 0x38
-
-/** \ingroup util_twi
-    \def TW_MR_SLA_ACK
-    SLA+R transmitted, ACK received */
-#define TW_MR_SLA_ACK 0x40
-
-/** \ingroup util_twi
-    \def TW_MR_SLA_NACK
-    SLA+R transmitted, NACK received */
-#define TW_MR_SLA_NACK 0x48
-
-/** \ingroup util_twi
-    \def TW_MR_DATA_ACK
-    data received, ACK returned */
-#define TW_MR_DATA_ACK 0x50
-
-/** \ingroup util_twi
-    \def TW_MR_DATA_NACK
-    data received, NACK returned */
-#define TW_MR_DATA_NACK 0x58
-
-/* Slave Transmitter */
-/** \ingroup util_twi
-    \def TW_ST_SLA_ACK
-    SLA+R received, ACK returned */
-#define TW_ST_SLA_ACK 0xA8
-
-/** \ingroup util_twi
-    \def TW_ST_ARB_LOST_SLA_ACK
-    arbitration lost in SLA+RW, SLA+R received, ACK returned */
-#define TW_ST_ARB_LOST_SLA_ACK 0xB0
-
-/** \ingroup util_twi
-    \def TW_ST_DATA_ACK
-    data transmitted, ACK received */
-#define TW_ST_DATA_ACK 0xB8
-
-/** \ingroup util_twi
-    \def TW_ST_DATA_NACK
-    data transmitted, NACK received */
-#define TW_ST_DATA_NACK 0xC0
-
-/** \ingroup util_twi
-    \def TW_ST_LAST_DATA
-    last data byte transmitted, ACK received */
-#define TW_ST_LAST_DATA 0xC8
-
-/* Slave Receiver */
-/** \ingroup util_twi
-    \def TW_SR_SLA_ACK
-    SLA+W received, ACK returned */
-#define TW_SR_SLA_ACK 0x60
-
-/** \ingroup util_twi
-    \def TW_SR_ARB_LOST_SLA_ACK
-    arbitration lost in SLA+RW, SLA+W received, ACK returned */
-#define TW_SR_ARB_LOST_SLA_ACK 0x68
-
-/** \ingroup util_twi
-    \def TW_SR_GCALL_ACK
-    general call received, ACK returned */
-#define TW_SR_GCALL_ACK 0x70
-
-/** \ingroup util_twi
-    \def TW_SR_ARB_LOST_GCALL_ACK
-    arbitration lost in SLA+RW, general call received, ACK returned */
-#define TW_SR_ARB_LOST_GCALL_ACK 0x78
-
-/** \ingroup util_twi
-    \def TW_SR_DATA_ACK
-    data received, ACK returned */
-#define TW_SR_DATA_ACK 0x80
-
-/** \ingroup util_twi
-    \def TW_SR_DATA_NACK
-    data received, NACK returned */
-#define TW_SR_DATA_NACK 0x88
-
-/** \ingroup util_twi
-    \def TW_SR_GCALL_DATA_ACK
-    general call data received, ACK returned */
-#define TW_SR_GCALL_DATA_ACK 0x90
-
-/** \ingroup util_twi
-    \def TW_SR_GCALL_DATA_NACK
-    general call data received, NACK returned */
-#define TW_SR_GCALL_DATA_NACK 0x98
-
-/** \ingroup util_twi
-    \def TW_SR_STOP
-    stop or repeated start condition received while selected */
-#define TW_SR_STOP 0xA0
-
-/* Misc */
-/** \ingroup util_twi
-    \def TW_NO_INFO
-    no state information available */
-#define TW_NO_INFO 0xF8
-
-/** \ingroup util_twi
-    \def TW_BUS_ERROR
-    illegal start or stop condition */
-#define TW_BUS_ERROR 0x00
 
 //
 //  (I2C_CR1) Control register 1
@@ -341,6 +197,7 @@ volatile uint32_t i2cVal;
 volatile uint32_t i2cdata;
 uint8_t on = 1;
 uint8_t off = 0;
+uint8_t readi2c = 0;
 #define SLA_W 0X4E
 #define SLA_R 0X4F
 void i2c1_stop(void);
@@ -448,6 +305,9 @@ void i2c_chipSel(uint8_t state)
 }
 void i2c1_init() // scl-PB6 sda-pb7
 {
+    i2c_chipSel(off);
+    i2c_chipSel(on);
+
     setI2c1Pins_mapr0();
     I2C1->CR1 = 0;
     I2C1->CR2 = 0;
@@ -462,8 +322,6 @@ void i2c1_init() // scl-PB6 sda-pb7
     I2C1->CCR &= ~(I2C_CCR_DUTY | I2C_CCR_FS);
     I2C1->TRISE = (I2C_TRISE_TRISE_Msk & 21);
 
-    // i2c_chipSel(off);
-    // i2c_chipSel(on);
     // I2C1->CR2 |= ITEVTEN; // SB ADDR ADDR10,STOPF BTF
     // I2C1->CR2 |= ITBUFEN; // ITEVFEN + TxE RxNE
     // I2C1->CR2 |= ITERREN; // BERR ARLO AF OVR PECERR TIMEOUT SMBALERT
@@ -490,7 +348,7 @@ void i2c1_init() // scl-PB6 sda-pb7
         I2C1->TRISE = (I2C_TRISE_TRISE_Msk & 21);
 
         // i2c_chipSel(off);
-        // i2c_chipSel(on);
+        i2c_chipSel(on);
         // I2C1->CR2 |= ITEVTEN; // SB ADDR ADDR10,STOPF BTF
         // I2C1->CR2 |= ITBUFEN; // ITEVFEN + TxE RxNE
         // I2C1->CR2 |= ITERREN; // BERR ARLO AF OVR PECERR TIMEOUT SMBALERT
@@ -519,19 +377,32 @@ void i2cStart()
 }
 void i2c1_send_address(uint8_t address)
 {
+    // i2cStart();
+    if ((address == SLA_R) | (address == 0))
+    {
+        while (!(I2C1->SR1 & I2C_SR1_ADDR)) // addr 0-not txed 1-txed
+            ;
+        if ((I2C1->SR1 & I2C_SR1_RXNE)) // 0-Empty 1-full
+        {
+            readi2c = 0;
+        }
+    }
     I2C1->DR = address;
-    while (!(I2C1->SR1 & I2C_SR1_ADDR)) // addr 0-not txed 1-txed
-        ;
-    i2cdummy = I2C1->SR2;
-
+    if (address == SLA_W)
+    {
+        while (!(I2C1->SR1 & I2C_SR1_ADDR)) // addr 0-not txed 1-txed
+            ;
+        i2cdummy = I2C1->SR2;
+        readi2c = 1;
+    }
 }
-
 void i2c1_write(uint8_t data)
 {
     /*
     TXE----BTF
     TRA--BUSY--MSL
     */
+    // i2cStart();
     I2C1->DR = data;
     while (!(I2C1->SR1 & I2C_SR1_TXE)) // 0-full 1-empty
         ;
@@ -543,7 +414,7 @@ void i2c1_write(uint8_t data)
         ;
     while (!(I2C1->SR2 & I2C_SR2_MSL)) // 0-slv 1-master
         ;
-    if ((I2C1->SR1 & I2C_SR1_RXNE))//0-Empty 1-full
+    if ((I2C1->SR1 & I2C_SR1_RXNE)) // 0-Empty 1-full
     {
         i2cVal = I2C1->DR;
     }
@@ -552,12 +423,7 @@ void i2c1_write(uint8_t data)
         i2cVal = I2C1->DR;
     }
     eusart_send(i2cVal);
-}
 
-void i2c_read_init()
-{
-    i2cStart();
-    i2c1_send_address(SLA_R);
 }
 void i2c1_stop(void)
 {
@@ -568,9 +434,10 @@ void i2c1_stop(void)
     // Wait for stop to be cleared (bus free)
     while (!(I2C1->CR1 & I2C_CR1_STOP))
         ;
-    // eusart_send(0xfe);
+    eusart_send(0xee);
     i2c_chipSel(off);
 }
+
 /////////////////
 /////// DMA /////////
 /* DMA I2-TX OR I2-RX

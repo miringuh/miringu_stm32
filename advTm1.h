@@ -11,24 +11,25 @@ The Time Base Unit includes:
 */
 //     TIMx->CR1  control register 1
 // div ratio OF  timer clock (CK_INT) frequency, dead time and sampling clock
-#define CKDIV1(REG,VAL) WRITE_REG(REG,VAL)
+#define CKDIV1(REG, VAL) WRITE_REG(REG, VAL)
 // Auto-reload preload enable. 1=Buffered
 #define ARPE1 TIM_CR1_ARPE;
 // Center-aligned mode selection.
 #define CMS1(REG, VAL) WRITE_REG(REG, VAL)
 #define EDGE_ALIGNED ~(TIM_CR1_CMS_1 | TIM_CR1_CMS_0)
-#define CENTRE_ALIGNED  TIM_CR1_CMS_0
+#define CENTRE_ALIGNED TIM_CR1_CMS_0
 // Direction. 1-upcnt 0-downCnt
-#define DIR1 TIM_CR1_DIR;
+#define CNT_DIR TIM_CR1_DIR;
 // 0: Counter is not stopped @ update event
-#define OPM1 TIM_CR1_OPM;
-// Update request source.select the UEV event sources 1-OVF or UNDF 0-OVF/UNDF or UG bit or from slave
-#define URS1 TIM_CR1_URS
-//update disable
-#define UDIS1 TIM_CR1_UDIS
-//0-disable 1-enable
-#define CEN1 TIM_CR1_CEN
+#define PULSE_MODE TIM_CR1_OPM;
+// Update request source.select the UEV event sources 1-OVF/UNDF 0-OVF/UNDF or UG bit or from slave
+#define UPDATE_REQ_SRC TIM_CR1_URS
+// update disable
+#define UPDATE_DISABLE TIM_CR1_UDIS
+// 0-disable 1-enable
+#define COUNT_EN TIM_CR1_CEN
 //
+
 //      TIM1_dier  Control register 2
 // Trigger DMA request enable.
 #define TDE1 TIM_DIER_TDE
@@ -63,14 +64,45 @@ The Time Base Unit includes:
 //
 // TIM1_SR  Status register
 // Capture/Compare 4 Overcapture Flag.
-#define CC4OF TIM_SR_CC4IF
+#define CC4OF_FLAG TIM_SR_CC4IF
 // Capture/Compare 3 Overcapture Flag.
-#define CC3OF TIM_SR_CC3IF
+#define CC3OF_FLAG TIM_SR_CC3IF
 // Capture/Compare 2 Overcapture Flag.
-#define CC2OF TIM_SR_CC2IF
+#define CC2OF_FLAG TIM_SR_CC2IF
 // Capture/Compare 1 Overcapture Flag.
-#define CC1OF TIM_SR_CC1IF
+#define CC1OF_FLAG TIM_SR_CC1IF
 // Break interrupt Flag.
-#define BIF TIM_SR_BIF
+#define BIF_FLAG TIM_SR_BIF
+// Trigger interrupt Flag.
+#define TIF_FLAG TIM_SR_TIF
+// COM interrupt Flag.
+#define COMIF_FLAG TIM_SR_COMIF
+// Capture/Compare 4 interrupt Flag
+#define CC41F_FLAG TIM_SR_CC41F
+// Capture/Compare 3 interrupt Flag
+#define CC31F_FLAG TIM_SR_CC31F
+// Capture/Compare 2 interrupt Flag
+#define CC42F_FLAG TIM_SR_CC21F
+// Capture/Compare 1 interrupt Flag
+#define CC11F_FLAG TIM_SR_CC11F
+// Capture/Compare 4 interrupt Flag
+#define UIF_FLAG TIM_SR_UIF
+
+//       TIM1_EGR  Event generation register
+// Break Generation.
+#define BG TIM_EGR_BG
+// Trigger Generation.
+#define TG TIM_EGR_TG
+// Update Generation.
+#define UG TIM_EGR_TG
+//
+//     TIM1_CNT [15:0]
+#define TIM1_CNT_REG(REG,VAL) WRITE_REG(REG,VAL)
+//     TIM1_PSC [15:0]  The counter clock frequency (CK_CNT) is equal to fCK_PSC / (PSC[15:0] + 1).
+#define TIM1_PSC_REG(REG, VAL) WRITE_REG(REG, VAL)
+// ARR is the value to be loaded in the actual auto-reload register.
+#define TIM1_ARR_REG(REG, VAL) WRITE_REG(REG, VAL)
+// Repetition Counter Value.[8:0]
+#define TIM1_RCR_REG(REG, VAL) WRITE_REG(REG, VAL)
 //
 #endif // __ADVTIM1

@@ -1,13 +1,13 @@
 #include "/home/jeff/STM32/stm32F1xx_headers/stm32f1xx.h"
 
-#include "spi.h"
+// #include "spi.h"
 // #include "tim1.h"
-// #include "advTm1.h"
+#include "advTm1.h"
 // #include "adc.h"
 #include "eusart.h"
 // #include "gpio.h"
 #include "rcc_conf.h"
-#include "i2c.h"
+// #include "i2c.h"
 // #include "dma.h"
 #define txBuffSize 12
 char eusart_buff[txBuffSize];
@@ -22,24 +22,12 @@ int main()
     SysTick_Init();
     _delay_ms(1000000);
 
-    eusart_init(U19200);
+    eusart_init_1(U19200);
 
-    // char *values = "0123456789ABCDEFGHIJKLMN";
-    // dma_i2cRx_init(strlen(values));
-
-    i2c1_init();
-    i2cStart();
-    i2c1_send_address(SLA_W);
-    for (uint8_t i = 1; i < 255; i++)
-    {
-        i2c1_write(i);
-        _delay_ms(20000);
-    }
-
-    i2c1_stop();
+    
     while (1)
     {
-        // eusart_send(eusart_rd());
+
     }
     return 0;
 }
