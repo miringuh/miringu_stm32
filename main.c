@@ -7,6 +7,7 @@
 #include "eusart.h"
 // #include "gpio.h"
 #include "rcc_conf.h"
+#include "lcdI2c.h"
 // #include "i2c.h"
 // #include "dma.h"
 #define txBuffSize 12
@@ -22,11 +23,24 @@ int main()
     SysTick_Init();
     _delay_ms(1000000);
 
-    eusart_init_1(U19200);
+    eusart_init(U19200);
+    i2c1_init();
+    i2cStart();
+    i2c1_send_address(SLA_W);
 
-    
+    // for (uint8_t i = 0; i < 25; i++)
+    // {
+    //     i2c1_write(i);
+    //     _delay_ms(20000);
+    // }
+    // i2c1_stop();
     while (1)
     {
+        for (uint8_t i = 0x10; i < 0xFF; i++)
+        {
+            i2c1_write(i);
+            _delay_ms(800000);
+        }
 
     }
     return 0;

@@ -301,7 +301,7 @@ void i2c_chipSel(uint8_t state)
     {
         GPIOC->ODR &= ~GPIO_ODR_ODR13;
     }
-    _delay_ms(600000);
+    _delay_ms(1000000);
 }
 
 void i2c1_init() // scl-PB6 sda-pb7
@@ -336,6 +336,8 @@ void i2c1_init() // scl-PB6 sda-pb7
 
     while ((I2C1->SR2 & I2C_SR2_BUSY))
     {
+        // i2c_chipSel(off);
+        // i2c_chipSel(on);
         I2C1->CR1 = I2C_CR1_SWRST;
         _delay_ms(200000);
         I2C1->CR1 &= ~I2C_CR1_SWRST;
@@ -348,8 +350,6 @@ void i2c1_init() // scl-PB6 sda-pb7
         I2C1->CCR &= ~(I2C_CCR_DUTY | I2C_CCR_FS);
         I2C1->TRISE = (I2C_TRISE_TRISE_Msk & 21);
 
-        // i2c_chipSel(off);
-        i2c_chipSel(on);
         // I2C1->CR2 |= ITEVTEN; // SB ADDR ADDR10,STOPF BTF
         // I2C1->CR2 |= ITBUFEN; // ITEVFEN + TxE RxNE
         // I2C1->CR2 |= ITERREN; // BERR ARLO AF OVR PECERR TIMEOUT SMBALERT
@@ -379,16 +379,14 @@ void i2cStart()
 void i2c1_send_address(uint8_t address)
 {
     // i2cStart();
+    I2C1->DR = address;
     if ((address == SLA_R) | (address == 0))
     {
         while (!(I2C1->SR1 & I2C_SR1_ADDR)) // addr 0-not txed 1-txed
             ;
-        if ((I2C1->SR1 & I2C_SR1_RXNE)) // 0-Empty 1-full
-        {
-            readi2c = 0;
-        }
+        i2cdummy = I2C1->SR2;
+        readi2c = 0;
     }
-    I2C1->DR = address;
     if (address == SLA_W)
     {
         while (!(I2C1->SR1 & I2C_SR1_ADDR)) // addr 0-not txed 1-txed
@@ -423,8 +421,7 @@ void i2c1_write(uint8_t data)
     {
         i2cVal = I2C1->DR;
     }
-    eusart_send(i2cVal);
-
+    // eusart_send(i2cVal);
 }
 void i2c1_stop(void)
 {
@@ -436,7 +433,7 @@ void i2c1_stop(void)
     while (!(I2C1->CR1 & I2C_CR1_STOP))
         ;
     eusart_send(0xee);
-    i2c_chipSel(off);
+    // i2c_chipSel(off);
 }
 
 /////////////////
@@ -482,20 +479,21 @@ void DMA1_Channel7_IRQHandler()
 /////////////////////
 void dma_i2cTx_init(char *msg, uint16_t size)
 {
-    strcpy(i2c_buff, msg);
-    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-    setI2c1Pins_mapr0();
-    I2C1->CR1 = 0;
-    I2C1->CR2 = 0;
     i2c_chipSel(off);
     i2c_chipSel(on);
-    // Trise = (APB1 clock / 1000000) + 1
-    I2C1->CR2 = (I2C_CR2_FREQ_Msk & 20);
-    I2C1->CR1 &= ~(I2C_CR1_ENPEC) | (I2C_CR1_ENARP);
-    // CCR = (APB1 clock) / (2 * SCL clock)
-    I2C1->CCR |= I2C_CCR_CCR_Msk & 100;
-    I2C1->CCR &= ~(I2C_CCR_DUTY | I2C_CCR_FS);
-    I2C1->TRISE = (I2C_TRISE_TRISE_Msk & 21);
+    strcpy(i2c_buff, msg);
+    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+    // setI2c1Pins_mapr0();
+
+    // I2C1->CR1 = 0;
+    // I2C1->CR2 = 0;
+    // // Trise = (APB1 clock / 1000000) + 1
+    // I2C1->CR2 = (I2C_CR2_FREQ_Msk & 20);
+    // I2C1->CR1 &= ~(I2C_CR1_ENPEC) | (I2C_CR1_ENARP);
+    // // CCR = (APB1 clock) / (2 * SCL clock)
+    // I2C1->CCR |= I2C_CCR_CCR_Msk & 100;
+    // I2C1->CCR &= ~(I2C_CCR_DUTY | I2C_CCR_FS);
+    // I2C1->TRISE = (I2C_TRISE_TRISE_Msk & 21);
 
     DMA1_Channel6->CPAR = (uint32_t)&I2C1->DR;
     DMA1_Channel6->CMAR = (uint32_t)buff;
@@ -514,8 +512,8 @@ void dma_i2cTx_init(char *msg, uint16_t size)
     /*
  The DMAEN bit must be set only after receiving the address sequence, when ADDR is cleared
  */
-    I2C1->CR2 |= I2C_CR2_DMAEN; // I2C1 Tx channel=6
-    I2C1->CR1 |= I2C_CR1_PE;
+    // I2C1->CR2 |= I2C_CR2_DMAEN; // I2C1 Tx channel=6
+    // I2C1->CR1 |= I2C_CR1_PE;
 
     start();
     sendAddr(SLA_W);

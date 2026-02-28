@@ -3,6 +3,7 @@
 #include "/usr/lib/stm32/stm32F1xx_headers/stm32f1xx.h"
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <unistd.h>
 #include <math.h>
 #include "gpio.h"
@@ -38,32 +39,93 @@
 #define FUNC_SET_4BIT 0X20
 #define FUNC_SET_2LINE 0X28
 #define FUNC_SET_1LINE 0X20
-#define FUNC_SET_5X10 0X24
-#define FUNC_SET_5X8 0X20
 #define FUNC_SET_8BIT_2LINE (FUNC_SET_8BIT | FUNC_SET_2LINE)
 #define FUNC_SET_8BIT_1LINE (FUNC_SET_8BIT | FUNC_SET_1LINE)
 #define FUNC_SET_4BIT_2LINE (FUNC_SET_4BIT | FUNC_SET_2LINE)
 #define FUNC_SET_4BIT_1LINE (FUNC_SET_4BIT | FUNC_SET_1LINE)
-#define FUNC_SET_5X10DOT_8BIT_1LINE (FUNC_SET_8BIT_1LINE | FUNC_SET_5X10)
-#define FUNC_SET_5X8DOT_8BIT_2LINE (FUNC_SET_8BIT_2LINE | FUNC_SET_5X8)
+#define FUNC_SET_5X10 0X24
+#define FUNC_SET_5X8 0X20
+// #define FUNC_SET_5X10DOT_8BIT_1LINE (FUNC_SET_8BIT_1LINE | FUNC_SET_5X10)
+// #define FUNC_SET_5X10DOT_8BIT_2LINE (FUNC_SET_8BIT_2LINE | FUNC_SET_5X10)
 #define FUNC_SET_5X10DOT_4BIT_1LINE (FUNC_SET_4BIT_1LINE | FUNC_SET_5X10)
+#define FUNC_SET_5X10DOT_4BIT_2LINE (FUNC_SET_4BIT_2LINE | FUNC_SET_5X10)
+//
+// #define FUNC_SET_5X8DOT_8BIT_1LINE (FUNC_SET_8BIT_1LINE | FUNC_SET_5X8)
+// #define FUNC_SET_5X8DOT_8BIT_2LINE (FUNC_SET_8BIT_2LINE | FUNC_SET_5X8)
+#define FUNC_SET_5X8DOT_4BIT_1LINE (FUNC_SET_4BIT_1LINE | FUNC_SET_5X8)
 #define FUNC_SET_5X8DOT_4BIT_2LINE (FUNC_SET_4BIT_2LINE | FUNC_SET_5X8)
 #define RS 0X02
 #define RW 0X04
 #define EN 0X08
-#define i2cdel 20000
+#define i2cdel 50000
 volatile uint8_t i2cDummy;
 volatile uint8_t lcd4Data;
 uint8_t valh = 0;
 uint8_t vall = 0;
+uint8_t bytex = 0;
 
-void setData(uint8_t val)
+uint8_t mxbuff[8];
+uint8_t mbuff[8];
+uint8_t byte_buff[8];
+
+void lsb_byte(uint8_t val)
 {
-    vall = (comm);
+    memset(mxbuff, 0, 8);
+    memset(mbuff, 0, 8);
+    uint8_t cnt = 1;
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        mxbuff[i] = ((val & cnt) >> i);
+        mbuff[i] = mxbuff[i];
+        cnt = (cnt << 1);
+    }
+}
+void abyte(char val)
+{
+    uint8_t cnt = 1;
+    uint8_t rd_buff[8];
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        rd_buff[i] = ((val & cnt) >> i);
+        cnt = (cnt << 1);
+    }
+    byte_buff[0] = rd_buff[7];
+    byte_buff[1] = rd_buff[6];
+    byte_buff[2] = rd_buff[5];
+    byte_buff[3] = rd_buff[4];
+    byte_buff[4] = rd_buff[3];
+    byte_buff[5] = rd_buff[2];
+    byte_buff[6] = rd_buff[1];
+    byte_buff[7] = rd_buff[0];
+}
+char get_2_byte(char val) // bytex
+{
+    uint8_t cnt = 128;
+    bytex = 0;
+    // abyte(val);
+    lsb_byte(val);
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        if (mbuff[i] == 1)
+        {
+            bytex += cnt;
+        }
+        else
+        {
+        }
+        cnt = cnt / 2;
+    }
+    // eusart_send(bytex);
+
+    return bytex;
+}
+//////////////////////////
+void setData(uint8_t comm)
+{
+    // uint8_t val = get_2_byte(comm);
+    vall = comm;
     valh = (comm << 4);
 }
-
-
 void i2cToggle(uint8_t comm, uint8_t mode)
 {
     setData(comm);
@@ -73,7 +135,6 @@ void i2cToggle(uint8_t comm, uint8_t mode)
     i2c1_write(vall);
     i2c1_write(mode | vall);
 }
-
 void lcd_i2c_set(uint8_t comm)
 {
     setData(comm);
@@ -88,48 +149,38 @@ void lcd_i2c_comm(uint8_t comm)
 }
 void lcd_i2c_write(uint8_t comm)
 {
-    i2cToggle(comm, RS|EN);
+    i2cToggle(comm, RS | EN);
     _delay_ms(i2cdel);
 }
-// void lcd_Init(uint8_t comm, uint8_t mode)
-// {
-//     i2c1_init();
-//     i2cStart();
-//     i2c1_send_address(SLA_W);
-//     setData(comm);
-//     i2c1_write(valh);
-//     i2c1_write(mode | valh);
-//     _delay_ms(i2cdel);
-//     i2c1_write(vall);
-//     i2c1_write(mode | vall);
-//     _delay_ms(i2cdel);
-// }
-void lcd_Init(){
-
+void lcd_Init()
+{
+    // i2c1_init();
+    // i2cStart();
+    // i2c1_send_address(SLA_W);
+    _delay_ms(100000);
+    lcd_i2c_set(0x30);
+    _delay_ms(100000);
+    lcd_i2c_set(0x30);
     _delay_ms(50000);
     lcd_i2c_set(0x30);
-    _delay_ms(5000);
-    lcd_i2c_set(0x30);
-    _delay_us(5000);
-    lcd_i2c_set(0x30);
-    _delay_us(2000);
+    _delay_ms(50000);
     lcd_i2c_set(0X20);
 
     lcd_i2c_comm(DISP_OFF);
-    lcd_i2c_comm(CLEAR_DISP);
-    lcd_i2c_comm(ENTRY_MODE_INC);
+    // lcd_i2c_comm(CLEAR_DISP);
+    // lcd_i2c_comm(ENTRY_MODE_INC);
+    lcd_i2c_comm(FUNC_SET_5X10DOT_4BIT_1LINE);
     lcd_i2c_comm(CURSOR_BLINK_ON);
-    lcd_i2c_comm(FUNC_SET_5X8DOT_4BIT_2LINE);
-    lcd_i2c_comm(HOME);
-    lcd_i2c_comm(CLEAR_DISP);
-    lcd_i2c_comm(DISP_ON);
+    // lcd_i2c_comm(HOME);
+    // lcd_i2c_comm(CLEAR_DISP);
+    // lcd_i2c_comm(DISP_ON);
 }
 void lcd_i2c_char(char val)
 {
     lcd_i2c_write(val);
-    lcd_i2c_comm(DISP_ON);
+    // lcd_i2c_comm(DISP_ON);
 }
-void lcd4DataHigh(unsigned char *word)
+void lcd4DataHigh(char *word)
 {
     char buff[30];
     memset(buff, 0, 30);
@@ -141,7 +192,7 @@ void lcd4DataHigh(unsigned char *word)
         lcd_i2c_char(buff[i]);
     }
 }
-void lcd4DataLow(unsigned char *word)
+void lcd4DataLow(char *word)
 {
     char buff[30];
     memset(buff, 0, 30);
@@ -152,7 +203,7 @@ void lcd4DataLow(unsigned char *word)
         lcd_i2c_char(buff[i]);
     }
 }
-void lcdScreenWrite(unsigned char *wordh, unsigned char *wordl)
+void lcdScreenWrite(char *wordh, char *wordl)
 {
     lcd4DataHigh(wordh);
     lcd_i2c_comm(LINE2);
