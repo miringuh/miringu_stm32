@@ -24,24 +24,18 @@ int main()
     _delay_ms(1000000);
 
     eusart_init(U19200);
-    i2c1_init();
-    i2cStart();
-    i2c1_send_address(SLA_W);
+    
 
-    // for (uint8_t i = 0; i < 25; i++)
+    // for (uint8_t i = 0; i < 255; i++)
     // {
-    //     i2c1_write(i);
+    //     eusart_send(i);
     //     _delay_ms(20000);
     // }
     // i2c1_stop();
+    // eusart_send(0x44);
     while (1)
     {
-        for (uint8_t i = 0x10; i < 0xFF; i++)
-        {
-            i2c1_write(i);
-            _delay_ms(800000);
-        }
-
+        eusart_send(eusart_rd());
     }
     return 0;
 }

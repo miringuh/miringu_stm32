@@ -140,7 +140,7 @@ void usart1_pins_remap1() // tx-PB6  rx-PB7
     RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPBEN | RCC_APB2ENR_AFIOEN;
     AFIO->MAPR |= AFIO_MAPR_USART1_REMAP;
     GPIOB->CRL = (GPIO_CRL_CNF6_1 | GPIO_CRL_MODE6_1); // tx 10mhz AF_P_P
-    GPIOB->CRL |= (GPIO_CRL_CNF7_0);                     // rx input FLOAT
+    GPIOB->CRL |= (GPIO_CRL_CNF7_0);                   // rx input FLOAT
 }
 /*
      (master)  TX----->RX (slave)
@@ -188,23 +188,22 @@ void USART1_IRQHandler()
     //     dummy = USART1->SR;
     // }
 }
-
 ////// USART1_0 // tx-PA9 rx-PA10 //////
 
 void eusart_init(uint32_t bauds)
 {
     usart1_pins_remap0(); /// PINS
+    USART1->CR1 = 0;
     u_baud(bauds);
     USART1->CR2 = STOP_1;
-    USART1->CR1 = 0;
 
     // USART1->CR3 = EIE;
-    USART1->CR1 = TCIE | USART_RXNEIE ;//| USART_TXEIE;
+    USART1->CR1 = TCIE | USART_RXNEIE; //| USART_TXEIE;
     USART1->CR1 |= TXEN | RXEN;
     USART1->CR1 |= EU;
 
-    NVIC_SetPriority(USART1_IRQn, 2);
-    NVIC_EnableIRQ(USART1_IRQn);
+    // NVIC_SetPriority(USART1_IRQn, 2);
+    // NVIC_EnableIRQ(USART1_IRQn);
 }
 uint8_t eusart_send(uint8_t val)
 {
@@ -213,6 +212,7 @@ uint8_t eusart_send(uint8_t val)
     while (!(USART1->SR & TXE_FLAG)) // 1 DR-->>reg
     {
     }
+    dummy = USART1->SR;
     return USART1->DR;
 }
 void eusartString(char *mesg)
@@ -227,15 +227,13 @@ void eusartString(char *mesg)
 }
 uint8_t eusart_rd()
 {
-    // while (!(USART1->SR & RXNE_FLAG)) // 0=not recvd
-    // ;
-    // while ((USART1->SR & ORE_FLAG)) // 1=ovr
-    //     ;
+    while (!(USART1->SR & RXNE_FLAG)) // 0=not recvd
+    ;
     rdVal = USART1->DR;
     while ((USART1->SR & FE_FLAG)) // 1=error
-    ;
+        ;
     while ((USART1->SR & NE_FLAG)) // 1=noise
-    ;
+        ;
     dummy = USART1->SR;
     return rdVal;
 }
