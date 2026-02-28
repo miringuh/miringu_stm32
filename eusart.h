@@ -242,14 +242,17 @@ uint8_t eusart_rd()
 void eusart_init_1(uint32_t bauds)
 {
     usart1_pins_remap1(); /// PINS
+    USART1->CR1 = 0;
     u_baud(bauds);
     USART1->CR2 = STOP_1;
-    USART1->CR1 = 0;
-    USART1->CR1 |= TCIE; // | USART_TXEIE | USART_RXNEIE;
+
+    // USART1->CR3 = EIE;
+    USART1->CR1 = TCIE | USART_RXNEIE; //| USART_TXEIE;
     USART1->CR1 |= TXEN | RXEN;
     USART1->CR1 |= EU;
-    NVIC_SetPriority(USART1_IRQn, 2);
-    NVIC_EnableIRQ(USART1_IRQn);
+
+    // NVIC_SetPriority(USART1_IRQn, 2);
+    // NVIC_EnableIRQ(USART1_IRQn);
 }
 uint8_t eusart_send_1(uint8_t val)
 {
@@ -263,7 +266,7 @@ void eusart_rd1()
 {
     eusart_rd();
 }
-////////////////
+//////////////////////////////////////////////////////
 ////// USART 2 //tx-PA2  rx-PA3 cts-PA0 rts-PA1
 void u_baud2(uint32_t baud)
 {
@@ -317,21 +320,24 @@ void eusart_init_2(uint32_t bauds)
 }
 uint8_t eusart_send_2(uint8_t val)
 {
+    // wrVal = val;
     USART2->DR = val;
-    while ((!(USART2->SR & TC_FLAG)))
-        ;
-    rdVal = USART2->DR;
-    return rdVal;
+    while (!(USART2->SR & TXE_FLAG)) // 1 DR-->>reg
+    {
+    }
+    dummy = USART2->SR;
+    return USART2->DR;
 }
 uint8_t eusart_rd_2()
 {
-    dummy = USART2->DR;
-    dummy = USART2->SR;
-    while (!(USART2->SR & RXNE_FLAG))
-        ;
-    while ((USART2->SR & FE_FLAG))
+    while (!(USART2->SR & RXNE_FLAG)) // 0=not recvd
         ;
     rdVal = USART2->DR;
+    while ((USART2->SR & FE_FLAG)) // 1=error
+        ;
+    while ((USART2->SR & NE_FLAG)) // 1=noise
+        ;
+    dummy = USART2->SR;
     return rdVal;
 }
 void eusartString_2(char *mesg)
@@ -344,7 +350,6 @@ void eusartString_2(char *mesg)
         eusart_send_2(buff[i]);
     }
 }
-//************
 void eusart_cntrl_2(uint8_t val)
 {
     if (!(USART2->SR & USART_SR_CTS)) // CTS if 1-send if 0-read
@@ -420,20 +425,22 @@ void eusart_init_3(uint32_t bauds)
 uint8_t eusart_send_3(uint8_t val)
 {
     USART3->DR = val;
-    while ((!(USART3->SR & TC_FLAG)))
-        ;
-    rdVal = USART3->DR;
-    return rdVal;
+    while (!(USART3->SR & TXE_FLAG)) // 1 DR-->>reg
+    {
+    }
+    dummy = USART3->SR;
+    return USART3->DR;
 }
 uint8_t eusart_rd_3()
 {
-    dummy = USART3->DR;
-    dummy = USART3->SR;
-    while (!(USART3->SR & RXNE_FLAG))
-        ;
-    while ((USART3->SR & FE_FLAG))
+    while (!(USART3->SR & RXNE_FLAG)) // 0=not recvd
         ;
     rdVal = USART3->DR;
+    while ((USART3->SR & FE_FLAG)) // 1=error
+        ;
+    while ((USART3->SR & NE_FLAG)) // 1=noise
+        ;
+    dummy = USART3->SR;
     return rdVal;
 }
 void eusartString_3(char *mesg)
@@ -504,7 +511,7 @@ usart3- RX=channel 3
 
 */
 uint8_t valData;
-char buff[20];
+char buff[255];
 volatile uint8_t state;
 //
 void DMA1_Channel4_IRQHandler() // tx
@@ -541,8 +548,8 @@ void eusart_dma_tx_init(uint32_t baud, const char *msg)
     USART1->CR1 = 0;
     USART1->CR2 = STOP_1;
     DMA1_Channel4->CPAR = (uint32_t)&USART1->DR;
-    DMA1_Channel4->CMAR = (uint32_t)buff;
-    DMA1_Channel4->CNDTR = (strlen(msg) * 2);
+    DMA1_Channel4->CMAR = (uint32_t)&buff;
+    DMA1_Channel4->CNDTR = (strlen(msg)*2);
     DMA1_Channel4->CCR |= CIRC;                                     // 1-circ
     DMA1_Channel4->CCR |= MINC;                                     // mem incr
     DMA1_Channel4->CCR &= ~PINC;                                    // periph no incr
@@ -562,7 +569,7 @@ void eusart_dma_tx_init(uint32_t baud, const char *msg)
 void eusart_dma_tx2_init(uint32_t baud, char msg[])
 {
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-    usart1_pins_remap0();
+    usart1_pins_remap1();
     u_baud(baud);
     USART1->CR1 = 0;
     USART1->CR2 = STOP_1;
@@ -584,6 +591,7 @@ void eusart_dma_tx2_init(uint32_t baud, char msg[])
     USART1->CR1 |= TXEN | EU;
     DMA1_Channel4->CCR |= DMAEN;
 }
+/////////////////
 void eusart_dma_rx_init(uint32_t bauds, char msg[], uint16_t size)
 {
     usart1_pins_remap1(); /// PINS

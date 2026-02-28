@@ -198,8 +198,9 @@ volatile uint32_t i2cdata;
 uint8_t on = 1;
 uint8_t off = 0;
 uint8_t readi2c = 0;
-#define SLA_W 0X4E
-#define SLA_R 0X4F
+uint8_t SLA_W = 0;
+uint8_t SLA_R = 0;
+uint8_t count = 0;
 void i2c1_stop(void);
 ////// 10mhz //////////////
 void setI2c1Pins_mapr1() // 1==scl-PB8 sda-pb9
@@ -236,8 +237,8 @@ void I2C1_EV_IRQHandler()
     }
     if ((I2C1->SR1 & I2C_SR1_ADDR))
     {
-        i2cdummy = I2C1->SR1;
         i2cdummy = I2C1->SR2;
+        i2cdummy = I2C1->SR1;
     }
     // if ((I2C1->SR1 & I2C_SR1_BTF))
     // {
@@ -251,10 +252,10 @@ void I2C1_EV_IRQHandler()
     // {
     //     I2C1->DR = (uint32_t)&i2cdata;
     // }
-    // if ((I2C1->SR1 & I2C_SR1_STOPF))
-    // {
-    //     i2cdummy = I2C1->SR1;
-    // }
+    if ((I2C1->SR1 & I2C_SR1_STOPF))
+    {
+        i2cdummy = I2C1->SR1;
+    }
 }
 void I2C1_ER_IRQHandler()
 {
@@ -301,13 +302,14 @@ void i2c_chipSel(uint8_t state)
     {
         GPIOC->ODR &= ~GPIO_ODR_ODR13;
     }
-    _delay_ms(1000000);
+    _delay_ms(200000);
 }
 
 void i2c1_init() // scl-PB6 sda-pb7
 {
     i2c_chipSel(off);
     i2c_chipSel(on);
+    _delay_ms(20000);
 
     setI2c1Pins_mapr0();
     I2C1->CR1 = 0;
@@ -326,7 +328,6 @@ void i2c1_init() // scl-PB6 sda-pb7
     // I2C1->CR2 |= ITEVTEN; // SB ADDR ADDR10,STOPF BTF
     // I2C1->CR2 |= ITBUFEN; // ITEVFEN + TxE RxNE
     // I2C1->CR2 |= ITERREN; // BERR ARLO AF OVR PECERR TIMEOUT SMBALERT
-
     // NVIC_SetPriority(I2C1_EV_IRQn, 2);
     // NVIC_EnableIRQ(I2C1_EV_IRQn);
     // NVIC_SetPriority(I2C1_ER_IRQn, 3);
@@ -339,7 +340,7 @@ void i2c1_init() // scl-PB6 sda-pb7
         // i2c_chipSel(off);
         // i2c_chipSel(on);
         I2C1->CR1 = I2C_CR1_SWRST;
-        _delay_ms(200000);
+        _delay_ms(20000);
         I2C1->CR1 &= ~I2C_CR1_SWRST;
 
         // Trise = (APB1 clock / 1000000) + 1
@@ -361,7 +362,7 @@ void i2c1_init() // scl-PB6 sda-pb7
         I2C1->CR1 |= I2C_CR1_ACK | I2C_CR1_PE;
     }
 }
-void i2cStart()
+void i2c1_start()
 {
 
     if ((I2C1->SR1 & I2C_SR1_SB)) // 0-nostrt 1-strt
@@ -369,31 +370,70 @@ void i2cStart()
         i2cdummy = I2C1->SR1;
         I2C1->DR = 0;
     }
-
     I2C1->CR1 |= I2C_CR1_START;
+
+    // i2cdummy = I2C1->SR1;
+    // if ((I2C1->SR1 & I2C_SR1_BERR)) // 0-OK 1-MISS
+    // {
+    //     I2C1->SR1 &= ~I2C_SR1_BERR;
+    // }
+    // eusart_send((I2C1->SR1 & 0XFF00) >> 8);
+    // eusart_send((I2C1->SR1 & 0X00FF));
     while (!(I2C1->SR1 & I2C_SR1_SB)) // 0-nostrt 1-strt
         ;
     i2cdummy = I2C1->SR2;
     i2cdummy = I2C1->SR1;
 }
-void i2c1_send_address(uint8_t address)
+uint8_t i2c1_getAddress(uint8_t address)
 {
-    // i2cStart();
+    i2c1_start();
+    i2cdummy = I2C1->SR1;
+    i2cdummy = I2C1->SR2;
     I2C1->DR = address;
-    if ((address == SLA_R) | (address == 0))
+    _delay_ms(2000);
+    // eusart_send(0X02);
+    while ((I2C1->SR1 & I2C_SR1_ARLO)) // ABTR 0-nope 1-loss
+        ;
+    // eusart_send(0X03);
+    if (!(I2C1->SR1 & I2C_SR1_ADDR)) // addr 0-not txed 1-txed
     {
-        while (!(I2C1->SR1 & I2C_SR1_ADDR)) // addr 0-not txed 1-txed
-            ;
-        i2cdummy = I2C1->SR2;
-        readi2c = 0;
+        return 0;
     }
-    if (address == SLA_W)
+    if (count == 0)
     {
-        while (!(I2C1->SR1 & I2C_SR1_ADDR)) // addr 0-not txed 1-txed
-            ;
-        i2cdummy = I2C1->SR2;
-        readi2c = 1;
+        SLA_W = I2C1->DR;
     }
+    if (count == 1)
+    {
+        SLA_R = I2C1->DR;
+    }
+    count++;
+    eusart_send(I2C1->DR);
+    i2cdummy = I2C1->SR1;
+    i2cdummy = I2C1->SR2;
+    return I2C1->DR;
+}
+uint8_t i2c1_send_address(uint8_t address)
+{
+    i2c1_start();
+    i2cdummy = I2C1->SR2;
+    i2cdummy = I2C1->SR1;
+    I2C1->DR = address;
+    _delay_ms(2000);
+    // eusart_send(0x01);
+    while ((I2C1->SR1 & I2C_SR1_ARLO)) // ABTR 0-nope 1-loss
+        ;
+    // eusart_send(0x02);
+
+    if (!(I2C1->SR1 & I2C_SR1_ADDR)) // addr 0-not txed 1-txed
+    {
+        return 0;
+    }
+
+    eusart_send(I2C1->DR);
+    i2cdummy = I2C1->SR1;
+    i2cdummy = I2C1->SR2;
+    return I2C1->DR;
 }
 void i2c1_write(uint8_t data)
 {
@@ -407,7 +447,7 @@ void i2c1_write(uint8_t data)
         ;
     while (!(I2C1->SR1 & I2C_SR1_BTF)) // 0-not Txed 1-txed
         ;
-    while (!(I2C1->SR2 & I2C_SR2_TRA)) // 0-not txed 1-txed
+    while (!(I2C1->SR2 & I2C_SR2_TRA)) // 0-resvd 1-txed
         ;
     while (!(I2C1->SR2 & I2C_SR2_BUSY)) // 0-free 1-busy
         ;
@@ -421,7 +461,25 @@ void i2c1_write(uint8_t data)
     {
         i2cVal = I2C1->DR;
     }
-    // eusart_send(i2cVal);
+    eusart_send(i2cVal);
+}
+
+uint8_t i2c1_read()
+{
+    i2cdummy = I2C1->SR2;
+    i2cdummy = I2C1->SR1;
+    while ((I2C1->SR1 & I2C_SR1_ARLO)) // ABTR 0-nope 1-loss
+        ;
+    while (!(I2C1->SR2 & I2C_SR2_BUSY)) // 0-free 1-busy
+        ;
+    while (!(I2C1->SR2 & I2C_SR2_MSL)) // 0-slv 1-master
+        ;
+    while ((I2C1->SR2 & I2C_SR2_TRA)) // 0-resvd 1-txed
+        ;
+    i2cVal = I2C1->DR;
+    eusart_send(i2cVal);
+
+    return i2cVal;
 }
 void i2c1_stop(void)
 {
@@ -521,7 +579,7 @@ void dma_i2cTx_init(char *msg, uint16_t size)
 }
 void start()
 {
-    i2cStart();
+    i2c1_start();
 }
 void sendAddr(uint8_t address)
 {
@@ -562,3 +620,18 @@ void dma_i2cRx_init(uint16_t size)
 }
 
 #endif
+/*
+eusart_init(U19200);
+
+    i2c1_init();
+
+    for (uint8_t i = 0; i < 255; i++)
+    {
+        i2c1_start();
+        i2c1_getAddress(i);
+        _delay_ms(20);
+    }
+    i2c1_send_address(SLA_W);
+    or
+    i2c1_send_address(SLA_R);
+*/
