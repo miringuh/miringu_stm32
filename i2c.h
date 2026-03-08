@@ -391,10 +391,8 @@ uint8_t i2c1_getAddress(uint8_t address)
     i2cdummy = I2C1->SR2;
     I2C1->DR = address;
     _delay_ms(2000);
-    // eusart_send(0X02);
     while ((I2C1->SR1 & I2C_SR1_ARLO)) // ABTR 0-nope 1-loss
         ;
-    // eusart_send(0X03);
     if (!(I2C1->SR1 & I2C_SR1_ADDR)) // addr 0-not txed 1-txed
     {
         return 0;

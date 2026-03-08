@@ -113,7 +113,7 @@ void latch() // PC13
     _delay_ms(60000);
 }
 ////////////
-void spi0_setup()
+void spi01_setup()
 { // mosi - PA7 miso - PA6 sck - PA5 ss - PA4 50MHZ
     RCC->APB2ENR |= RCC_APB2ENR_AFIOEN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_IOPAEN;
     AFIO->MAPR |= (AFIO_MAPR_SWJ_CFG_JTAGDISABLE);
@@ -171,7 +171,7 @@ void SPI2_IRQHandler(void)
 ////// SPI0 /////
 void spi0_init(uint8_t baud)
 { // mosi-PA7  miso-PA6  sck-PA5 ss - PA4 50MHZ
-    spi0_setup();
+    spi01_setup();
     GPIOA->CRL = (MOSI_0 | MISO_0 | SCKL_0 | SS_0);
     SPI1->CR1 = 0;
     SPI1->CR2 = 0;
@@ -318,7 +318,7 @@ void spi1_dma_tx_init(uint32_t baud, const char *msg)//SPI1-TX
 {
     strcpy(spi_buff, msg);
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-    spi0_setup();
+    spi01_setup();
 
     GPIOA->CRL = (MOSI_0 | MISO_0 | SCKL_0 | SS_0);
     SPI1->CR1 = 0;
@@ -349,7 +349,7 @@ void spi1_dma_rx_init(uint32_t baud, const char *msg, uint16_t size) // SPI1-RX
 {
     strcpy(buff, msg);
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-    spi0_setup();
+    spi01_setup();
 
     GPIOA->CRL = (MOSI_0 | MISO_0 | SCKL_0 | SS_0);
     SPI1->CR1 = 0;

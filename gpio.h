@@ -20,21 +20,53 @@
 #define ANALOG 0b0000
 #define FLOAT_INP 0b0100 // DEFAULT
 #define INP_PPULL 0b1000
+/*
+MODES @ gpio.h 2MHZ 10MHZ or 50MHZ
+CRL   7   |6   |5   |4   |3   |2  |1  |0
+POS   28  |24  |20  |16  |12  |8  |4  |0 **********
+CRH   15  |14  |13  |12  |11  |10 |9  |8
+*/
+// REG manipulations
+#define PIN_MODE(REG, VAL) WRITE_REG(REG, VAL)
+
+#define WR_REG(REG, VAL) WRITE_REG(REG, VAL)
+#define RD_REG(REG, VAL) READ_REG(REG, VAL)
+#define CLR_REG(REG, VAL) CLEAR_REG(REG, VAL)
+// BITS manipulations
+#define SET_REG_BIT(REG, BIT) SET_BIT(REG, BIT)
+#define READ_REG_BIT(REG, BIT) READ_BIT(REG, BIT)
+#define CLR_BIT(REG, BIT) CLEAR_BIT(REG, BIT)
 
 // CALLBACK //
-typedef void (*callback)(uint32_t);
-void readReg(uint32_t val, callback cb)
+typedef void (*callback1)(void);
+void func_void(callback1 cb)
+{
+    cb();
+}
+typedef void (*callback2)(uint32_t);
+void func_void_param(uint32_t val, callback2 cb)
 {
     cb(val);
 }
-void getRegA(uint32_t val)
+typedef void (*callback3)(uint32_t, uint32_t);
+void func_void_2param(uint32_t val0, uint32_t val1, callback3 cb)
 {
-    GPIOA->ODR = val;
+    cb(val0,val1);
 }
-void getRegB(uint32_t val)
-{
-    GPIOB->ODR = (val << 8);
-}
-// readReg(val,getReg)
 
+typedef uint32_t (*callback4)(void);
+uint32_t func_return(callback4 cb)
+{
+    return cb();
+}
+typedef uint32_t (*callback5)(uint32_t);
+uint32_t func_return_param(uint32_t val, callback5 cb)
+{
+    return cb(val);
+}
+typedef uint32_t (*callback6)(uint32_t, uint32_t);
+uint32_t func_return_2param(uint32_t val0,uint32_t val1,callback6 cb)
+{
+    return cb(val0,val1);
+}
 #endif // __GPIO

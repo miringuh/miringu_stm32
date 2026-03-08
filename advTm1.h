@@ -8,6 +8,7 @@ The Time Base Unit includes:
 ●   Prescaler Register (TIM1_PSC):
 ●   Auto-Reload Register (TIM1_ARR)
 ●   Repetition Counter Register (TIM1_RCR)
+
 */
 //     TIMx->CR1  control register 1
 // div ratio OF  timer clock (CK_INT) frequency, dead time and sampling clock
@@ -105,4 +106,25 @@ The Time Base Unit includes:
 // Repetition Counter Value.[8:0]
 #define TIM1_RCR_REG(REG, VAL) WRITE_REG(REG, VAL)
 //
+
+/*
+In up-counting mode, the counter counts from 0 to the auto-reload value (content of the TIM1_ARR register) then restarts from 0 and generates a counter overflow event.
+
+If the repetition counter is used, the update event (UEV) is generated after up-counting is repeated for the number of times programmed in the repetition counter register (TIM1_RCR).
+
+Setting the UG bit in the TIM1_EGR register (by software or by using the slave mode controller) also generates an update event.
+
+The UEV event can be disabled by software by setting the UDIS bit in the TIM1_CR1 register
+
+When an update event occurs, all the registers are updated and the update flag (UIF bit in TIM1_SR register) is set (depending on the URS bit):
+
+The counter clock can be provided by the following clock sources:
+       ●Internal clock (CK_INT)
+       ●External clock mode1: external input pin
+       ●External clock mode2: external trigger input ETR
+       ●Internal trigger inputs (ITRx): using one timer as prescaler for another timer, for
+example, you can configure Timer 1 to act as a prescaler for Timer 2. Refer to
+
+*/
+
 #endif // __ADVTIM1

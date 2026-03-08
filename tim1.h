@@ -8,7 +8,7 @@
 // Auto-reload preload enable 1: TIMx_ARR register is buffered.
 #define ARPE TIM_CR1_ARPE
 // Center-aligned Mode Selection
-#define CMS (REG, VAL) WRITE_REG(REG, VAL) // 00
+#define CMS(REG, VAL) WRITE_REG(REG, VAL) // 00
 // Direction
 // 1-downcnt 0-upcnt
 #define TIM_DIR TIM_CR1_DIR
@@ -49,23 +49,28 @@
 // TIMx_ARR auto-reload register
 #define AUTO_RELOAD(REG, VAL) WRITE_REG(REG, VAL) // ARR[15:0]
 // 25HZ=8892 50HZ=4446 100HZ=2223
-//
-#define _204800HZ 1   // 3us
-#define _102400HZ 2   // 6us
-#define _51200HZ 3    // 11us
-#define _25600HZ 5    // 41us
-#define _12800HZ 10   // 82us
-#define _6400HZ 19    // 163us
-#define _3200HZ 37    // 325us
+/*
+((2385×100)÷50)÷4
+*/
+#define _204800HZ 0  // 3us
+#define _102400HZ 1  // 6us
+#define _51200HZ 2   // 11us
+#define _25600HZ 4   // 41us
+#define _12800HZ 9  // 82us
+#define _6400HZ 19   // 163us
+#define _3200HZ 37   // 325us
 #define _1600HZ 74   // 650us
-#define _800HZ 147    // 1.25ms
-#define _400HZ 293    // 2.5ms
-#define _200HZ 585   // 5ms
-#define _100HZ 1170   // 10ms
-#define _50HZ 2340    // 20ms
-#define _25HZ 4680    // 40ms
-#define _12_5HZ 9100  // 80ms
+#define _800HZ 149   // 1.25ms
+#define _400HZ 298   // 2.5ms
+#define _200HZ 596   // 5ms
+#define _100HZ 1192  // 10ms
+#define _50HZ 2385   // 20ms
+#define _25HZ 4760   // 40ms
+#define _12HZ 9880   // 83ms
+#define _6HZ 19760   //
+#define _3HZ 39520   //
 //
+void test_tim6();
 void TIM_IRQHandler(void)
 {
     // TIMx_SR (UIF flag)
@@ -78,10 +83,10 @@ void TIM_IRQHandler(void)
 void timer1_init()
 {
     RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
-    TIM1->CR1 &= ~(OPM | UDIS | TIM_DIR);
+    TIM1->CR1 &= ~(OPM | UDIS | TIM_DIR | TIM_CR1_CMS);
     TIM1->SR &= ~(TIM_SR_UIF);
     TIM1->CR1 = URS | ARPE;
-    TIM1->CR2 &= ~(TIM_CR2_MMS);
+    TIM1->CR2 &= ~(TIM_CR2_MMS | TIM_CR2_TI1S | TIM_CR2_CCDS);
     TIM1->DIER = UIE;
     // TIM1->CR1 |= TIM_CR1_;
     //
@@ -94,6 +99,7 @@ void timer1_init()
         GPIOC->CRH = GPIO_CRH_MODE13_Msk; // 50MHZ P_P
     }
     //
+    // TIM1->CR1 |= TIM_CR1_ ;
     TIM1->CR1 |= CEN;
 }
 void timer1(uint16_t cnt_val, uint16_t pres_val, uint16_t reload)
@@ -112,9 +118,10 @@ void tim_del(uint16_t cyc)
     uint16_t cnt = cyc;
     while (cnt >= 1)
     {
-        timer1(0, 0xFFFF, 0XFFFF);
+        timer1(0, 19, 0XFFFE);
         cnt--;
     }
+    test_tim6();
 }
 
 void test_tim6()
@@ -124,3 +131,8 @@ void test_tim6()
 }
 
 #endif // __TIMER
+       /*
+       
+       
+       
+       */
