@@ -12,6 +12,7 @@
 #include "gpio.h"
 #include "rcc_conf.h"
 #include "dma.h"
+#include "tim1.h"
 
 //
 // USART_SR Status register
@@ -189,7 +190,6 @@ void USART1_IRQHandler()
     // }
 }
 ////// USART1_0 // tx-PA9 rx-PA10 //////
-
 void eusart_init(uint32_t bauds)
 {
     usart1_pins_remap0(); /// PINS

@@ -7,6 +7,7 @@
 #include <math.h>
 #include "gpio.h"
 #include "eusart.h"
+#include "tim1.h"
 /*
 Setting the START bit while the BUSY bit is cleared generates a Start condition and switch to Master mode (M/SL bit set)
 
@@ -195,6 +196,7 @@ i2c2-scl-b10
 volatile uint32_t i2cdummy;
 volatile uint32_t i2cVal;
 volatile uint32_t i2cdata;
+uint32_t i2cState = 0;
 uint8_t on = 1;
 uint8_t off = 0;
 uint8_t readi2c = 0;
@@ -216,9 +218,10 @@ void setI2c1Pins_mapr0() // 0==scl-PB6 sda-pb7
 {
     RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
     RCC->APB2ENR |= RCC_APB2ENR_AFIOEN | RCC_APB2ENR_IOPBEN | RCC_APB2ENR_IOPCEN;
-    GPIOB->CRL = (GPIO_CRL_CNF7_Msk | GPIO_CRL_MODE7_0);  // sda pb7
-    GPIOB->CRL |= (GPIO_CRL_CNF6_Msk | GPIO_CRL_MODE6_0); // clk pb6
-    GPIOC->CRH = (P_P10MHZ << GPIO_CRH_CNF13_Pos);
+    GPIOB->CRL = (GPIO_CRL_CNF7_Msk | GPIO_CRL_MODE7_1);  // sda pb7
+    GPIOB->CRL |= (GPIO_CRL_CNF6_Msk | GPIO_CRL_MODE6_1); // clk pb6
+    // PIN_MODE(GPIOB->CRL, (AF_O_D2MHZ << 28));
+    // PIN_MODE(GPIOB->CRL, (AF_O_D2MHZ << 24));
     AFIO->MAPR &= ~(AFIO_MAPR_I2C1_REMAP | AFIO_MAPR_SWJ_CFG_Msk);
 }
 /*
@@ -302,14 +305,14 @@ void i2c_chipSel(uint8_t state)
     {
         GPIOC->ODR &= ~GPIO_ODR_ODR13;
     }
-    _delay_ms(200000);
+    timer1_del(400000);
 }
 
 void i2c1_init() // scl-PB6 sda-pb7
 {
     i2c_chipSel(off);
     i2c_chipSel(on);
-    _delay_ms(20000);
+    timer1_del(_100ms);
 
     setI2c1Pins_mapr0();
     I2C1->CR1 = 0;
@@ -340,7 +343,7 @@ void i2c1_init() // scl-PB6 sda-pb7
         // i2c_chipSel(off);
         // i2c_chipSel(on);
         I2C1->CR1 = I2C_CR1_SWRST;
-        _delay_ms(20000);
+        timer1_del(_100ms);
         I2C1->CR1 &= ~I2C_CR1_SWRST;
 
         // Trise = (APB1 clock / 1000000) + 1
@@ -371,14 +374,18 @@ void i2c1_start()
         I2C1->DR = 0;
     }
     I2C1->CR1 |= I2C_CR1_START;
+    i2cdummy = I2C1->SR2;
+    i2cdummy = I2C1->SR1;
+    timer1_del(_50ms);
 
-    // i2cdummy = I2C1->SR1;
     // if ((I2C1->SR1 & I2C_SR1_BERR)) // 0-OK 1-MISS
     // {
     //     I2C1->SR1 &= ~I2C_SR1_BERR;
     // }
-    // eusart_send((I2C1->SR1 & 0XFF00) >> 8);
-    // eusart_send((I2C1->SR1 & 0X00FF));
+    // eusart_send((I2C1->CR1 & 0XFF00) >> 8);
+    // eusart_send((I2C1->CR1 & 0X00FF));
+    eusart_send((I2C1->SR1 & 0XFF00) >> 8);
+    eusart_send((I2C1->SR1 & 0X00FF));
     while (!(I2C1->SR1 & I2C_SR1_SB)) // 0-nostrt 1-strt
         ;
     i2cdummy = I2C1->SR2;
@@ -386,13 +393,33 @@ void i2c1_start()
 }
 uint8_t i2c1_getAddress(uint8_t address)
 {
+    // if (state == 1)
+    // {
+    //     goto ends;
+    // }
     i2c1_start();
-    i2cdummy = I2C1->SR1;
     i2cdummy = I2C1->SR2;
+    i2cdummy = I2C1->SR1;
     I2C1->DR = address;
-    _delay_ms(2000);
+    timer1_del(200);
+
+    // eusart_send((I2C1->SR1 & 0XFF00) >> 8);
+    // eusart_send((I2C1->SR1 & 0X00FF));
+
+    if ((I2C1->SR1 & I2C_SR1_BERR)) // 0-OK 1-MISS
+    {
+        I2C1->SR1 &= ~I2C_SR1_BERR;
+    }
+    if ((I2C1->SR1 & I2C_SR1_AF)) // 0-ACK 1-NACK
+    {
+        I2C1->SR1 &= ~I2C_SR1_AF;
+    }
     while ((I2C1->SR1 & I2C_SR1_ARLO)) // ABTR 0-nope 1-loss
         ;
+    // if (!(I2C1->SR2 & I2C_SR2_TRA)) // DATA 0-resvd 1-txed
+    // {
+    //     return 0;
+    // }
     if (!(I2C1->SR1 & I2C_SR1_ADDR)) // addr 0-not txed 1-txed
     {
         return 0;
@@ -404,35 +431,47 @@ uint8_t i2c1_getAddress(uint8_t address)
     if (count == 1)
     {
         SLA_R = I2C1->DR;
+        // i2cState = 1;
     }
     count++;
     eusart_send(I2C1->DR);
-    i2cdummy = I2C1->SR1;
     i2cdummy = I2C1->SR2;
+    i2cdummy = I2C1->SR1;
     return I2C1->DR;
+ends:
+    return 0
 }
 uint8_t i2c1_send_address(uint8_t address)
 {
     i2c1_start();
-    i2cdummy = I2C1->SR2;
     i2cdummy = I2C1->SR1;
+    i2cdummy = I2C1->SR2;
     I2C1->DR = address;
-    _delay_ms(2000);
-    // eusart_send(0x01);
+    timer1_del(200);
+    // eusart_send((I2C1->CR1 & 0XFF00) >> 8);
+    // eusart_send((I2C1->CR1 & 0X00FF));
+    // eusart_send((I2C1->SR1 & 0XFF00) >> 8);
+    // eusart_send((I2C1->SR1 & 0X00FF));
+
+    // if ((I2C1->SR1 & I2C_SR1_BERR)) // 0-OK 1-MISS
+    // {
+    //     I2C1->SR1 &= ~I2C_SR1_BERR;
+    // }
+    if ((I2C1->SR1 & I2C_SR1_AF)) // 0-ACK 1-NACK
+    {
+        I2C1->SR1 &= ~I2C_SR1_AF;
+    }
     while ((I2C1->SR1 & I2C_SR1_ARLO)) // ABTR 0-nope 1-loss
         ;
-    // eusart_send(0x02);
-
-    if (!(I2C1->SR1 & I2C_SR1_ADDR)) // addr 0-not txed 1-txed
-    {
-        return 0;
-    }
+    while (!(I2C1->SR1 & I2C_SR1_ADDR)) // addr 0-not txed 1-txed
+        ;
 
     eusart_send(I2C1->DR);
     i2cdummy = I2C1->SR1;
     i2cdummy = I2C1->SR2;
     return I2C1->DR;
 }
+
 void i2c1_write(uint8_t data)
 {
     /*
@@ -466,6 +505,8 @@ uint8_t i2c1_read()
 {
     i2cdummy = I2C1->SR2;
     i2cdummy = I2C1->SR1;
+    // eusart_send((I2C1->SR1 & 0XFF00) >> 8);
+    // eusart_send((I2C1->SR1 & 0X00FF));
     while ((I2C1->SR1 & I2C_SR1_ARLO)) // ABTR 0-nope 1-loss
         ;
     while (!(I2C1->SR2 & I2C_SR2_BUSY)) // 0-free 1-busy
@@ -627,7 +668,7 @@ eusart_init(U19200);
     {
         i2c1_start();
         i2c1_getAddress(i);
-        _delay_ms(20);
+        timer1_del(20);
     }
     i2c1_send_address(SLA_W);
     or

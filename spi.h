@@ -4,6 +4,7 @@
 #include "rcc_conf.h"
 #include "eusart.h"
 #include "gpio.h"
+#include "tim1.h"
 //
 //  (SPI_CR1)
 #define BIDIMODE SPI_CR1_BIDIMODE // 0: 2-line uni-DIR 1: 1-line BIDIR
@@ -108,9 +109,9 @@ void latch() // PC13
         GPIOC->CRH = GPIO_CRH_MODE13_1; // 2MHZ P_P
     }
     GPIOC->ODR &= ~GPIO_ODR_ODR13;
-    _delay_ms(60000);
+   timer1_del(_100ms );
     GPIOC->ODR |= GPIO_ODR_ODR13;
-    _delay_ms(60000);
+   timer1_del(_100ms );
 }
 ////////////
 void spi01_setup()

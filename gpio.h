@@ -35,7 +35,7 @@ CRH   15  |14  |13  |12  |11  |10 |9  |8
 // BITS manipulations
 #define SET_REG_BIT(REG, BIT) SET_BIT(REG, BIT)
 #define READ_REG_BIT(REG, BIT) READ_BIT(REG, BIT)
-#define CLR_BIT(REG, BIT) CLEAR_BIT(REG, BIT)
+#define CLR_REG_BIT(REG, BIT) CLEAR_BIT(REG, BIT)
 
 // CALLBACK //
 typedef void (*callback1)(void);
@@ -51,7 +51,7 @@ void func_void_param(uint32_t val, callback2 cb)
 typedef void (*callback3)(uint32_t, uint32_t);
 void func_void_2param(uint32_t val0, uint32_t val1, callback3 cb)
 {
-    cb(val0,val1);
+    cb(val0, val1);
 }
 
 typedef uint32_t (*callback4)(void);
@@ -65,8 +65,9 @@ uint32_t func_return_param(uint32_t val, callback5 cb)
     return cb(val);
 }
 typedef uint32_t (*callback6)(uint32_t, uint32_t);
-uint32_t func_return_2param(uint32_t val0,uint32_t val1,callback6 cb)
+uint32_t func_return_2param(uint32_t val0, uint32_t val1, callback6 cb)
 {
-    return cb(val0,val1);
+    return cb(val0, val1);
 }
+
 #endif // __GPIO

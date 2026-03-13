@@ -49,7 +49,6 @@
 #define LSIRDYIE RCC_CIR_LSIRDYIE // 1-clrd
 // Clock Security System Interrupt flag
 #define CSSF RCC_CIR_CSSF // 1-clrd
-
 //
 // RCC_CR
 #define PLL_READY (1 << 25)
@@ -57,7 +56,6 @@
 #define CSS_ON (1 << 19) // 1: Clock detector ON if external 1-25 MHz oscillator is ready.
 #define HSERDY_FLAG (1 << 17)
 #define HSE_ON (1 << 16)
-
 //
 /*
 SYSCLK = 40 MHz
@@ -75,7 +73,6 @@ void clock_init_20mhz_apb(void)
         FLASH->ACR |= FLASH_ACR_PRFTBE;
         FLASH->ACR &= ~FLASH_ACR_LATENCY;
         FLASH->ACR |= FLASH_ACR_LATENCY_1; // 2 wait states
-
         /* 3. Set prescalers
            AHB  = SYSCLK /1
            APB1 = SYSCLK /2
@@ -84,10 +81,8 @@ void clock_init_20mhz_apb(void)
         RCC->CFGR &= ~(RCC_CFGR_HPRE |
                        RCC_CFGR_PPRE1 |
                        RCC_CFGR_PPRE2);
-
         RCC->CFGR |= RCC_CFGR_PPRE1_DIV2;
         RCC->CFGR |= RCC_CFGR_PPRE2_DIV2;
-
         /* 4. Configure PLL
            Source = HSE
            Multiplier = x5 → 8 MHz × 5 = 40 MHz
@@ -95,12 +90,10 @@ void clock_init_20mhz_apb(void)
         RCC->CFGR &= ~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLMULL);
         RCC->CFGR |= RCC_CFGR_PLLSRC;   // HSE as PLL source
         RCC->CFGR |= RCC_CFGR_PLLMULL5; // ×5
-
         /* 5. Enable PLL */
         RCC->CR |= RCC_CR_PLLON;
         while (!(RCC->CR & RCC_CR_PLLRDY))
                 ;
-
         /* 6. Select PLL as SYSCLK */
         RCC->CFGR &= ~RCC_CFGR_SW;
         RCC->CFGR |= RCC_CFGR_SW_PLL;
@@ -200,13 +193,12 @@ void rcc_init(void)
 void SysTick_Init(void)
 {
         SysTick->CTRL = 0;
-        SysTick->LOAD = 33- 1;
+        SysTick->LOAD = 7200 - 1;
         SysTick->VAL = 0;
         SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk;
 }
 void _delay_ms(uint32_t ms)
 {
-
         for (uint32_t i = 0; i < ms; i++)
         {
                 while ((SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk))

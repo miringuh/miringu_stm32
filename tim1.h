@@ -10,12 +10,11 @@
 // Center-aligned Mode Selection
 #define CMS(REG, VAL) WRITE_REG(REG, VAL) // 00
 // Direction
-// 1-downcnt 0-upcnt
-#define TIM_DIR TIM_CR1_DIR
+#define TIM_DIR TIM_CR1_DIR // 1-downcnt 0-upcnt
 // Counter stops counting 0-no stop  1-the next update event & CEN is hware sets to 0
 #define OPM TIM_CR1_OPM
 // This bit is set and cleared by software to select the UEV event sources.
-#define URS TIM_CR1_URS   // Only counter ovf/underflow generates an update interrupt
+#define URS TIM_CR1_URS   // Only counter ovf/undf generates an update interrupt
 #define UDIS TIM_CR1_UDIS // Update disable UEV events
 #define CEN TIM_CR1_CEN   // Counter enable
 //
@@ -48,28 +47,73 @@
 //
 // TIMx_ARR auto-reload register
 #define AUTO_RELOAD(REG, VAL) WRITE_REG(REG, VAL) // ARR[15:0]
-// 25HZ=8892 50HZ=4446 100HZ=2223
-/*
-((2385×100)÷50)÷4
-*/
-#define _204800HZ 0  // 3us
-#define _102400HZ 1  // 6us
-#define _51200HZ 2   // 11us
-#define _25600HZ 4   // 41us
-#define _12800HZ 9  // 82us
-#define _6400HZ 19   // 163us
-#define _3200HZ 37   // 325us
-#define _1600HZ 74   // 650us
-#define _800HZ 149   // 1.25ms
-#define _400HZ 298   // 2.5ms
-#define _200HZ 596   // 5ms
-#define _100HZ 1192  // 10ms
-#define _50HZ 2385   // 20ms
-#define _25HZ 4760   // 40ms
-#define _12HZ 9880   // 83ms
-#define _6HZ 19760   //
-#define _3HZ 39520   //
 //
+/*
+
+*/
+// #define _1638400MHZ _5MHZ / 327680 //
+// #define _819200HZ _5MHZ / 163840 //
+// #define _409600HZ _5MHZ /81920 //
+#define _204800HZ _5MHZ / 40960 // 5 us
+#define _102400HZ _5MHZ / 20480 // 8 us
+#define _51200HZ _5MHZ / 10240  // 19.5 us
+#define _25600HZ _5MHZ / 5120   // 39 us
+#define _12800HZ _5HZ / 2560    // 78.125 us
+#define _6400HZ _5HZ / 1280     // 156.25 us
+#define _3200HZ _5HZ / 640      // 312.5 us
+#define _1600HZ _5HZ / 320      // 625 us
+#define _800HZ _5HZ / 160       // 1.25 ms
+#define _600HZ _5HZ / 120       // 1.6 ms
+#define _400HZ _5HZ / 80        // 2.5 ms
+#define _200HZ _5HZ / 40        // 5 ms
+#define _160HZ _5HZ / 32        // 6.25 ms
+#define _155HZ _5HZ / 31        //
+#define _150HZ _5HZ / 30        // 6.66 ms
+#define _145HZ _5HZ / 29        //
+#define _140HZ _5HZ / 28        // 7.1
+#define _135HZ _5HZ / 27        //
+#define _130HZ _5HZ / 26        //7.7 ms
+#define _125HZ _5HZ / 25        //
+#define _120HZ _5HZ / 24        //8.3 ms
+#define _115HZ _5HZ / 23        //
+#define _110HZ _5HZ / 22        // 9.1 ms
+#define _105HZ _5HZ / 21        //
+#define _100HZ _5HZ / 20        // 10ms
+#define _95HZ _5HZ / 19         //
+#define _90HZ _5HZ / 18         // 11.1 ms
+#define _85HZ _5HZ / 17         //
+#define _80HZ _5HZ / 16         // 12.5 ms
+#define _75HZ _5HZ / 15         //
+#define _70HZ _5HZ / 14         // 14.28 ms
+#define _65HZ _5HZ / 13         //
+#define _60HZ _5HZ / 12         // 16.66 ms
+#define _55HZ _5HZ / 11         //
+#define _50HZ _5HZ / 10         // 20ms
+#define _45HZ _5HZ / 9          //
+#define _40HZ _5HZ / 8          // 25 ms
+#define _35HZ _5HZ / 7          //
+#define _30HZ _5HZ / 6          // 33.33 ms
+#define _25HZ _5HZ / 5          //
+#define _20HZ _5HZ / 4          // 50 ms
+#define _15HZ _5HZ / 3          //
+#define _10HZ _5HZ / 2          // 100ms
+#define _5HZ 59750              // 500ms
+// 1sec ==1000ms == 1,000,000 us
+//
+#define _5us _204800HZ
+#define _8us _102400HZ
+#define _20us _51200HZ
+#define _39us _25600HZ
+#define _78us _12800HZ
+#define _625us _1600HZ
+#define _1ms _800HZ
+#define _5ms _200HZ
+#define _10ms _100HZ
+#define _20ms _50HZ
+#define _50ms _20HZ
+#define _100ms _10HZ
+
+volatile uint32_t tim1_cnt = 0;
 void test_tim6();
 void TIM_IRQHandler(void)
 {
@@ -82,46 +126,38 @@ void TIM_IRQHandler(void)
 
 void timer1_init()
 {
-    RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+    RCC->APB2ENR |= RCC_APB2ENR_TIM1EN | RCC_APB2ENR_IOPCEN;
+    // PINC13 INIT
+    PIN_MODE(GPIOC->CRH, (P_P2MHZ) << 20);
+
     TIM1->CR1 &= ~(OPM | UDIS | TIM_DIR | TIM_CR1_CMS);
     TIM1->SR &= ~(TIM_SR_UIF);
     TIM1->CR1 = URS | ARPE;
     TIM1->CR2 &= ~(TIM_CR2_MMS | TIM_CR2_TI1S | TIM_CR2_CCDS);
     TIM1->DIER = UIE;
-    // TIM1->CR1 |= TIM_CR1_;
-    //
-    if (!(RCC->APB2ENR & RCC_APB2ENR_IOPCEN))
-    {
-        RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
-    }
-    if (!(GPIOC->CRH & GPIO_CRH_MODE13_Msk))
-    {
-        GPIOC->CRH = GPIO_CRH_MODE13_Msk; // 50MHZ P_P
-    }
-    //
-    // TIM1->CR1 |= TIM_CR1_ ;
     TIM1->CR1 |= CEN;
+    NVIC_SetPriority(TIM1_UP_IRQn, 2);
+    NVIC_EnableIRQ(TIM1_UP_IRQn);
 }
 void timer1(uint16_t cnt_val, uint16_t pres_val, uint16_t reload)
 {
     COUNTER(TIM1->CNT, cnt_val);
     TIM_PRESC(TIM1->PSC, pres_val);
     AUTO_RELOAD(TIM1->ARR, reload);
-    NVIC_SetPriority(TIM1_UP_IRQn, 2);
-    NVIC_EnableIRQ(TIM1_UP_IRQn);
     // while ((TIM1->SR & UIF_FLAG))
     // {
     // }
 }
-void tim_del(uint16_t cyc)
+
+void timer1_del(uint16_t cyc)
 {
     uint16_t cnt = cyc;
     while (cnt >= 1)
     {
-        timer1(0, 19, 0XFFFE);
+        timer1(0, 19, 0XFFFF);
         cnt--;
     }
-    test_tim6();
+    // test_tim6();
 }
 
 void test_tim6()

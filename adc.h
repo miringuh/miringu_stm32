@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "eusart.h"
+#include "tim1.h"
 //
 // (RCC_CFGR) ADPREPRESC
 #define ADPRE_PRESC2 RCC_CFGR_ADCPRE_DIV2
@@ -24,23 +25,20 @@
 produce a loss of synchronization. It is recommended to disable dual mode
 before any configuration change.
 */
-//      dual-modes  0110: Regular simultaneous mode only
+// dual-modes  0110: Regular simultaneous mode only
 #define DUALMOD(REG, VAL) WRITE_REG(REG, VAL) // xxx
-
 /*DISCNUM define the num of regular channels to be converted
  in discontinuous mode, after receiving an external trigger*/
 #define DISCNUM(REG, BIT) WRITE_REG(REG, BIT) // DISCNUM[2:0] 0...0x07
 #define DISCEN ADC_CR1_DISCEN                 // enable/disable Discontinuous mode
-
-#define SCAN_MODE ADC_CR1_SCAN // enable/disable Scan mode
-#define EOCIE ADC_CR1_EOCIE    // enable/disable the End of Conversion interrupt
+#define SCAN_MODE ADC_CR1_SCAN                // enable/disable Scan mode
+#define EOCIE ADC_CR1_EOCIE                   // enable/disable the End of Conversion interrupt
 //
 //         ADC->CR2
 // temp sensor vref channel Enable
 #define TEMP_SEN_VREF_EN ADC_CR2_TSVREFE
 /* start conversion and cleared by hardware as soon as conversion starts.
-if SWSTART is selected as trigger event by the EXTSEL[2:0] bits
-*/
+if SWSTART is selected as trigger event by the EXTSEL[2:0] bits*/
 #define SWSTART ADC_CR2_SWSTART
 // enable/disable the external trigger used to start conversion
 #define EXTTRIG ADC_CR2_EXTTRIG
@@ -95,59 +93,21 @@ if SWSTART is selected as trigger event by the EXTSEL[2:0] bits
 //
 uint32_t adcData;
 uint32_t adcDummy;
-void adc_test() // PC13
-{
-    if (!(RCC->APB2ENR & RCC_APB2ENR_IOPCEN))
-    {
-        RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
-    }
-    if (!(GPIOC->CRH & GPIO_CRH_MODE13_1))
-    {
-        GPIOC->CRH = GPIO_CRH_MODE13_1; // 2MHZ P_P
-    }
-    GPIOC->ODR ^= GPIO_ODR_ODR13;
-    _delay_ms(60000);
-}
-//
-void setADCpins() // FLOAT INPUTS
-{                 // PA0....PA7   PB0,PB1
-    RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
-    GPIOA->CRL = (GPIO_CRL_CNF0 | GPIO_CRL_CNF1 | GPIO_CRL_CNF2 | GPIO_CRL_CNF3 | GPIO_CRL_CNF4 | GPIO_CRL_CNF5 | GPIO_CRL_CNF6 | GPIO_CRL_CNF7);
-    RCC->CFGR &= ~RCC_CFGR_ADCPRE;
-    RCC->CFGR = RCC_CFGR_ADCPRE_DIV8;
-    GPIOB->CRL = (GPIO_CRL_CNF0 | GPIO_CRL_CNF1);
-}
-
-////////////////
-/// SINGLE /////
-void adc1_single_init()
-{
-    setADCpins();
-    ADC1->CR2 |= ADON; //
-    _delay_ms(20000);
-    // ADC1->CR2 |= ADC_CR2_RSTCAL;
-    ADC1->CR2 |= ADC_CR2_CAL;
-    while (!(ADC1->CR2 & ADC_CR2_CAL))
-        ;
-    ADC1->CR2 &= ~ALIGN; // 1-left 0-right
-    ADC1->CR2 &= ~CONT;
-
-    ADC1->SMPR2 |= ADC_SMPR2_SMP0_0 | ADC_SMPR2_SMP0_1 | ADC_SMPR2_SMP0_2; // 239.5 cyc
-    ADC1->SQR3 |= 0;                                                       // adc-pin 1
-    ADC1->SQR1 = 0;                                                        // adc-pin 1
-}
-uint16_t read_Single_Adc()
-{
-    ADC1->CR2 |= ADON;             // Start Conversion of regular' channels
-    while (!(ADC1->SR & EOC_FLAG)) // 1-conv stops
-        ;
-    // eusart_send((ADC1->DR & 0x0F00) >> 8);
-    eusart_send(ADC1->DR);
-    return ADC1->DR;
-}
-//
 volatile uint16_t adc_result;
 volatile uint8_t conversion_complete = 0;
+#define ADC_BUFFER_SIZE 64
+volatile uint16_t adc_buffer[ADC_BUFFER_SIZE];
+uint16_t adc_values[3];
+
+void ADC1_2_IRQHandler(void)
+{
+    if (ADC1->SR & ADC_SR_EOC)
+    {
+        adc_result = ADC1->DR;
+        conversion_complete = 1;
+    }
+    eusart_send(adc_result);
+}
 
 void ADC_Interrupt_Init(void)
 {
@@ -160,9 +120,11 @@ void ADC_Interrupt_Init(void)
     // ADC configuration
     RCC->CFGR &= ~RCC_CFGR_ADCPRE;
     RCC->CFGR |= RCC_CFGR_ADCPRE_DIV6;
+    // ADC1->CR2 |= ADC_CR2_CONT;
 
     ADC1->CR2 |= ADC_CR2_ADON;
-    _delay_ms(10000);
+    timer1_del(_50ms);
+    ADC1->CR2 &= ~(ADC_CR2_ALIGN);
 
     // Calibration
     ADC1->CR2 |= ADC_CR2_CAL;
@@ -181,24 +143,23 @@ void ADC_Interrupt_Init(void)
 
 void ADC_Start_Conversion(void)
 {
+    ADC1->CR2 |= ADC_CR2_ADON;
     conversion_complete = 0;
     ADC1->CR2 |= ADC_CR2_SWSTART;
 }
-
-void ADC1_2_IRQHandler(void)
+///
+// dma channel 1 == ADC1
+///
+void DMA1_Channel1_IRQHandler() // tx
 {
-    if (ADC1->SR & ADC_SR_EOC)
+    if ((DMA1->ISR & DMA_ISR_TCIF5))
     {
-        adc_result = ADC1->DR;
-        conversion_complete = 1;
+        DMA1->IFCR &= ~(DMA_IFCR_CTCIF1);
     }
-    eusart_send(adc_result);
+    // eusart_send((uint8_t)(adc_buffer&0XFF00) >> 8);
+    eusart_send(0X22);
+    
 }
-///
-///
-#define ADC_BUFFER_SIZE 100
-uint16_t adc_buffer[ADC_BUFFER_SIZE];
-
 void ADC_DMA_Init(void)
 {
     // Enable clocks
@@ -217,13 +178,14 @@ void ADC_DMA_Init(void)
     DMA1_Channel1->CMAR = (uint32_t)adc_buffer;
     DMA1_Channel1->CNDTR = ADC_BUFFER_SIZE;
     DMA1_Channel1->CCR = DMA_CCR_MINC | DMA_CCR_CIRC | DMA_CCR_PSIZE_0 | DMA_CCR_MSIZE_0;
+    DMA1_Channel1->CCR = DMA_CCR_TCIE;
 
     // ADC1 configuration
     ADC1->CR1 |= ADC_CR1_SCAN;
     ADC1->CR2 |= ADC_CR2_CONT | ADC_CR2_DMA;
     ADC1->CR2 |= ADC_CR2_ADON;
 
-    _delay_ms(10000);
+    timer1_del(_50ms);
 
     // Calibration
     ADC1->CR2 |= ADC_CR2_CAL;
@@ -241,7 +203,6 @@ void ADC_DMA_Init(void)
     ADC1->CR2 |= ADC_CR2_ADON;
     ADC1->CR2 |= ADC_CR2_SWSTART;
 }
-////
 ////
 void ADC_MultiChannel_Init(void)
 {
@@ -261,7 +222,7 @@ void ADC_MultiChannel_Init(void)
     ADC1->CR2 |= ADC_CR2_CONT; // Enable continuous conversion
     ADC1->CR2 |= ADC_CR2_ADON; // Enable ADC
 
-    _delay_ms(10000);
+    timer1_del(_50ms);
 
     // Calibration
     ADC1->CR2 |= ADC_CR2_CAL;
@@ -286,16 +247,5 @@ void ADC_MultiChannel_Init(void)
     ADC1->CR2 |= ADC_CR2_SWSTART;
 }
 
-uint16_t adc_values[3];
 
-// void ADC1_2_IRQHandler(void)
-// {
-//     if (ADC1->SR & ADC_SR_EOC)
-//     {
-//         static uint8_t channel = 0;
-//         adc_values[channel++] = ADC1->DR;
-//         if (channel >= 3)
-//             channel = 0;
-//     }
-// }
 #endif // __ADC

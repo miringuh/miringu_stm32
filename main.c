@@ -4,8 +4,8 @@
 #include "portRemaps.h"
 #include "tim1.h"
 // #include "advTm1.h"
-// #include "adc.h"
-// #include "eusart.h"
+//  #include "adc.h"
+#include "eusart.h"
 #include "gpio.h"
 #include "rcc_conf.h"
 // #include "lcdI2c.h"
@@ -20,25 +20,23 @@ int main()
 {
     RCC->APB1ENR = 0;
     RCC->APB2ENR = 0;
-
     clock_init_20mhz_apb();
-    // pllInit();
     SysTick_Init();
-    _delay_ms(10000);
+    timer1_init();
+    timer1_del(10000);
+
+    // pllInit();
     // eusart_init(U19200);
 
-    RCC->APB2ENR = RCC_APB2ENR_IOPCEN;
-    // GPIOC->CRH = GPIO_CRH_MODE13_1;
-    // GPIOC->CRH = (P_P10MHZ<<20);
-    PIN_MODE(GPIOC->CRH, (P_P10MHZ << 20));
-
-    // timer1_init();
+    // timer1_Init(0, 0xFFFF, 0XFFFE);
+    // eusartString("welcome");
     while (1)
     {
-        // GPIOC->ODR ^= GPIO_ODR_ODR13;
-        GPIOC->ODR ^= GPIO_ODR_ODR13;
-        _delay_ms(20000);
-        // tim_del(_12800HZ);
+        timer1_del(_50ms );
+        test_tim6();
+        // eusart_send(eusart_rd());
+        // ADC_Start_Conversion();
+        // _delay_ms(400000);
     }
     return 0;
 }
