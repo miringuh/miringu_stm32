@@ -315,6 +315,7 @@ void DMA1_Channel3_IRQHandler()
         DMA1->IFCR |= DMA_IFCR_CTCIF3;
     }
 }
+
 void spi1_dma_tx_init(uint32_t baud, const char *msg)//SPI1-TX
 {
     strcpy(spi_buff, msg);
@@ -345,7 +346,6 @@ void spi1_dma_tx_init(uint32_t baud, const char *msg)//SPI1-TX
     NVIC_EnableIRQ(DMA1_Channel2_IRQn);
     SPI1->CR1 |= SPE;
 }
-
 void spi1_dma_rx_init(uint32_t baud, const char *msg, uint16_t size) // SPI1-RX
 {
     strcpy(buff, msg);
