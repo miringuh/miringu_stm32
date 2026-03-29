@@ -97,7 +97,7 @@
 #define _20HZ _5HZ / 4          // 50 ms
 #define _15HZ _5HZ / 3          //
 #define _10HZ _5HZ / 2          // 100ms
-#define _5HZ 59750              // 500ms
+#define _5HZ 45200              // 500ms
 // 1sec ==1000ms == 1,000,000 us
 //
 #define _5us _204800HZ
@@ -123,32 +123,32 @@ void TIM_IRQHandler(void)
         TIM1->SR &= ~TIM_SR_UIF;
     }
 };
-
+//up-count
 void timer1_init()
 {
     RCC->APB2ENR |= RCC_APB2ENR_TIM1EN | RCC_APB2ENR_IOPCEN;
     // PINC13 INIT
     PIN_MODE(GPIOC->CRH, (P_P2MHZ) << 20);
+    TIM1->CR1 &= ~CEN;
 
-    TIM1->CR1 &= ~(OPM | UDIS | TIM_DIR | TIM_CR1_CMS);
-    TIM1->SR &= ~(TIM_SR_UIF);
-    TIM1->CR1 = URS | ARPE;
+    TIM1->CR1 &= ~( UDIS | TIM_DIR | TIM_CR1_CMS);
     TIM1->CR2 &= ~(TIM_CR2_MMS | TIM_CR2_TI1S | TIM_CR2_CCDS);
+    TIM1->SR &= ~(TIM_SR_UIF);
+    TIM1->CR1 = URS | ARPE|OPM;
     TIM1->DIER = UIE;
     TIM1->CR1 |= CEN;
-    NVIC_SetPriority(TIM1_UP_IRQn, 2);
-    NVIC_EnableIRQ(TIM1_UP_IRQn);
+    // NVIC_SetPriority(TIM1_UP_IRQn, 2);
+    // NVIC_EnableIRQ(TIM1_UP_IRQn);
 }
+
 void timer1(uint16_t cnt_val, uint16_t pres_val, uint16_t reload)
 {
     COUNTER(TIM1->CNT, cnt_val);
     TIM_PRESC(TIM1->PSC, pres_val);
-    AUTO_RELOAD(TIM1->ARR, reload);
-    // while ((TIM1->SR & UIF_FLAG))
-    // {
-    // }
+    AUTO_RELOAD(TIM1->ARR, reload);       
+    while ((TIM1->SR & UIF_FLAG))
+    ;
 }
-
 void timer1_del(uint16_t cyc)
 {
     uint16_t cnt = cyc;
@@ -159,7 +159,32 @@ void timer1_del(uint16_t cyc)
     }
     // test_tim6();
 }
+//
+//centre Aligned
+/*
+ cnt 0......>>ARR [OVF]......>CNT O[UDF]
+*/
+void timer1_centre_init()
+{
+    RCC->APB2ENR |= RCC_APB2ENR_TIM1EN | RCC_APB2ENR_IOPCEN;
+    // PINC13 INIT
+    PIN_MODE(GPIOC->CRH, (P_P2MHZ) << 20);
+    TIM1->CR1 &= ~CEN;
 
+    TIM1->CR1 &= ~ UDIS ;
+    TIM1->SR &= ~(TIM_SR_UIF);
+    TIM1->CR1 = URS | ARPE|OPM;
+    TIM1->CR1 |=TIM_CR1_CMS_0;//centre aligned
+
+    TIM1->CR2 &= ~(TIM_CR2_MMS | TIM_CR2_TI1S | TIM_CR2_CCDS);
+    TIM1->DIER = UIE;
+    TIM1->CR1 |= CEN;
+    NVIC_SetPriority(TIM1_UP_IRQn, 2);
+    NVIC_EnableIRQ(TIM1_UP_IRQn);
+}
+
+
+//////                              
 void test_tim6()
 {
     GPIOC->ODR ^= GPIO_ODR_ODR13;

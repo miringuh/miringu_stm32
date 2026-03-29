@@ -32,7 +32,7 @@ int main()
     // eusartString("welcome");
     while (1)
     {
-        timer1_del(_50ms );
+        timer1_del(_5HZ);
         test_tim6();
         // eusart_send(eusart_rd());
         // ADC_Start_Conversion();
