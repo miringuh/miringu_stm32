@@ -5,9 +5,11 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 #include <math.h>
 #include "gpio.h"
 #include "spi.h"
+
 #define HOME 0X02
 #define CLEAR_DISP 0X01
 #define LINE2 0XC0
@@ -52,6 +54,9 @@
 #define RS 0X01
 #define RW 0X02
 #define EN 0X04
+//
+#define PINC14(VAL) WRITE_REG(GPIOC->CRH, (VAL << 24))
+#define PINC13(VAL) WRITE_REG(GPIOC->CRH, (VAL << 20))
 //           RS  R/W
 // command   0   0
 // READ BUSY 0   1
@@ -59,13 +64,154 @@
 // DR-READ   1   1
 uint8_t vall;
 uint8_t valh;
-#define dely 2
+#define dely 20000
 
+typedef void (*lcdfunc)(uint8_t);
+void func_lcd(uint8_t val, lcdfunc cb)
+{
+    cb(val);
+}
+//////
+void spi_latch()
+{
+
+    GPIOC->ODR &= ~GPIO_ODR_ODR13;
+    _delay_ms(10000);
+    GPIOC->ODR |= GPIO_ODR_ODR13;
+    _delay_ms(10000);
+}
 void lcd4_init(uint8_t baud)
 {
-    RCC->APB1ENR = RCC ;
+    // RCC->APB2ENR |= RCC_APB2ENR_SPI1EN | RCC_APB2ENR_IOPCEN;
+    GPIOC->ODR &= ~(GPIO_ODR_ODR14 | GPIO_ODR_ODR13); // 0FF
+    _delay_ms(50000);
+    GPIOC->ODR |= GPIO_ODR_ODR14; // 0N
+    _delay_ms(50000);
     spi0_init(baud);
     spi0_send(0);
+    spi_latch();
+    _delay_ms(dely);
 }
+void lcd4_setup(uint8_t comm)
+{
+    valh = (comm & 0xF0);
+    vall = (comm << 4);
+}
+void toggle(uint8_t comm, uint8_t mode)
+{
+    lcd4_setup(comm);
 
+    spi0_send(valh);
+    spi_latch();
+    spi0_send(mode | valh);
+    spi_latch();
+    _delay_ms(dely);
+    //
+    spi0_send(vall);
+    spi_latch();
+    spi0_send(mode | vall);
+    spi_latch();
+    _delay_ms(dely);
+}
+//////// RAM ////
+void setCGram(uint8_t addr, uint8_t data)
+{
+    toggle((0x40 | addr), EN);
+    toggle(data, EN);
+}
+void setDDram(uint8_t addr, uint8_t data)
+{
+    toggle((0x80 | addr), EN);
+    toggle(data, EN);
+}
+void readram(uint8_t addr)
+{
+    toggle(addr, RS | RW | EN);
+}
+/////////
+void lcd_set(uint8_t comm)
+{
+    lcd4_setup(comm);
+    //
+    spi0_send(valh);
+    spi_latch();
+    spi0_send(EN | valh);
+    spi_latch();
+    _delay_ms(dely);
+    //
+    spi0_send(0);
+    spi_latch();
+    _delay_ms(dely);
+}
+void lcd_command(uint8_t comm)
+{
+    toggle(comm, EN);
+}
+void lcd_data(uint8_t comm)
+{
+    toggle(comm, EN | RS);
+}
+/////////
+void lcd_4_init()
+{
+    _delay_ms(500000);
+    lcd_set(0x30);
+    _delay_ms(500000);
+    lcd_set(0x30);
+    _delay_ms(20000);
+    lcd_set(0x30);
+    _delay_ms(40000);
+    lcd_set(0x20);
+
+    lcd_command(DISP_OFF);
+    lcd_command(CLEAR_DISP);
+    lcd_command(ENTRY_MODE_INC);
+    lcd_command(CURSOR_BLINK_ON);
+    lcd_command(FUNC_SET_5X8DOT_4BIT_2LINE);
+    lcd_command(HOME);
+    lcd_command(CLEAR_DISP);
+    lcd_command(DISP_ON);
+}
+void write4Char(char val) // char
+{
+    lcd_data(val);
+    lcd_command(DISP_ON);
+}
+void write4DataHigh(char *word)
+{
+    char buff[30];
+    memset(buff, 0, 30);
+    strcpy(buff, word);
+    lcd_command(CLEAR_DISP);
+    for (uint8_t i = 0; i < strlen(word); i++)
+    {
+        write4Char(buff[i]);
+    }
+}
+void write4DataLow(char *word)
+{
+    char buff[30];
+    memset(buff, 0, 30);
+    strcpy(buff, word);
+    for (uint8_t i = 0; i < strlen(word); i++)
+    {
+        write4Char(buff[i]);
+    }
+}
+void write4Data(char *wordh, char *wordl)
+{
+    write4DataHigh(wordh);
+    lcd_command(LINE2);
+    write4DataLow(wordl);
+}
+void lcd4_stop()
+{
+    spi0_send(0);
+    spi_latch();
+    _delay_ms(dely);
+    GPIOC->ODR &= ~GPIO_ODR_ODR13;
+    _delay_ms(10000);
+    spi0_stop();
+}
+//
 #endif // _SPI_LCD

@@ -100,18 +100,18 @@ volatile uint8_t sdata;
 
 void latch() // PC13
 {
-    if (!(RCC->APB2ENR & RCC_APB2ENR_IOPCEN))
-    {
-        RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
-    }
-    if (!(GPIOC->CRH & GPIO_CRH_MODE13_1))
-    {
-        GPIOC->CRH = GPIO_CRH_MODE13_1; // 2MHZ P_P
-    }
+    // if (!(RCC->APB2ENR & RCC_APB2ENR_IOPCEN))
+    // {
+    //     RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
+    // }
+    // if (!(GPIOC->CRH & GPIO_CRH_MODE13_1))
+    // {
+    //     GPIOC->CRH = GPIO_CRH_MODE13_1; // 2MHZ P_P
+    // }
     GPIOC->ODR &= ~GPIO_ODR_ODR13;
-   timer1_del(_100ms );
+   _delay_ms(10000);
     GPIOC->ODR |= GPIO_ODR_ODR13;
-   timer1_del(_100ms );
+   _delay_ms(10000);
 }
 ////////////
 void spi01_setup()
@@ -172,24 +172,25 @@ void SPI2_IRQHandler(void)
 ////// SPI0 /////
 void spi0_init(uint8_t baud)
 { // mosi-PA7  miso-PA6  sck-PA5 ss - PA4 50MHZ
-    spi01_setup();
-    GPIOA->CRL = (MOSI_0 | MISO_0 | SCKL_0 | SS_0);
     SPI1->CR1 = 0;
     SPI1->CR2 = 0;
-
+    
+    spi01_setup();
+    GPIOA->CRL = (MOSI_0 | MISO_0 | SCKL_0 | SS_0);
     SPI1->CR1 = baud;
-    SPI1->CR1 |= SSM | MSTR | SSI;
-    SPI1->CR1 |= SPI_CR1_LSBFIRST;
+    SPI1->CR1 |= SSM | MSTR | SSI ;
+    // SPI1->CR1 |= SPI_CR1_LSBFIRST;
+    SPI1->CR1 &= ~SPI_CR1_LSBFIRST;
 
-    SPI1->CR2 = RXNEIE | ERRIE | SSOE; // | TXEIE;
+    SPI1->CR2 = RXNEIE | ERRIE | SSOE;// | TXEIE;
     NVIC_SetPriority(SPI1_IRQn, 2);
     NVIC_EnableIRQ(SPI1_IRQn);
     SPI1->CR1 |= SPE;
 }
 uint8_t spi0_send(uint8_t val)
 {
-    while (!(SPI1->SR & SPI_SR_TXE)) // 0-Full 1-empty
-        ;
+    // while (!(SPI1->SR & SPI_SR_TXE)) // 0-Full 1-empty
+    //     ;
     SPI1->DR = val;
     while ((SPI1->SR & SPI_SR_BSY)) // 0-free 1-bsy
         ;
