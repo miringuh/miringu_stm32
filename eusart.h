@@ -93,7 +93,7 @@ void test_eusart()
         GPIOC->CRH = GPIO_CRH_MODE13_1; // 2MHZ P_P
     }
     GPIOC->ODR ^= GPIO_ODR_ODR13;
-    _delay_ms(600000);
+    // _delay_ms(600000);
 }
 void u_baud(uint32_t baud)
 {

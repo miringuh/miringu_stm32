@@ -109,12 +109,12 @@ void latch() // PC13
     //     GPIOC->CRH = GPIO_CRH_MODE13_1; // 2MHZ P_P
     // }
     GPIOC->ODR &= ~GPIO_ODR_ODR13;
-   _delay_ms(10000);
+    _delay_ms(10000);
     GPIOC->ODR |= GPIO_ODR_ODR13;
-   _delay_ms(10000);
+    _delay_ms(10000);
 }
 ////////////
-void spi01_setup()
+void spi0_setup()
 { // mosi - PA7 miso - PA6 sck - PA5 ss - PA4 50MHZ
     RCC->APB2ENR |= RCC_APB2ENR_AFIOEN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_IOPAEN;
     AFIO->MAPR |= (AFIO_MAPR_SWJ_CFG_JTAGDISABLE);
@@ -174,15 +174,15 @@ void spi0_init(uint8_t baud)
 { // mosi-PA7  miso-PA6  sck-PA5 ss - PA4 50MHZ
     SPI1->CR1 = 0;
     SPI1->CR2 = 0;
-    
-    spi01_setup();
+
+    spi0_setup();
     GPIOA->CRL = (MOSI_0 | MISO_0 | SCKL_0 | SS_0);
     SPI1->CR1 = baud;
-    SPI1->CR1 |= SSM | MSTR | SSI ;
+    SPI1->CR1 |= SSM | MSTR | SSI;
     // SPI1->CR1 |= SPI_CR1_LSBFIRST;
     SPI1->CR1 &= ~SPI_CR1_LSBFIRST;
+    SPI1->CR2 = RXNEIE | ERRIE | SSOE; // | TXEIE;
 
-    SPI1->CR2 = RXNEIE | ERRIE | SSOE;// | TXEIE;
     NVIC_SetPriority(SPI1_IRQn, 2);
     NVIC_EnableIRQ(SPI1_IRQn);
     SPI1->CR1 |= SPE;
@@ -213,24 +213,37 @@ void spi0_stop()
 ////// SPI1 /////
 void spi1_init(uint8_t baud)
 { // mosi pb5 miso pb4 sck-pb3 ss-pa15 50mhz
-    spi1_setup();
-    GPIOB->CRL = MOSI_1 | MISO_1 | SCK_1;
-    GPIOA->CRH = SS_1;
     SPI1->CR1 = 0;
     SPI1->CR2 = 0;
 
-    SPI1->CR1 = baud;
-    SPI1->CR1 |= SPI_CR1_LSBFIRST;
-    SPI1->CR1 |= SSM | MSTR | SSI;
+    spi1_setup();
+    // GPIOB->CRL |= MOSI_1 | MISO_1 | SCK_1;
+    // GPIOA->CRH |= SS_1;
+    setPinB(AF_P_P50MHZ, 5);
+    setPinB(FLOAT_INP, 4);
+    setPinB(AF_P_P50MHZ, 3);
+    setPinA(AF_P_P50MHZ, 15);
 
+    SPI1->CR1 = baud;
+    SPI1->CR1 |= SSM | MSTR | SSI;
+    // SPI1->CR1 |= SPI_CR1_LSBFIRST;
+    SPI1->CR1 &= ~SPI_CR1_LSBFIRST;
     SPI1->CR2 = RXNEIE | ERRIE | SSOE; // | TXEIE;
+
     NVIC_SetPriority(SPI1_IRQn, 2);
     NVIC_EnableIRQ(SPI1_IRQn);
     SPI1->CR1 |= SPE;
 }
 uint8_t spi1_send(uint8_t val)
 {
-    return spi0_send(val);
+    // while (!(SPI1->SR & SPI_SR_TXE)) // 0-Full 1-empty
+    //     ;
+    SPI1->DR = val;
+    while ((SPI1->SR & SPI_SR_BSY)) // 0-free 1-bsy
+        ;
+    spi_rd = SPI1->DR;
+
+    return (uint8_t)(spi_rd);
 }
 void spi1_buffer(char buff[], uint16_t size)
 {
@@ -317,11 +330,11 @@ void DMA1_Channel3_IRQHandler()
     }
 }
 
-void spi1_dma_tx_init(uint32_t baud, const char *msg)//SPI1-TX
+void spi1_dma_tx_init(uint32_t baud, const char *msg) // SPI1-TX
 {
     strcpy(spi_buff, msg);
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-    spi01_setup();
+    spi0_setup();
 
     GPIOA->CRL = (MOSI_0 | MISO_0 | SCKL_0 | SS_0);
     SPI1->CR1 = 0;
@@ -351,7 +364,7 @@ void spi1_dma_rx_init(uint32_t baud, const char *msg, uint16_t size) // SPI1-RX
 {
     strcpy(buff, msg);
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-    spi01_setup();
+    spi0_setup();
 
     GPIOA->CRL = (MOSI_0 | MISO_0 | SCKL_0 | SS_0);
     SPI1->CR1 = 0;
@@ -367,7 +380,7 @@ void spi1_dma_rx_init(uint32_t baud, const char *msg, uint16_t size) // SPI1-RX
     DMA1_Channel3->CCR |= CIRC;                                     // 1-circ
     DMA1_Channel3->CCR |= MINC;                                     // mem incr
     DMA1_Channel3->CCR &= ~PINC;                                    // periph no incr
-    DMA1_Channel3->CCR &= ~DIR;                                      // 0=peri READ 1=mem READ
+    DMA1_Channel3->CCR &= ~DIR;                                     // 0=peri READ 1=mem READ
     DMA1_Channel3->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem size
     DMA1_Channel3->CCR |= DMA_CCR_PL_0;                             // high prioty
     SPI1->CR2 |= SPI_CR2_RXDMAEN;                                   // spi1 Tx channel=2

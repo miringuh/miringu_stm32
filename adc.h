@@ -6,6 +6,9 @@
 #include <stdint.h>
 #include "eusart.h"
 #include "tim1.h"
+#include "gpio.h"
+#include "spi_Lcd.h"
+
 //
 // (RCC_CFGR) ADPREPRESC
 #define ADPRE_PRESC2 RCC_CFGR_ADCPRE_DIV2
@@ -98,7 +101,182 @@ volatile uint8_t conversion_complete = 0;
 #define ADC_BUFFER_SIZE 64
 volatile uint16_t adc_buffer[ADC_BUFFER_SIZE];
 uint16_t adc_values[3];
-
+//
+void lcd_char2hex(uint16_t val)
+{
+    if (val > 0x00 && val <= 0x09) // 0--9
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char(0x30 + val);
+    }
+    if (val >= 10 && val <= 19) // 10--19
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('1');
+        write4Char(0x30 + (val - 10));
+    }
+    if (val >= 20 && val <= 29)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('2');
+        write4Char(0x30 + (val - 20));
+    }
+    if (val >= 30 && val <= 39)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('3');
+        write4Char(0x30 + (val - 30));
+    }
+    if (val >= 40 && val <= 49)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('4');
+        write4Char(0x30 + (val - 40));
+    }
+    if (val >= 50 && val <= 59)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('5');
+        write4Char(0x30 + (val - 50));
+    }
+    if (val >= 60 && val <= 69)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('6');
+        write4Char(0x30 + (val - 60));
+    }
+    if (val >= 70 && val <= 79)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('7');
+        write4Char(0x30 + (val - 70));
+    }
+    if (val >= 80 && val <= 89)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('8');
+        write4Char(0x30 + (val - 80));
+    }
+    if (val >= 90 && val <= 99)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('9');
+        write4Char(0x30 + (val - 90));
+    }
+    if (val >= 100 && val <= 109)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('1');
+        write4Char('0');
+        write4Char(0x30 + (val - 100));
+    }
+    if (val >= 110 && val <= 119)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('1');
+        write4Char('1');
+        write4Char(0x30 + (val - 110));
+    }
+    if (val >= 120 && val <= 129)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('1');
+        write4Char('2');
+        write4Char(0x30 + (val - 120));
+    }
+    if (val >= 130 && val <= 139)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('1');
+        write4Char('3');
+        write4Char(0x30 + (val - 130));
+    }
+    if (val >= 140 && val <= 149)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('1');
+        write4Char('4');
+        write4Char(0x30 + (val - 140));
+    }
+    if (val >= 150 && val <= 159)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('1');
+        write4Char('5');
+        write4Char(0x30 + (val - 150));
+    }
+    if (val >= 160 && val <= 169)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('1');
+        write4Char('6');
+        write4Char(0x30 + (val - 160));
+    }
+    if (val >= 170 && val <= 179)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('1');
+        write4Char('7');
+        write4Char(0x30 + (val - 170));
+    }
+    if (val >= 180 && val <= 189)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('1');
+        write4Char('8');
+        write4Char(0x30 + (val - 180));
+    }
+    if (val >= 190 && val <= 199)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('1');
+        write4Char('9');
+        write4Char(0x30 + (val - 190));
+    }
+    if (val >= 200 && val <= 209)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('2');
+        write4Char('0');
+        write4Char(0x30 + (val - 200));
+    }
+    if (val >= 210 && val <= 219)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('2');
+        write4Char('1');
+        write4Char(0x30 + (val - 210));
+    }
+    if (val >= 220 && val <= 229)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('2');
+        write4Char('2');
+        write4Char(0x30 + (val - 220));
+    }
+    if (val >= 230 && val <= 239)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('2');
+        write4Char('3');
+        write4Char(0x30 + (val - 230));
+    }
+    if (val >= 240 && val <= 249)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('2');
+        write4Char('4');
+        write4Char(0x30 + (val - 240));
+    }
+    if (val >= 250 && val <= 255)
+    {
+        lcd_command(CLEAR_DISP);
+        write4Char('2');
+        write4Char('5');
+        write4Char(0x30 + (val - 250));
+    }
+}
+//
 void ADC1_2_IRQHandler(void)
 {
     if (ADC1->SR & ADC_SR_EOC)
@@ -106,16 +284,18 @@ void ADC1_2_IRQHandler(void)
         adc_result = ADC1->DR;
         conversion_complete = 1;
     }
-    eusart_send(adc_result);
+    // lcd_command(CLEAR_DISP);
+    // write4Char((char) adc_result);
 }
 
-void ADC_Interrupt_Init(void)
+void ADC_Init(uint32_t regv, uint32_t conf_mode)
 {
     // Enable clocks
     RCC->APB2ENR |= RCC_APB2ENR_ADC1EN | RCC_APB2ENR_IOPAEN;
 
     // Configure PA0 analog
-    GPIOA->CRL &= ~(GPIO_CRL_MODE0 | GPIO_CRL_CNF0);
+    // GPIOA->CRL &= ~(GPIO_CRL_MODE0 | GPIO_CRL_CNF0);
+    regv |= conf_mode;
 
     // ADC configuration
     RCC->CFGR &= ~RCC_CFGR_ADCPRE;
@@ -141,11 +321,12 @@ void ADC_Interrupt_Init(void)
     NVIC_SetPriority(ADC1_2_IRQn, 1);
 }
 
-void ADC_Start_Conversion(void)
+uint16_t get_ADC(void)
 {
     ADC1->CR2 |= ADC_CR2_ADON;
     conversion_complete = 0;
     ADC1->CR2 |= ADC_CR2_SWSTART;
+    return adc_result;
 }
 ///
 // dma channel 1 == ADC1
@@ -157,8 +338,7 @@ void DMA1_Channel1_IRQHandler() // tx
         DMA1->IFCR &= ~(DMA_IFCR_CTCIF1);
     }
     // eusart_send((uint8_t)(adc_buffer&0XFF00) >> 8);
-    eusart_send(0X22);
-    
+    // eusart_send(0X22);
 }
 void ADC_DMA_Init(void)
 {
@@ -246,6 +426,19 @@ void ADC_MultiChannel_Init(void)
     // Start conversion
     ADC1->CR2 |= ADC_CR2_SWSTART;
 }
-
+//
+//////// ADC/LCD ///////////
+//
+void adc_lcd_init(uint32_t reg, uint32_t conf_mode, uint8_t baud)
+{
+    ADC_Init(reg, conf_mode);
+    lcd4_init(baud);
+    lcd_4_init();
+}
+void get_adc_lcd()
+{
+    get_ADC();
+    _delay_ms(50000);
+}
 
 #endif // __ADC

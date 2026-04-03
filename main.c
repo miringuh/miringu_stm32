@@ -4,7 +4,7 @@
 #include "portRemaps.h"
 // #include "tim1.h"
 // #include "advTm1.h"
-//  #include "adc.h"
+#include "adc.h"
 #include "eusart.h"
 #include "gpio.h"
 #include "rcc_conf.h"
@@ -23,32 +23,19 @@ int main()
     RCC->APB2ENR = 0;
     clock_init_20mhz_apb();
     SysTick_Init();
-    RCC->APB2ENR |= RCC_APB2ENR_IOPCEN | RCC_APB2ENR_SPI1EN;
+    RCC->APB2ENR |= RCC_APB2ENR_IOPCEN | RCC_APB2ENR_IOPBEN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_SPI1EN;
     _delay_ms(900000);
 
-    setPinC(P_P50MHZ,13);
-    setPinC(P_P50MHZ,14);
-    // spi0_init(BAUD_FCLK_64);
-    lcd4_init(BAUD_FCLK_256);
+    // ADC_Init(GPIOA->CRL, 0x0000);
+    // setPinC(P_P50MHZ, 13);
+    // setPinC(P_P50MHZ, 14);
 
+    lcd4_init(BAUD_FCLK_64);
     lcd_4_init();
-
-    write4Data("Welcome ","welcome and beer");
-
+    write4Data("Welcome", "WELCOMEs");
     lcd4_stop();
     while (1)
     {
-      
-        
-        // for (uint8_t i= 0; i < 255; i++)
-        // {
-        //     lcd_command(CLEAR_DISP);
-        //     write4Char(i);
-        //     spi_latch();
-        //     _delay_ms(50000);
-            
-        // }
-        
     }
     return 0;
 }

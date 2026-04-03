@@ -64,7 +64,7 @@
 // DR-READ   1   1
 uint8_t vall;
 uint8_t valh;
-#define dely 20000
+#define dely 20
 
 typedef void (*lcdfunc)(uint8_t);
 void func_lcd(uint8_t val, lcdfunc cb)
@@ -76,17 +76,13 @@ void spi_latch()
 {
 
     GPIOC->ODR &= ~GPIO_ODR_ODR13;
-    _delay_ms(10000);
+    _delay_ms(1000);
     GPIOC->ODR |= GPIO_ODR_ODR13;
-    _delay_ms(10000);
+    _delay_ms(1000);
 }
 void lcd4_init(uint8_t baud)
 {
     // RCC->APB2ENR |= RCC_APB2ENR_SPI1EN | RCC_APB2ENR_IOPCEN;
-    GPIOC->ODR &= ~(GPIO_ODR_ODR14 | GPIO_ODR_ODR13); // 0FF
-    _delay_ms(50000);
-    GPIOC->ODR |= GPIO_ODR_ODR14; // 0N
-    _delay_ms(50000);
     spi0_init(baud);
     spi0_send(0);
     spi_latch();
@@ -113,22 +109,23 @@ void toggle(uint8_t comm, uint8_t mode)
     spi_latch();
     _delay_ms(dely);
 }
-//////// RAM ////
+//
 void setCGram(uint8_t addr, uint8_t data)
 {
-    toggle((0x40 | addr), EN);
+    toggle(addr, EN);
     toggle(data, EN);
 }
 void setDDram(uint8_t addr, uint8_t data)
 {
-    toggle((0x80 | addr), EN);
+    toggle(0x80 | addr, EN);
     toggle(data, EN);
 }
 void readram(uint8_t addr)
 {
     toggle(addr, RS | RW | EN);
 }
-/////////
+//
+
 void lcd_set(uint8_t comm)
 {
     lcd4_setup(comm);
@@ -213,5 +210,6 @@ void lcd4_stop()
     _delay_ms(10000);
     spi0_stop();
 }
+
 //
 #endif // _SPI_LCD

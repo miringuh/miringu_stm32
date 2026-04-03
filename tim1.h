@@ -2,6 +2,7 @@
 #define __TIMER
 #include "/usr/lib/stm32/stm32F1xx_headers/stm32f1xx.h"
 #include "eusart.h"
+#include "gpio.h"
 //
 //     TIMx->CR1  control register 1
 #define CLK_DIV(REG, VAL) WRITE_REG(REG, VAL) // 00 Clock Division.
@@ -51,70 +52,80 @@
 /*
 
 */
-// #define _1638400MHZ _5MHZ / 327680 //
-// #define _819200HZ _5MHZ / 163840 //
-// #define _409600HZ _5MHZ /81920 //
-#define _204800HZ _5MHZ / 40960 // 5 us
-#define _102400HZ _5MHZ / 20480 // 8 us
-#define _51200HZ _5MHZ / 10240  // 19.5 us
-#define _25600HZ _5MHZ / 5120   // 39 us
-#define _12800HZ _5HZ / 2560    // 78.125 us
-#define _6400HZ _5HZ / 1280     // 156.25 us
-#define _3200HZ _5HZ / 640      // 312.5 us
-#define _1600HZ _5HZ / 320      // 625 us
-#define _800HZ _5HZ / 160       // 1.25 ms
-#define _600HZ _5HZ / 120       // 1.6 ms
-#define _400HZ _5HZ / 80        // 2.5 ms
-#define _200HZ _5HZ / 40        // 5 ms
-#define _160HZ _5HZ / 32        // 6.25 ms
-#define _155HZ _5HZ / 31        //
-#define _150HZ _5HZ / 30        // 6.66 ms
-#define _145HZ _5HZ / 29        //
-#define _140HZ _5HZ / 28        // 7.1
-#define _135HZ _5HZ / 27        //
-#define _130HZ _5HZ / 26        //7.7 ms
-#define _125HZ _5HZ / 25        //
-#define _120HZ _5HZ / 24        //8.3 ms
-#define _115HZ _5HZ / 23        //
-#define _110HZ _5HZ / 22        // 9.1 ms
-#define _105HZ _5HZ / 21        //
-#define _100HZ _5HZ / 20        // 10ms
-#define _95HZ _5HZ / 19         //
-#define _90HZ _5HZ / 18         // 11.1 ms
-#define _85HZ _5HZ / 17         //
-#define _80HZ _5HZ / 16         // 12.5 ms
-#define _75HZ _5HZ / 15         //
-#define _70HZ _5HZ / 14         // 14.28 ms
-#define _65HZ _5HZ / 13         //
-#define _60HZ _5HZ / 12         // 16.66 ms
-#define _55HZ _5HZ / 11         //
-#define _50HZ _5HZ / 10         // 20ms
-#define _45HZ _5HZ / 9          //
-#define _40HZ _5HZ / 8          // 25 ms
-#define _35HZ _5HZ / 7          //
-#define _30HZ _5HZ / 6          // 33.33 ms
-#define _25HZ _5HZ / 5          //
-#define _20HZ _5HZ / 4          // 50 ms
-#define _15HZ _5HZ / 3          //
-#define _10HZ _5HZ / 2          // 100ms
-#define _5HZ 45200              // 500ms
-// 1sec ==1000ms == 1,000,000 us
+#define _1638400MHZ _5MHZ / 327680 // 0.6 us /600ns
+#define _819200HZ _5MHZ / 163840   // 1.2 us
+#define _409600HZ _5MHZ / 81920    // 2.4 us
+#define _204800HZ _5MHZ / 40960    // 4.9 us
+#define _102400HZ _5MHZ / 20480    // 9.7 us
+#define _51200HZ _5MHZ / 10240     // 19.5 us
+#define _25600HZ _5MHZ / 5120      // 39 us
+#define _12800HZ _5HZ / 2560       // 78.12 us
+#define _6400HZ _5HZ / 1280        // 156.25 us
+#define _3200HZ _5HZ / 640         // 312.5 us
+#define _1600HZ _5HZ / 320         // 625 us
+#define _800HZ _5HZ / 160          // 1.25 ms
+#define _600HZ _5HZ / 120          // 1.7 ms
+#define _400HZ _5HZ / 80           // 2.5 ms
+#define _200HZ _5HZ / 40           // 5 ms
 //
+#define _160HZ _5HZ / 32           // 6.25 ms
+#define _155HZ _5HZ / 31           // 6.5 ms
+#define _150HZ _5HZ / 30           // 6.7 ms
+#define _145HZ _5HZ / 29           //
+#define _140HZ _5HZ / 28           // 7 ms
+#define _135HZ _5HZ / 27           //
+#define _130HZ _5HZ / 26           //
+#define _125HZ _5HZ / 25           //
+#define _120HZ _5HZ / 24           // 8.3 ms
+#define _115HZ _5HZ / 23           //
+#define _110HZ _5HZ / 22           // 9.1 ms
+#define _105HZ _5HZ / 21           //
+#define _100HZ _5HZ / 20           // 10ms
+#define _95HZ _5HZ / 19            //
+#define _90HZ _5HZ / 18            //
+#define _85HZ _5HZ / 17            //
+#define _80HZ _5HZ / 16            // 12.5 ms
+#define _75HZ _5HZ / 15            //
+#define _70HZ _5HZ / 14            // 14.1 ms
+#define _65HZ _5HZ / 13            //
+#define _60HZ _5HZ / 12            // 16.7 ms
+#define _55HZ _5HZ / 11            //
+#define _50HZ _5HZ / 10            // 20 ms
+#define _45HZ _5HZ / 9             //
+#define _40HZ _5HZ / 8             // 25 ms
+#define _35HZ _5HZ / 7             //
+#define _30HZ _5HZ / 6             // 33.3 ms
+#define _25HZ _5HZ / 5             //
+#define _20HZ _5HZ / 4             // 50 ms
+#define _15HZ _5HZ / 3             //
+#define _10HZ _5HZ / 2             // 100 ms
+#define _5HZ 26900                 // 200 ms
+#define _2HZ 65500                 // 500 ms
+// 1sec ==1000ms == 1,000,000 us
+// (1/freq HZ)*1000==ms
+//
+// #define clk_ms(REG, (1 / FREQ) * 1000) WRITE_REG(REG, FREQ)
+#define _1us _819200HZ
+#define _2us _409600HZ
 #define _5us _204800HZ
-#define _8us _102400HZ
 #define _20us _51200HZ
 #define _39us _25600HZ
 #define _78us _12800HZ
 #define _625us _1600HZ
 #define _1ms _800HZ
+#define _2ms _400HZ
 #define _5ms _200HZ
 #define _10ms _100HZ
 #define _20ms _50HZ
 #define _50ms _20HZ
 #define _100ms _10HZ
+#define _200ms _5HZ
+#define _500ms _2HZ
+
+// #define PINC13(VAL) WRITE_REG(GPIOC->CRH, (VAL << 20))
 
 volatile uint32_t tim1_cnt = 0;
-void test_tim6();
+
 void TIM_IRQHandler(void)
 {
     // TIMx_SR (UIF flag)
@@ -123,72 +134,68 @@ void TIM_IRQHandler(void)
         TIM1->SR &= ~TIM_SR_UIF;
     }
 };
-//up-count
+// up-count
 void timer1_init()
 {
     RCC->APB2ENR |= RCC_APB2ENR_TIM1EN | RCC_APB2ENR_IOPCEN;
-    // PINC13 INIT
-    PIN_MODE(GPIOC->CRH, (P_P2MHZ) << 20);
-    TIM1->CR1 &= ~CEN;
+    // PINC13(P_P2MHZ);
 
-    TIM1->CR1 &= ~( UDIS | TIM_DIR | TIM_CR1_CMS);
-    TIM1->CR2 &= ~(TIM_CR2_MMS | TIM_CR2_TI1S | TIM_CR2_CCDS);
+    TIM1->CR1 &= ~CEN;
+    TIM1->CR1 = 0;
+    TIM1->CR2 = 0;
+
+    TIM1->CR1 &= ~(TIM_DIR | TIM_CR1_CMS_0 | TIM_CR1_CMS_1 | ARPE | UDIS);
     TIM1->SR &= ~(TIM_SR_UIF);
-    TIM1->CR1 = URS | ARPE|OPM;
-    TIM1->DIER = UIE;
-    TIM1->CR1 |= CEN;
-    // NVIC_SetPriority(TIM1_UP_IRQn, 2);
+
+    TIM1->CR1 |= URS | OPM;
+    TIM1->CR2 |= (UIE);
+    // NVIC_SetPriority(TIM1_UP_IRQn, 3);
     // NVIC_EnableIRQ(TIM1_UP_IRQn);
+    TIM1->CR1 |= CEN;
 }
 
 void timer1(uint16_t cnt_val, uint16_t pres_val, uint16_t reload)
 {
     COUNTER(TIM1->CNT, cnt_val);
     TIM_PRESC(TIM1->PSC, pres_val);
-    AUTO_RELOAD(TIM1->ARR, reload);       
-    while ((TIM1->SR & UIF_FLAG))
-    ;
+    AUTO_RELOAD(TIM1->ARR, reload);
+    while ((TIM1->SR & UIF_FLAG)) // 0=NULL  1-intrr
+        ;
+    TIM1->SR &= ~TIM_SR_UIF;
+    TIM1->CR1 |= TIM_CR1_URS;
+    TIM1->CR1 |= CEN;
 }
 void timer1_del(uint16_t cyc)
 {
     uint16_t cnt = cyc;
     while (cnt >= 1)
     {
-        timer1(0, 19, 0XFFFF);
+        timer1(0XFF, 0XFFFF, 0XFFFF);
         cnt--;
     }
-    // test_tim6();
+    // GPIOC->ODR ^= GPIO_ODR_ODR13;
 }
 //
-//centre Aligned
+// centre Aligned
 /*
  cnt 0......>>ARR [OVF]......>CNT O[UDF]
 */
 void timer1_centre_init()
 {
     RCC->APB2ENR |= RCC_APB2ENR_TIM1EN | RCC_APB2ENR_IOPCEN;
-    // PINC13 INIT
-    PIN_MODE(GPIOC->CRH, (P_P2MHZ) << 20);
+
     TIM1->CR1 &= ~CEN;
 
-    TIM1->CR1 &= ~ UDIS ;
+    TIM1->CR1 &= ~UDIS;
     TIM1->SR &= ~(TIM_SR_UIF);
-    TIM1->CR1 = URS | ARPE|OPM;
-    TIM1->CR1 |=TIM_CR1_CMS_0;//centre aligned
+    TIM1->CR1 = URS | ARPE | OPM;
+    TIM1->CR1 |= TIM_CR1_CMS_0; // centre aligned
 
     TIM1->CR2 &= ~(TIM_CR2_MMS | TIM_CR2_TI1S | TIM_CR2_CCDS);
     TIM1->DIER = UIE;
     TIM1->CR1 |= CEN;
     NVIC_SetPriority(TIM1_UP_IRQn, 2);
     NVIC_EnableIRQ(TIM1_UP_IRQn);
-}
-
-
-//////                              
-void test_tim6()
-{
-    GPIOC->ODR ^= GPIO_ODR_ODR13;
-    // tim_del(del);
 }
 
 #endif // __TIMER
