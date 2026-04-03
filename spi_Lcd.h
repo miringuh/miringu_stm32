@@ -9,6 +9,7 @@
 #include <math.h>
 #include "gpio.h"
 #include "spi.h"
+#include "tim1.h"
 
 #define HOME 0X02
 #define CLEAR_DISP 0X01
@@ -64,7 +65,7 @@
 // DR-READ   1   1
 uint8_t vall;
 uint8_t valh;
-#define dely 20
+#define dely _1ms
 
 typedef void (*lcdfunc)(uint8_t);
 void func_lcd(uint8_t val, lcdfunc cb)
@@ -76,9 +77,9 @@ void spi_latch()
 {
 
     GPIOC->ODR &= ~GPIO_ODR_ODR13;
-    _delay_ms(1000);
+    timer1_del(1000);
     GPIOC->ODR |= GPIO_ODR_ODR13;
-    _delay_ms(1000);
+    timer1_del(1000);
 }
 void lcd4_init(uint8_t baud)
 {
@@ -86,7 +87,7 @@ void lcd4_init(uint8_t baud)
     spi0_init(baud);
     spi0_send(0);
     spi_latch();
-    _delay_ms(dely);
+    timer1_del(_50ms);
 }
 void lcd4_setup(uint8_t comm)
 {
@@ -101,13 +102,13 @@ void toggle(uint8_t comm, uint8_t mode)
     spi_latch();
     spi0_send(mode | valh);
     spi_latch();
-    _delay_ms(dely);
+    timer1_del(dely);
     //
     spi0_send(vall);
     spi_latch();
     spi0_send(mode | vall);
     spi_latch();
-    _delay_ms(dely);
+    timer1_del(dely);
 }
 //
 void setCGram(uint8_t addr, uint8_t data)
@@ -134,11 +135,11 @@ void lcd_set(uint8_t comm)
     spi_latch();
     spi0_send(EN | valh);
     spi_latch();
-    _delay_ms(dely);
+    timer1_del(dely);
     //
     spi0_send(0);
     spi_latch();
-    _delay_ms(dely);
+    timer1_del(dely);
 }
 void lcd_command(uint8_t comm)
 {
@@ -151,13 +152,13 @@ void lcd_data(uint8_t comm)
 /////////
 void lcd_4_init()
 {
-    _delay_ms(500000);
+    timer1_del(_5ms);
     lcd_set(0x30);
-    _delay_ms(500000);
+    timer1_del(_5ms);
     lcd_set(0x30);
-    _delay_ms(20000);
+    timer1_del(_39us);
     lcd_set(0x30);
-    _delay_ms(40000);
+    timer1_del(_39us);
     lcd_set(0x20);
 
     lcd_command(DISP_OFF);
@@ -169,7 +170,7 @@ void lcd_4_init()
     lcd_command(CLEAR_DISP);
     lcd_command(DISP_ON);
 }
-void write4Char(char val) // char
+void write4Char(uint16_t val) // char
 {
     lcd_data(val);
     lcd_command(DISP_ON);
@@ -205,9 +206,11 @@ void lcd4_stop()
 {
     spi0_send(0);
     spi_latch();
-    _delay_ms(dely);
+    timer1_del(dely);
     GPIOC->ODR &= ~GPIO_ODR_ODR13;
-    _delay_ms(10000);
+    timer1_del(dely);
+    GPIOC->ODR |= GPIO_ODR_ODR13;
+    timer1_del(dely);
     spi0_stop();
 }
 

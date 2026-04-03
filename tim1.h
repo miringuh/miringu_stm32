@@ -52,55 +52,55 @@
 /*
 
 */
-#define _1638400MHZ _5MHZ / 327680 // 0.6 us /600ns
-#define _819200HZ _5MHZ / 163840   // 1.2 us
-#define _409600HZ _5MHZ / 81920    // 2.4 us
-#define _204800HZ _5MHZ / 40960    // 4.9 us
-#define _102400HZ _5MHZ / 20480    // 9.7 us
-#define _51200HZ _5MHZ / 10240     // 19.5 us
-#define _25600HZ _5MHZ / 5120      // 39 us
-#define _12800HZ _5HZ / 2560       // 78.12 us
-#define _6400HZ _5HZ / 1280        // 156.25 us
-#define _3200HZ _5HZ / 640         // 312.5 us
-#define _1600HZ _5HZ / 320         // 625 us
-#define _800HZ _5HZ / 160          // 1.25 ms
-#define _600HZ _5HZ / 120          // 1.7 ms
-#define _400HZ _5HZ / 80           // 2.5 ms
-#define _200HZ _5HZ / 40           // 5 ms
+#define _1638400MHZ _5HZ / 327680 // 0.6 us /600ns
+#define _819200HZ _5HZ / 163840   // 1.2 us
+#define _409600HZ _5HZ / 81920    // 2.4 us
+#define _204800HZ _5HZ / 40960    // 4.9 us
+#define _102400HZ _5HZ / 20480    // 9.7 us
+#define _51200HZ _5HZ / 10240     // 19.5 us
+#define _25600HZ _5HZ / 5120      // 39 us
+#define _12800HZ _5HZ / 2560      // 78.12 us
+#define _6400HZ _5HZ / 1280       // 156.25 us
+#define _3200HZ _5HZ / 640        // 312.5 us
+#define _1600HZ _5HZ / 320        // 625 us
+#define _800HZ _5HZ / 160         // 1.25 ms
+#define _600HZ _5HZ / 120         // 1.7 ms
+#define _400HZ _5HZ / 80          // 2.5 ms
+#define _200HZ _5HZ / 40          // 5 ms
 //
-#define _160HZ _5HZ / 32           // 6.25 ms
-#define _155HZ _5HZ / 31           // 6.5 ms
-#define _150HZ _5HZ / 30           // 6.7 ms
-#define _145HZ _5HZ / 29           //
-#define _140HZ _5HZ / 28           // 7 ms
-#define _135HZ _5HZ / 27           //
-#define _130HZ _5HZ / 26           //
-#define _125HZ _5HZ / 25           //
-#define _120HZ _5HZ / 24           // 8.3 ms
-#define _115HZ _5HZ / 23           //
-#define _110HZ _5HZ / 22           // 9.1 ms
-#define _105HZ _5HZ / 21           //
-#define _100HZ _5HZ / 20           // 10ms
-#define _95HZ _5HZ / 19            //
-#define _90HZ _5HZ / 18            //
-#define _85HZ _5HZ / 17            //
-#define _80HZ _5HZ / 16            // 12.5 ms
-#define _75HZ _5HZ / 15            //
-#define _70HZ _5HZ / 14            // 14.1 ms
-#define _65HZ _5HZ / 13            //
-#define _60HZ _5HZ / 12            // 16.7 ms
-#define _55HZ _5HZ / 11            //
-#define _50HZ _5HZ / 10            // 20 ms
-#define _45HZ _5HZ / 9             //
-#define _40HZ _5HZ / 8             // 25 ms
-#define _35HZ _5HZ / 7             //
-#define _30HZ _5HZ / 6             // 33.3 ms
-#define _25HZ _5HZ / 5             //
-#define _20HZ _5HZ / 4             // 50 ms
-#define _15HZ _5HZ / 3             //
-#define _10HZ _5HZ / 2             // 100 ms
-#define _5HZ 26900                 // 200 ms
-#define _2HZ 65500                 // 500 ms
+#define _160HZ _5HZ / 32 // 6.25 ms
+#define _155HZ _5HZ / 31 // 6.5 ms
+#define _150HZ _5HZ / 30 // 6.7 ms
+#define _145HZ _5HZ / 29 //
+#define _140HZ _5HZ / 28 // 7 ms
+#define _135HZ _5HZ / 27 //
+#define _130HZ _5HZ / 26 //
+#define _125HZ _5HZ / 25 //
+#define _120HZ _5HZ / 24 // 8.3 ms
+#define _115HZ _5HZ / 23 //
+#define _110HZ _5HZ / 22 // 9.1 ms
+#define _105HZ _5HZ / 21 //
+#define _100HZ _5HZ / 20 // 10ms
+#define _95HZ _5HZ / 19  //
+#define _90HZ _5HZ / 18  //
+#define _85HZ _5HZ / 17  //
+#define _80HZ _5HZ / 16  // 12.5 ms
+#define _75HZ _5HZ / 15  //
+#define _70HZ _5HZ / 14  // 14.1 ms
+#define _65HZ _5HZ / 13  //
+#define _60HZ _5HZ / 12  // 16.7 ms
+#define _55HZ _5HZ / 11  //
+#define _50HZ _5HZ / 10  // 20 ms
+#define _45HZ _5HZ / 9   //
+#define _40HZ _5HZ / 8   // 25 ms
+#define _35HZ _5HZ / 7   //
+#define _30HZ _5HZ / 6   // 33.3 ms
+#define _25HZ _5HZ / 5   //
+#define _20HZ _5HZ / 4   // 50 ms
+#define _15HZ _5HZ / 3   //
+#define _10HZ _5HZ / 2   // 100 ms
+#define _5HZ 26900       // 200 ms
+#define _2HZ 65500       // 500 ms
 // 1sec ==1000ms == 1,000,000 us
 // (1/freq HZ)*1000==ms
 //

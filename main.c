@@ -12,6 +12,7 @@
 #include "spi_Lcd.h"
 // #include "i2c.h"
 // #include "dma.h"
+#include "adc.h"
 
 #define txBuffSize 12
 char eusart_buff[txBuffSize];
@@ -24,18 +25,27 @@ int main()
     clock_init_20mhz_apb();
     SysTick_Init();
     RCC->APB2ENR |= RCC_APB2ENR_IOPCEN | RCC_APB2ENR_IOPBEN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_SPI1EN;
-    _delay_ms(900000);
+    timer1_init();
+    timer1_del(_200ms);
 
-    // ADC_Init(GPIOA->CRL, 0x0000);
-    // setPinC(P_P50MHZ, 13);
-    // setPinC(P_P50MHZ, 14);
+    setPinC(P_P50MHZ, 13);
 
-    lcd4_init(BAUD_FCLK_64);
-    lcd_4_init();
-    write4Data("Welcome", "WELCOMEs");
-    lcd4_stop();
+    adc_lcd_init(GPIOA->CRL, 0x0000, BAUD_FCLK_64);
+
+    // lcd4_init(BAUD_FCLK_64);
+    // lcd_4_init();
+    write4Data("Welcome", "welcome home");
+    // lcd4_stop();
+    
+
     while (1)
     {
+        // lcd_command(CLEAR_DISP);
+        // write4Char(get_ADC());
+        get_ADC();
+        timer1_del(_500ms);
+        timer1_del(_500ms);
+        timer1_del(_500ms);
     }
     return 0;
 }
