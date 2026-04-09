@@ -5,6 +5,7 @@
 #include "eusart.h"
 #include "gpio.h"
 #include "tim1.h"
+#include "portRemaps.h"
 //
 //  (SPI_CR1)
 #define BIDIMODE SPI_CR1_BIDIMODE // 0: 2-line uni-DIR 1: 1-line BIDIR
@@ -84,7 +85,7 @@ and the I/O value of the NSS pin is ignored.
 // mosi pb5 miso pb4 sck-pb3 ss-pa15 50mhz
 #define MOSI_1 (GPIO_CRL_CNF5_1 | GPIO_CRL_MODE5_Msk) // AF PB5
 #define MISO_1 (GPIO_CRL_CNF4_1)                      // PB4 or INPUT P-P
-#define SCK_1 (GPIO_CRL_CNF3_1 | GPIO_CRL_MODE3_Msk)  // AF PB3
+#define SCKL_1 (GPIO_CRL_CNF3_1 | GPIO_CRL_MODE3_Msk) // AF PB3
 #define SS_1 (GPIO_CRH_CNF15_1 | GPIO_CRH_MODE15_Msk) // AF PA15
 //
 // mosi pb15 miso pb14 sck-pb13 ss-pb12 50mhz
@@ -119,12 +120,11 @@ void spi0_setup()
     RCC->APB2ENR |= RCC_APB2ENR_AFIOEN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_IOPAEN;
     AFIO->MAPR |= (AFIO_MAPR_SWJ_CFG_JTAGDISABLE);
     AFIO->MAPR &= ~(AFIO_MAPR_SPI1_REMAP);
-    //
 }
 void spi1_setup()
 { // mosi pb5 miso pb4 sck-pb3 ss-pa15 50mhz
     RCC->APB2ENR |= RCC_APB2ENR_AFIOEN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_IOPBEN;
-    AFIO->MAPR |= (AFIO_MAPR_SWJ_CFG_JTAGDISABLE | AFIO_MAPR_SPI1_REMAP);
+    AFIO->MAPR |= AFIO_MAPR_SWJ_CFG_JTAGDISABLE | AFIO_MAPR_SPI1_REMAP;
 }
 void spi2_setup()
 { // mosi pb15 miso pb14 sck-pb13 ss-pb12 50mhz
@@ -133,6 +133,7 @@ void spi2_setup()
     AFIO->MAPR |= (AFIO_MAPR_SWJ_CFG_JTAGDISABLE);
     AFIO->MAPR &= ~(AFIO_MAPR_SPI1_REMAP);
 }
+/////////
 /////////
 void SPI1_IRQHandler(void)
 {
@@ -177,6 +178,7 @@ void spi0_init(uint8_t baud)
 
     spi0_setup();
     GPIOA->CRL = (MOSI_0 | MISO_0 | SCKL_0 | SS_0);
+
     SPI1->CR1 = baud;
     SPI1->CR1 |= SSM | MSTR | SSI;
     // SPI1->CR1 |= SPI_CR1_LSBFIRST;
@@ -215,20 +217,18 @@ void spi1_init(uint8_t baud)
 { // mosi pb5 miso pb4 sck-pb3 ss-pa15 50mhz
     SPI1->CR1 = 0;
     SPI1->CR2 = 0;
+    GPIOB->CRL = 0;
+    GPIOA->CRH = 0;
 
     spi1_setup();
-    // GPIOB->CRL |= MOSI_1 | MISO_1 | SCK_1;
-    // GPIOA->CRH |= SS_1;
-    setPinB(AF_P_P50MHZ, 5);
-    setPinB(FLOAT_INP, 4);
-    setPinB(AF_P_P50MHZ, 3);
-    setPinA(AF_P_P50MHZ, 15);
+    GPIOB->CRL |= MOSI_1 | MISO_1 | SCKL_1;
+    GPIOA->CRH |= SS_1;
 
-    SPI1->CR1 = baud;
+    SPI1->CR1 |= baud;
     SPI1->CR1 |= SSM | MSTR | SSI;
     // SPI1->CR1 |= SPI_CR1_LSBFIRST;
     SPI1->CR1 &= ~SPI_CR1_LSBFIRST;
-    SPI1->CR2 = RXNEIE | ERRIE | SSOE; // | TXEIE;
+    SPI1->CR2 = RXNEIE | ERRIE | SSOE; //| TXEIE;
 
     NVIC_SetPriority(SPI1_IRQn, 2);
     NVIC_EnableIRQ(SPI1_IRQn);
@@ -236,13 +236,12 @@ void spi1_init(uint8_t baud)
 }
 uint8_t spi1_send(uint8_t val)
 {
-    // while (!(SPI1->SR & SPI_SR_TXE)) // 0-Full 1-empty
-    //     ;
+    while (!(SPI1->SR & SPI_SR_TXE)) // 0-Full 1-empty
+        ;
     SPI1->DR = val;
     while ((SPI1->SR & SPI_SR_BSY)) // 0-free 1-bsy
         ;
     spi_rd = SPI1->DR;
-
     return (uint8_t)(spi_rd);
 }
 void spi1_buffer(char buff[], uint16_t size)

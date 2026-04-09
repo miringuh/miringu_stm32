@@ -37,7 +37,10 @@ CRH   15  |14  |13  |12  |11  |10 |9  |8
 #define READ_REG_BIT(REG, BIT) READ_BIT(REG, BIT)
 #define CLR_REG_BIT(REG, BIT) CLEAR_BIT(REG, BIT)
 //
-// SET PIN CONFS
+////////// SET PIN CONFS
+#define REG_A 1
+#define REG_B 2
+#define REG_C 3
 void setPinC(uint8_t conf_val, uint8_t pin)
 {
     RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
@@ -171,7 +174,22 @@ void setPinA(uint8_t conf_val, uint8_t pin)
         break;
     }
 }
-//
+void gpioConfig(uint32_t regv, uint8_t conf_mode, uint8_t pos)
+{
+    if (regv == REG_A)
+    {
+        setPinA(conf_mode, pos);
+    }
+    if (regv == REG_B)
+    {
+        setPinB(conf_mode, pos);
+    }
+    if (regv == REG_C)
+    {
+        setPinC(conf_mode, pos);
+    }
+}
+//////////
 // CALLBACK //
 typedef void (*callback1)(void);
 void func_void(callback1 cb)

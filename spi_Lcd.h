@@ -65,7 +65,7 @@
 // DR-READ   1   1
 uint8_t vall;
 uint8_t valh;
-#define dely _1ms
+#define dely _2ms
 
 typedef void (*lcdfunc)(uint8_t);
 void func_lcd(uint8_t val, lcdfunc cb)
@@ -75,17 +75,17 @@ void func_lcd(uint8_t val, lcdfunc cb)
 //////
 void spi_latch()
 {
-
     GPIOC->ODR &= ~GPIO_ODR_ODR13;
-    timer1_del(1000);
+    timer1_del(_10ms);
     GPIOC->ODR |= GPIO_ODR_ODR13;
-    timer1_del(1000);
+    timer1_del(_10ms);
 }
-void lcd4_init(uint8_t baud)
+void lcd4_init(uint8_t baud)//SPI2
 {
     // RCC->APB2ENR |= RCC_APB2ENR_SPI1EN | RCC_APB2ENR_IOPCEN;
-    spi0_init(baud);
-    spi0_send(0);
+    setPinC(P_P50MHZ, 13);
+    spi2_init(baud);
+    spi2_send(0);
     spi_latch();
     timer1_del(_50ms);
 }
@@ -98,15 +98,15 @@ void toggle(uint8_t comm, uint8_t mode)
 {
     lcd4_setup(comm);
 
-    spi0_send(valh);
+    spi2_send(valh);
     spi_latch();
-    spi0_send(mode | valh);
+    spi2_send(mode | valh);
     spi_latch();
     timer1_del(dely);
     //
-    spi0_send(vall);
+    spi2_send(vall);
     spi_latch();
-    spi0_send(mode | vall);
+    spi2_send(mode | vall);
     spi_latch();
     timer1_del(dely);
 }
@@ -131,13 +131,13 @@ void lcd_set(uint8_t comm)
 {
     lcd4_setup(comm);
     //
-    spi0_send(valh);
+    spi2_send(valh);
     spi_latch();
-    spi0_send(EN | valh);
+    spi2_send(EN | valh);
     spi_latch();
     timer1_del(dely);
     //
-    spi0_send(0);
+    spi2_send(0);
     spi_latch();
     timer1_del(dely);
 }
@@ -204,14 +204,14 @@ void write4Data(char *wordh, char *wordl)
 }
 void lcd4_stop()
 {
-    spi0_send(0);
+    spi2_send(0);
     spi_latch();
     timer1_del(dely);
     GPIOC->ODR &= ~GPIO_ODR_ODR13;
     timer1_del(dely);
     GPIOC->ODR |= GPIO_ODR_ODR13;
     timer1_del(dely);
-    spi0_stop();
+    spi1_stop();
 }
 
 //

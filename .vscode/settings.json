@@ -6,5 +6,6 @@
     "rcc_conf.h": "c",
     "eusart.h": "c"
   },
-  "workbench.tree.indent": 4
+  "workbench.tree.indent": 4,
+  "idf.currentSetup": "/home/jeff/espressif/v6.0/esp-idf"
 }
