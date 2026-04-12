@@ -67,29 +67,67 @@ if SWSTART is selected as trigger event by the EXTSEL[2:0] bits*/
 // Channel x Sample time selection
 #define SMP2(REG, BIT, CHANNEL) (SET_BIT(REG, BIT) << CHANNEL)
 //
-//      ADC_SQR1  regular sequence register 1
-#define SEQ_LEN(REG, VAL) WRITE_REG(REG, VAL) // 0000 define the total num of conv.
-#define SQ16(REG, VAL) WRITE_REG(REG, VAL)    // 16th conv. in reg. seq.
-#define SQ15(REG, VAL) WRITE_REG(REG, VAL)    // 15th conv. in reg. seq.
-#define SQ14(REG, VAL) WRITE_REG(REG, VAL)    // 14th conv. in reg. seq.
-#define SQ13(REG, VAL) WRITE_REG(REG, VAL)    // 13th conv. in reg. seq.
+// SQRx [4:0] Channel/channels selects 0....17
+#define ADCPA0 0
+#define ADCPA1 1
+#define ADCPA2 2
+#define ADCPA3 3
+#define ADCPA4 4
+#define ADCPA5 5
+#define ADCPA6 6
+#define ADCPA7 7
 //
-//      ADC_SQR2  regular sequence register 2
-#define SQ12(REG, VAL) WRITE_REG(REG, VAL) // 12th conv. in reg. seq.
-#define SQ11(REG, VAL) WRITE_REG(REG, VAL) // 11th conv. in reg. seq.
-#define SQ10(REG, VAL) WRITE_REG(REG, VAL) // 10th conv. in reg. seq.
-#define SQ9(REG, VAL) WRITE_REG(REG, VAL)  // 9th conv. in reg. seq.
-#define SQ8(REG, VAL) WRITE_REG(REG, VAL)  // 8th conv. in reg. seq.
-#define SQ7(REG, VAL) WRITE_REG(REG, VAL)  // 7th conv. in reg. seq.
+#define ADCPB0 8
+#define ADCPB1 9
 //
-//      ADC_SQR3  regular sequence register 3
-#define SQ6(REG, VAL) WRITE_REG(REG, VAL) // 6th conv. in reg. seq.
-#define SQ5(REG, VAL) WRITE_REG(REG, VAL) // 5th conv. in reg. seq.
-#define SQ4(REG, VAL) WRITE_REG(REG, VAL) // 4th conv. in reg. seq.
-#define SQ3(REG, VAL) WRITE_REG(REG, VAL) // 3th conv. in reg. seq.
-#define SQ2(REG, VAL) WRITE_REG(REG, VAL) // 2th conv. in reg. seq.
-#define SQ1(REG, VAL) WRITE_REG(REG, VAL) // 1th conv. in reg. seq.
+#define ADCPC0 10
+#define ADCPC1 11
+#define ADCPC2 12
+#define ADCPC3 13
+#define ADCPC4 14
+#define ADCPC5 15
 //
+#define ADCTEMP 16
+//
+#define SEQ_LEN(REG, VAL) WRITE_REG(REG, VAL) // ADC_SQR1_Lxx
+//
+//// SMPx 1.5 cyc [2:0]
+#define SMPR(REG, VAL) WRITE_REG(REG, VAL) // ADC_SMPRx_SMPx
+
+//
+#define CYC1_5 0
+#define CYC7_5 1
+#define CYC13_5 2
+#define CYC28_5 3
+#define CYC41_5 4
+#define CYC55_5 5
+#define CYC71_5 6
+#define CYC239_5 7
+/*
+SQRn GPIO MAPING
+
+SQR3[4:0] ch0....ch5
+SQR2[4:0] ch6....ch11
+SQR1[4:0] ch12....ch15
+sequence length SQR1[23:20]
+
+PINA analog pin (PA0......PA10) CH0.......CH7
+PINA 0.........PINA 7
+SMPR2[2:0].....SMPR2[23:21]
+//
+PINB analog pin (PB0 & PB1) [CH8 & CH9]
+PINB0 & PINB1
+SMPR2[26:24] & SMPR2[29:27]
+
+TEMP SENSOR
+SQR1 ch16
+
+VREF Internal
+SQR1 ch17
+
+
+
+*/
 //      ADC_DR  ADC regular data register
 #define DUAL_DR(REG) READ_REG(REG)
 #define DATA_DR(REG) READ_REG(REG)
@@ -302,61 +340,120 @@ void lcd_char2hex(uint16_t val) // 12bit
 //
 void ADC1_2_IRQHandler(void)
 {
-    if (ADC1->SR & ADC_SR_EOC)
+
+    if (ADC1->SR & ADC_SR_EOC) // It is cleared by software or by reading the ADC_DR.
     {
-        adc_result = ADC1->DR;
         conversion_complete = 1;
+        adc_result = ADC1->DR;
+        ADC1->SR &= ~ADC_SR_EOC;
+        eusart_send((uint8_t)(ADC1->SR & 0X0FF));
     }
+}
+void adc_pin_config()
+{
+    gpioConfig(REG_B, ANALOG, 0);
+}
+void adcInit()
+{
+    RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
+    ADC1->CR1 = 0;
+    ADC1->CR2 = 0;
+    ADC1->SQR1 = 0;
+    ADC1->SQR2 = 0;
+    ADC1->SQR3 = 0;
+    ADC1->SMPR1 = 0;
+    ADC1->SMPR2 = 0;
+
+    adc_pin_config(); // REG B0
+
+    RCC->CFGR |= RCC_CFGR_ADCPRE_DIV8;
+    ADC1->CR2 |= ADC_CR2_CONT;
+    ADC1->CR2 &= ~ADC_CR2_ALIGN;
+
+    ADC1->SQR3 |= ADCPB0; // channel selec
+    SMPR(ADC1->SMPR2, (CYC239_5 << 24));
+    SEQ_LEN(ADC1->SQR1, ADC_SQR1_L_0);
+
+    ADC1->CR2 |= ADC_CR2_ADON;
+    ADC1->CR2 |= ADC_CR2_RSTCAL;
+    while (ADC1->CR2 & ADC_CR2_RSTCAL)
+        ;
+
+    ADC1->CR2 |= ADC_CR2_CAL;
+    while ((ADC1->CR2 & ADC_CR2_CAL))
+        ;
+    // ADC1->CR1 |= ADC_CR1_EOCIE;
+    //  NVIC_EnableIRQ(ADC1_2_IRQn);
+    //  NVIC_SetPriority(ADC1_2_IRQn, 2);
+    //  ADC1->CR2 |= ADC_CR2_ADON;
+}
+uint16_t getAdc()
+{
+    ADC1->CR2 |= ADC_CR2_ADON;
+    while (!(ADC1->SR & ADC_SR_EOC))
+    {
+    }
+    uint16_t val = (ADC1->DR);
+    // eusart_send((uint8_t)(val & 0XF00) >> 8);
+    eusart_send((uint8_t)(val & 0X0FF));
+
+    return val;
 }
 
 void ADC_Init(uint32_t regv, uint32_t conf_mode, uint8_t pos)
 {
     // Enable clocks
     RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
-
     // Configure PA0 analog
-    // GPIOA->CRL &= ~(GPIO_CRL_MODE0 | GPIO_CRL_CNF0);
+    // GPIOB->CRL &= ~(GPIO_CRL_MODE0 | GPIO_CRL_CNF0);
     gpioConfig(regv, conf_mode, pos);
-
     // ADC configuration
-    RCC->CFGR &= ~RCC_CFGR_ADCPRE;
-    RCC->CFGR |= RCC_CFGR_ADCPRE_DIV6;
-    ADC1->CR2 |= ADC_CR2_CONT;
-
+    RCC->CFGR |= RCC_CFGR_ADCPRE_DIV8;
+    ADC1->CR2 &= ~ADC_CR2_CONT;
     ADC1->CR2 |= ADC_CR2_ADON;
     timer1_del(_50ms);
     ADC1->CR2 &= ~(ADC_CR2_ALIGN);
-
+    // ADC1->CR2 |= (ADC_CR2_ALIGN);
     // Calibration
+    ADC1->CR2 &= ~ADC_CR2_EXTSEL_Msk;
     ADC1->CR2 |= ADC_CR2_CAL;
+    // ADC1->CR1 |= ADC_CR1_SCAN;
     while (ADC1->CR2 & ADC_CR2_CAL)
         ;
-
     // Configure
-    ADC1->SMPR2 |= ADC_SMPR2_SMP0; // 239.5 cycles
-    ADC1->SQR3 = 0;                // Channel 0
-
+    ADC1->SQR3 |= ADCPB0; // channel sel
+    // ADC1->SMPR2 |=(7 << (3 * 8)); // cyc
+    SMPR(ADC1->SMPR2, (CYC239_5 << 24)); //
     // Enable interrupt
     ADC1->CR1 |= ADC_CR1_EOCIE;
-    NVIC_EnableIRQ(ADC1_2_IRQn);
-    NVIC_SetPriority(ADC1_2_IRQn, 2);
+    // NVIC_EnableIRQ(ADC1_2_IRQn);
+    // NVIC_SetPriority(ADC1_2_IRQn, 2);
     ADC1->CR2 |= ADC_CR2_ADON;
 }
-
 uint16_t get_ADC(void) // 12 bit
 {
+    // ADC1->CR2 |= ADC_CR2_CAL;
     ADC1->CR2 |= ADC_CR2_ADON;
     conversion_complete = 0;
     ADC1->CR2 |= ADC_CR2_SWSTART;
+    while (!(ADC1->SR & ADC_SR_STRT))
+    {
+    }
+    while (!(ADC1->SR & ADC_SR_EOC))
+    {
+    }
     uint16_t val = (ADC1->DR);
     lcd_command(CLEAR_DISP);
+    // write4Char((uint8_t)((val & 0xF000) >> 12) | 0x30);
     write4Char((uint8_t)((val & 0xF00) >> 8) | 0x30);
     write4Char((uint8_t)((val & 0x0F0) >> 4) | 0x30);
     write4Char((uint8_t)(val & 0x00F) | 0x30);
     write4Char(' ');
     timer1_del(_500ms);
+    ADC1->CR2 &= ~ADC_CR2_CAL;
     return ADC1->DR;
 }
+
 ///
 // dma channel 1 == ADC1
 ///
@@ -460,13 +557,13 @@ void ADC_MultiChannel_Init(void)
 //
 void adc_lcd_init(uint32_t reg, uint32_t conf_mode, uint8_t pos)
 {
-    ADC_Init(reg, conf_mode, pos);
-    lcd4_init(BAUD_FCLK_64);
-    lcd_4_init();
+    adcInit(reg, conf_mode, pos);
+    // lcd4_init(BAUD_FCLK_64);
+    // lcd_4_init();
 }
-void get_adc_lcd()
-{
-    get_ADC();
-}
+// void get_adc_lcd()
+// {
+//     getAdc();
+// }
 
 #endif // __ADC

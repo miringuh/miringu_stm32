@@ -133,14 +133,14 @@ void usart1_pins_remap0() // tx-PA9 rx-PA10
 {
     RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_AFIOEN;
     AFIO->MAPR &= ~(AFIO_MAPR_USART1_REMAP);
-    GPIOA->CRH = (GPIO_CRH_CNF9_1 | GPIO_CRH_MODE9_0); // tx 10mhz AF_P_P
-    GPIOA->CRH |= (GPIO_CRH_CNF10_0);                  // rx input float
+    GPIOA->CRH |= (GPIO_CRH_CNF9_1 | GPIO_CRH_MODE9_0); // tx 10mhz AF_P_P
+    GPIOA->CRH |= (GPIO_CRH_CNF10_0);                   // rx input float
 }
 void usart1_pins_remap1() // tx-PB6  rx-PB7
 {
     RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPBEN | RCC_APB2ENR_AFIOEN;
     AFIO->MAPR |= AFIO_MAPR_USART1_REMAP;
-    GPIOB->CRL = (GPIO_CRL_CNF6_1 | GPIO_CRL_MODE6_1); // tx 10mhz AF_P_P
+    GPIOB->CRL |= (GPIO_CRL_CNF6_1 | GPIO_CRL_MODE6_1); // tx 10mhz AF_P_P
     GPIOB->CRL |= (GPIO_CRL_CNF7_0);                   // rx input FLOAT
 }
 /*
@@ -156,7 +156,7 @@ void usart2_pins_remap2() // tx-PA2  rx-PA3 cts-PA0 rts-PA1
     RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
     AFIO->MAPR &= ~AFIO_MAPR_USART2_REMAP;
 
-    GPIOA->CRL = (GPIO_CRL_CNF2_1 | GPIO_CRL_MODE2_Msk); // tx 50mhz AF_P_P
+    GPIOA->CRL |= (GPIO_CRL_CNF2_1 | GPIO_CRL_MODE2_Msk); // tx 50mhz AF_P_P
     GPIOA->CRL |= (GPIO_CRL_MODE1_Msk);                  // rts 50mhz P_P
     GPIOA->CRL |= (GPIO_CRL_CNF3_0);                     // rx input FLOAT
     GPIOA->CRL |= (GPIO_CRL_CNF0_0);                     // cts input FLOAT
@@ -228,7 +228,7 @@ void eusartString(char *mesg)
 uint8_t eusart_rd()
 {
     while (!(USART1->SR & RXNE_FLAG)) // 0=not recvd
-    ;
+        ;
     rdVal = USART1->DR;
     while ((USART1->SR & FE_FLAG)) // 1=error
         ;
@@ -549,7 +549,7 @@ void eusart_dma_tx_init(uint32_t baud, const char *msg)
     USART1->CR2 = STOP_1;
     DMA1_Channel4->CPAR = (uint32_t)&USART1->DR;
     DMA1_Channel4->CMAR = (uint32_t)&buff;
-    DMA1_Channel4->CNDTR = (strlen(msg)*2);
+    DMA1_Channel4->CNDTR = (strlen(msg) * 2);
     DMA1_Channel4->CCR |= CIRC;                                     // 1-circ
     DMA1_Channel4->CCR |= MINC;                                     // mem incr
     DMA1_Channel4->CCR &= ~PINC;                                    // periph no incr

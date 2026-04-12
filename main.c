@@ -35,26 +35,36 @@ int main()
 
     timer1_init();
     timer1_del(_500ms);
-    // ats_init();
+    timer1_del(_500ms);
 
-    adc_lcd_init(GPIOB->CRL, 0x0000, 0);
+    eusart_init(U19200);
+    // ats_init();
+    adcInit();
     // lcd4_init(BAUD_FCLK_64);
     // lcd_4_init();
-    write4Data("Welcome home", "welcome home");
+    // write4Data("Welcome home", "welcome home");
     // lcd4_stop();
     // setPinC(P_P2MHZ, 13);
     // setPinA(P_P2MHZ, 0);
     // GPIOC->CRH |= (P_P2MHZ << 24);
 
+    // for (uint8_t i = 0; i < 20; i++)
+    // {
+    //     getAdc();
+    //     timer1_del(_500ms);
+        
+    // }
+    
+
     while (1)
     {
         // lcd_command(CLEAR_DISP);
         // write4Char(get_ADC());
-        get_ADC();
-        timer1_del(_500ms);       
+        
+        getAdc();
         timer1_del(_500ms);
-        // timer1_del(_500ms);
-        // run_ats();    
+        timer1_del(_500ms);
+        // run_ats();
         // timer1_del(_500ms);
     }
     return 0;

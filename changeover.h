@@ -21,7 +21,7 @@
 #define K2 GPIO_ODR_ODR6 // gen
 #define CHOKE GPIO_ODR_ODR7
 #define GEN_IGN GPIO_ODR_ODR8 //***CRH
-///// ADC INPUT  //////////
+///// ADC ANALOGS  //////////
 #define OIL GPIO_IDR_IDR9
 #define COOLANT GPIO_IDR_IDR10
 #define FUEL GPIO_IDR_IDR11
@@ -30,11 +30,13 @@
 //////
 uint8_t error_status = 0;
 uint8_t status = 0;
+/////// LCD->ADC //////
+void lcd_adc_config(){
+    //B3.....B11 
+    
+}
 /////////////
 
-/////
-
-/////////////
 void ats_delay(uint16_t cyc)
 {
     for (uint16_t i = 0; i < cyc; i++)
@@ -70,9 +72,7 @@ void ats_init()
     setPinA(FLOAT_INP, 11);
 
     setPinB(ANALOG, 0);
-    // ADC_Init(REG_B, ANALOG, 0);
-    // GPIOB->CRL &= ~(GPIO_CRL_MODE0 | GPIO_CRL_CNF0);
-    //
+
     lcd4_init(BAUD_FCLK_64); // Adc Inpus
     lcd_4_init();
 }

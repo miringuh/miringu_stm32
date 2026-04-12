@@ -20,6 +20,7 @@
 #define ANALOG 0b0000
 #define FLOAT_INP 0b0100 // DEFAULT
 #define INP_PPULL 0b1000
+//
 /*
 MODES @ gpio.h 2MHZ 10MHZ or 50MHZ
 CRL   7   |6   |5   |4   |3   |2  |1  |0
