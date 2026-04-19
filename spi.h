@@ -128,8 +128,8 @@ void spi1_setup()
 }
 void spi2_setup()
 { // mosi pb15 miso pb14 sck-pb13 ss-pb12 50mhz
-    RCC->APB1ENR |= RCC_APB1ENR_SPI2EN;
-    RCC->APB2ENR |= RCC_APB2ENR_AFIOEN | RCC_APB2ENR_IOPBEN;
+    // RCC->APB1ENR |= RCC_APB1ENR_SPI2EN;
+    // RCC->APB2ENR |= RCC_APB2ENR_AFIOEN | RCC_APB2ENR_IOPBEN;
     AFIO->MAPR |= (AFIO_MAPR_SWJ_CFG_JTAGDISABLE);
     AFIO->MAPR &= ~(AFIO_MAPR_SPI1_REMAP);
 }
@@ -177,7 +177,7 @@ void spi0_init(uint8_t baud)
     SPI1->CR2 = 0;
 
     spi0_setup();
-    GPIOA->CRL = (MOSI_0 | MISO_0 | SCKL_0 | SS_0);
+    GPIOA->CRL |= (MOSI_0 | MISO_0 | SCKL_0 | SS_0);
 
     SPI1->CR1 = baud;
     SPI1->CR1 |= SSM | MSTR | SSI;

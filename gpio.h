@@ -67,52 +67,52 @@ void setPinB(uint8_t conf_val, uint8_t pin)
     switch (pin)
     {
     case 0:
-        GPIOB->CRL |= (conf_val);
+        SET_BIT(GPIOB->CRL, conf_val);
         break;
     case 1:
-        GPIOB->CRL |= (conf_val << 4);
+        SET_BIT(GPIOB->CRL, (conf_val << 4));
         break;
     // case 2:
     //     GPIOB->CRL |= (conf_val << 8);
     //     break;
     case 3:
-        GPIOB->CRL |= (conf_val << 12);
+        SET_BIT(GPIOB->CRL, (conf_val << 12));
         break;
     case 4:
-        GPIOB->CRL |= (conf_val << 14);
+        SET_BIT(GPIOB->CRL, (conf_val << 14));
         break;
     case 5:
-        GPIOB->CRL |= (conf_val << 20);
+        SET_BIT(GPIOB->CRL, (conf_val << 20));
         break;
     case 6:
-        GPIOB->CRL |= (conf_val << 24);
+        SET_BIT(GPIOB->CRL, (conf_val << 24));
         break;
     case 7:
-        GPIOB->CRL |= (conf_val << 28);
+        SET_BIT(GPIOB->CRL, (conf_val << 28));
         break;
     case 8:
-        GPIOB->CRH |= (conf_val);
+        SET_BIT(GPIOB->CRH, conf_val);
         break;
     case 9:
-        GPIOB->CRH |= (conf_val << 4);
+        SET_BIT(GPIOB->CRH, (conf_val << 4));
         break;
     case 10:
-        GPIOB->CRH |= (conf_val << 8);
+        SET_BIT(GPIOB->CRH, (conf_val << 8));
         break;
     case 11:
-        GPIOB->CRH |= (conf_val << 12);
+        SET_BIT(GPIOB->CRH, (conf_val << 12));
         break;
     case 12:
-        GPIOB->CRH |= (conf_val << 14);
+        SET_BIT(GPIOB->CRH, (conf_val << 14));
         break;
     case 13:
-        GPIOB->CRH |= (conf_val << 20);
+        SET_BIT(GPIOB->CRH, (conf_val << 20));
         break;
     case 14:
-        GPIOB->CRH |= (conf_val << 24);
+        SET_BIT(GPIOB->CRH, (conf_val << 24));
         break;
     case 15:
-        GPIOB->CRH |= (conf_val << 28);
+        SET_BIT(GPIOB->CRH, (conf_val << 28));
         break;
     default:
         break;
@@ -175,6 +175,7 @@ void setPinA(uint8_t conf_val, uint8_t pin)
         break;
     }
 }
+
 void gpioConfig(uint32_t regv, uint8_t conf_mode, uint8_t pos)
 {
     if (regv == REG_A)

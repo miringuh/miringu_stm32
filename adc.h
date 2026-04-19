@@ -124,9 +124,6 @@ SQR1 ch16
 
 VREF Internal
 SQR1 ch17
-
-
-
 */
 //      ADC_DR  ADC regular data register
 #define DUAL_DR(REG) READ_REG(REG)
@@ -139,240 +136,67 @@ volatile uint8_t conversion_complete = 0;
 #define ADC_BUFFER_SIZE 64
 volatile uint16_t adc_buffer[ADC_BUFFER_SIZE];
 uint16_t adc_values[3];
-//
-//
-void lcd_char2hex(uint16_t val) // 12bit
-{
-    if (val > 0x00 && val <= 0x09) // 0--9
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char(0x30 + val);
-    }
-    if (val >= 10 && val <= 19) // 10--19
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('1');
-        write4Char(0x30 + (val - 10));
-    }
-    if (val >= 20 && val <= 29)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('2');
-        write4Char(0x30 + (val - 20));
-    }
-    if (val >= 30 && val <= 39)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('3');
-        write4Char(0x30 + (val - 30));
-    }
-    if (val >= 40 && val <= 49)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('4');
-        write4Char(0x30 + (val - 40));
-    }
-    if (val >= 50 && val <= 59)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('5');
-        write4Char(0x30 + (val - 50));
-    }
-    if (val >= 60 && val <= 69)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('6');
-        write4Char(0x30 + (val - 60));
-    }
-    if (val >= 70 && val <= 79)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('7');
-        write4Char(0x30 + (val - 70));
-    }
-    if (val >= 80 && val <= 89)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('8');
-        write4Char(0x30 + (val - 80));
-    }
-    if (val >= 90 && val <= 99)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('9');
-        write4Char(0x30 + (val - 90));
-    }
-    if (val >= 100 && val <= 109)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('1');
-        write4Char('0');
-        write4Char(0x30 + (val - 100));
-    }
-    if (val >= 110 && val <= 119)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('1');
-        write4Char('1');
-        write4Char(0x30 + (val - 110));
-    }
-    if (val >= 120 && val <= 129)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('1');
-        write4Char('2');
-        write4Char(0x30 + (val - 120));
-    }
-    if (val >= 130 && val <= 139)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('1');
-        write4Char('3');
-        write4Char(0x30 + (val - 130));
-    }
-    if (val >= 140 && val <= 149)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('1');
-        write4Char('4');
-        write4Char(0x30 + (val - 140));
-    }
-    if (val >= 150 && val <= 159)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('1');
-        write4Char('5');
-        write4Char(0x30 + (val - 150));
-    }
-    if (val >= 160 && val <= 169)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('1');
-        write4Char('6');
-        write4Char(0x30 + (val - 160));
-    }
-    if (val >= 170 && val <= 179)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('1');
-        write4Char('7');
-        write4Char(0x30 + (val - 170));
-    }
-    if (val >= 180 && val <= 189)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('1');
-        write4Char('8');
-        write4Char(0x30 + (val - 180));
-    }
-    if (val >= 190 && val <= 199)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('1');
-        write4Char('9');
-        write4Char(0x30 + (val - 190));
-    }
-    if (val >= 200 && val <= 209)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('2');
-        write4Char('0');
-        write4Char(0x30 + (val - 200));
-    }
-    if (val >= 210 && val <= 219)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('2');
-        write4Char('1');
-        write4Char(0x30 + (val - 210));
-    }
-    if (val >= 220 && val <= 229)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('2');
-        write4Char('2');
-        write4Char(0x30 + (val - 220));
-    }
-    if (val >= 230 && val <= 239)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('2');
-        write4Char('3');
-        write4Char(0x30 + (val - 230));
-    }
-    if (val >= 240 && val <= 249)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('2');
-        write4Char('4');
-        write4Char(0x30 + (val - 240));
-    }
-    if (val >= 250 && val <= 259)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('2');
-        write4Char('5');
-        write4Char(0x30 + (val - 250));
-    }
-    //
-    if (val >= 260 && val <= 269)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('2');
-        write4Char('6');
-        write4Char(0x30 + (val - 260));
-    }
-    if (val >= 270 && val <= 279)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('2');
-        write4Char('7');
-        write4Char(0x30 + (val - 270));
-    }
-    if (val >= 280 && val <= 289)
-    {
-        lcd_command(CLEAR_DISP);
-        write4Char('2');
-        write4Char('8');
-        write4Char(0x30 + (val - 280));
-    }
-}
+uint8_t conv_cnt = 0;
 //
 void ADC1_2_IRQHandler(void)
 {
-
-    if (ADC1->SR & ADC_SR_EOC) // It is cleared by software or by reading the ADC_DR.
+    if ((ADC1->SR & (ADC_SR_EOC)))
     {
-        conversion_complete = 1;
         adc_result = ADC1->DR;
-        ADC1->SR &= ~ADC_SR_EOC;
-        eusart_send((uint8_t)(ADC1->SR & 0X0FF));
+    }
+    if ((ADC1->SR & (ADC_SR_AWD)))
+    {
+        ADC1->SR &= ~ADC_SR_AWD;
+    }
+    if ((ADC1->SR & (ADC_SR_STRT)))
+    {
+        ADC1->SR &= ~ADC_SR_STRT;
+    }
+    if ((ADC1->SR & (ADC_SR_EOS)))
+    {
+        ADC1->SR &= ~ADC_SR_EOS;
+    }
+    if ((ADC1->SR & (ADC_SR_JEOC)))
+    {
+        ADC1->SR &= ~ADC_SR_JEOC;
+    }
+    if ((ADC1->SR & (ADC_SR_JSTRT)))
+    {
+        ADC1->SR &= ~ADC_SR_JSTRT;
     }
 }
+
 void adc_pin_config()
 {
-    gpioConfig(REG_B, ANALOG, 0);
+    GPIOA->CRL = (ANALOG << GPIO_CRL_CNF0_Pos);
+    GPIOA->CRL |= (ANALOG << GPIO_CRL_CNF1_Pos);
+    GPIOA->CRL |= (ANALOG << GPIO_CRL_CNF2_Pos);
+    //
+    ADC1->SQR3 = (0 << ADC_SQR3_SQ1_Pos);
+    ADC1->SQR3 |= (1 << ADC_SQR3_SQ2_Pos);
+    ADC1->SQR3 |= (2 << ADC_SQR3_SQ3_Pos);
+    // sample time for each channel
+    ADC1->SMPR2 = (1 << ADC_SMPR2_SMP0_Pos);
+    ADC1->SMPR2 |= (1 << ADC_SMPR2_SMP1_Pos);
+    ADC1->SMPR2 |= (1 << ADC_SMPR2_SMP2_Pos);
+    // total conv SEQ_LEN
+    ADC1->SQR1 = (2 << ADC_SQR1_L_Pos); //
 }
 void adcInit()
 {
-    RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
-    ADC1->CR1 = 0;
-    ADC1->CR2 = 0;
-    ADC1->SQR1 = 0;
-    ADC1->SQR2 = 0;
-    ADC1->SQR3 = 0;
-    ADC1->SMPR1 = 0;
-    ADC1->SMPR2 = 0;
+
+    RCC->APB2ENR |= RCC_APB2ENR_ADC1EN | RCC_APB2ENR_IOPAEN;
 
     adc_pin_config(); // REG B0
 
-    RCC->CFGR |= RCC_CFGR_ADCPRE_DIV8;
+    // RCC->CFGR |= RCC_CFGR_ADCPRE_DIV8;
     ADC1->CR2 |= ADC_CR2_CONT;
     ADC1->CR2 &= ~ADC_CR2_ALIGN;
 
-    ADC1->SQR3 |= ADCPB0; // channel selec
-    SMPR(ADC1->SMPR2, (CYC239_5 << 24));
-    SEQ_LEN(ADC1->SQR1, ADC_SQR1_L_0);
+    ADC1->CR1 |= ADC_CR1_SCAN;
+    ADC1->CR2 |= ADC_CR2_EXTTRIG;    // ext trg enable
+    ADC1->CR2 |= ADC_CR2_EXTSEL_Msk; // swstart
+    ADC1->SR &= ~ADC_SR_STRT;
 
     ADC1->CR2 |= ADC_CR2_ADON;
     ADC1->CR2 |= ADC_CR2_RSTCAL;
@@ -382,28 +206,41 @@ void adcInit()
     ADC1->CR2 |= ADC_CR2_CAL;
     while ((ADC1->CR2 & ADC_CR2_CAL))
         ;
-    // ADC1->CR1 |= ADC_CR1_EOCIE;
-    //  NVIC_EnableIRQ(ADC1_2_IRQn);
-    //  NVIC_SetPriority(ADC1_2_IRQn, 2);
-    //  ADC1->CR2 |= ADC_CR2_ADON;
+
+    while ((ADC1->SR & ADC_SR_STRT))
+    {
+        ADC1->SR &= ~ADC_SR_STRT;
+    }
+    ADC1->CR1 |= ADC_CR1_EOCIE;
+    // NVIC_EnableIRQ(ADC1_2_IRQn);
+    // NVIC_SetPriority(ADC1_2_IRQn, 2);
+    ADC1->CR2 |= ADC_CR2_ADON;
+    // eusart_send((uint8_t)(ADC1->SR & 0X0FF));
 }
 uint16_t getAdc()
 {
-    ADC1->CR2 |= ADC_CR2_ADON;
-    while (!(ADC1->SR & ADC_SR_EOC))
+    // ADC1->CR2 |= ADC_CR2_ADON;
+    // ADC1->SR &= ~ADC_SR_STRT;
+    while (!(ADC1->SR & ADC_SR_STRT))
     {
     }
+    ADC1->CR2 |= ADC_CR2_SWSTART;
+    while ((ADC1->SR & ADC_CR2_SWSTART))
+    {
+    }
+    while (!(ADC1->SR & ADC_SR_EOC))
+        ;
+
     uint16_t val = (ADC1->DR);
     // eusart_send((uint8_t)(val & 0XF00) >> 8);
-    eusart_send((uint8_t)(val & 0X0FF));
-
+    // eusart_send((uint8_t)(val & 0X0FF));
     return val;
 }
 
 void ADC_Init(uint32_t regv, uint32_t conf_mode, uint8_t pos)
 {
     // Enable clocks
-    RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
+    // RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
     // Configure PA0 analog
     // GPIOB->CRL &= ~(GPIO_CRL_MODE0 | GPIO_CRL_CNF0);
     gpioConfig(regv, conf_mode, pos);
@@ -411,7 +248,7 @@ void ADC_Init(uint32_t regv, uint32_t conf_mode, uint8_t pos)
     RCC->CFGR |= RCC_CFGR_ADCPRE_DIV8;
     ADC1->CR2 &= ~ADC_CR2_CONT;
     ADC1->CR2 |= ADC_CR2_ADON;
-    timer1_del(_50ms);
+    timer1_delay(50);
     ADC1->CR2 &= ~(ADC_CR2_ALIGN);
     // ADC1->CR2 |= (ADC_CR2_ALIGN);
     // Calibration
@@ -432,10 +269,8 @@ void ADC_Init(uint32_t regv, uint32_t conf_mode, uint8_t pos)
 }
 uint16_t get_ADC(void) // 12 bit
 {
-    // ADC1->CR2 |= ADC_CR2_CAL;
     ADC1->CR2 |= ADC_CR2_ADON;
-    conversion_complete = 0;
-    ADC1->CR2 |= ADC_CR2_SWSTART;
+    // ADC1->CR2 |= ADC_CR2_SWSTART;
     while (!(ADC1->SR & ADC_SR_STRT))
     {
     }
@@ -449,7 +284,7 @@ uint16_t get_ADC(void) // 12 bit
     write4Char((uint8_t)((val & 0x0F0) >> 4) | 0x30);
     write4Char((uint8_t)(val & 0x00F) | 0x30);
     write4Char(' ');
-    timer1_del(_500ms);
+    timer1_delay(500);
     ADC1->CR2 &= ~ADC_CR2_CAL;
     return ADC1->DR;
 }
@@ -491,7 +326,7 @@ void ADC_DMA_Init(void)
     ADC1->CR2 |= ADC_CR2_CONT | ADC_CR2_DMA;
     ADC1->CR2 |= ADC_CR2_ADON;
 
-    timer1_del(_50ms);
+    timer1_delay(50);
 
     // Calibration
     ADC1->CR2 |= ADC_CR2_CAL;
@@ -528,7 +363,7 @@ void ADC_MultiChannel_Init(void)
     ADC1->CR2 |= ADC_CR2_CONT; // Enable continuous conversion
     ADC1->CR2 |= ADC_CR2_ADON; // Enable ADC
 
-    timer1_del(_50ms);
+    timer1_delay(50);
 
     // Calibration
     ADC1->CR2 |= ADC_CR2_CAL;

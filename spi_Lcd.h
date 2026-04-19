@@ -65,7 +65,7 @@
 // DR-READ   1   1
 uint8_t vall;
 uint8_t valh;
-#define dely _2ms
+#define dely 2
 
 typedef void (*lcdfunc)(uint8_t);
 void func_lcd(uint8_t val, lcdfunc cb)
@@ -76,18 +76,18 @@ void func_lcd(uint8_t val, lcdfunc cb)
 void spi_latch()
 {
     GPIOC->ODR &= ~GPIO_ODR_ODR13;
-    timer1_del(_10ms);
+    timer1_delay(10);
     GPIOC->ODR |= GPIO_ODR_ODR13;
-    timer1_del(_10ms);
+    timer1_delay(10);
 }
-void lcd4_init(uint8_t baud)//SPI2
+void lcd4_init(uint8_t baud) // SPI2
 {
     // RCC->APB2ENR |= RCC_APB2ENR_SPI1EN | RCC_APB2ENR_IOPCEN;
     setPinC(P_P50MHZ, 13);
     spi2_init(baud);
     spi2_send(0);
     spi_latch();
-    timer1_del(_50ms);
+    timer1_delay(50);
 }
 void lcd4_setup(uint8_t comm)
 {
@@ -102,13 +102,13 @@ void toggle(uint8_t comm, uint8_t mode)
     spi_latch();
     spi2_send(mode | valh);
     spi_latch();
-    timer1_del(dely);
+    timer1_delay(dely);
     //
     spi2_send(vall);
     spi_latch();
     spi2_send(mode | vall);
     spi_latch();
-    timer1_del(dely);
+    timer1_delay(dely);
 }
 //
 void setCGram(uint8_t addr, uint8_t data)
@@ -135,11 +135,11 @@ void lcd_set(uint8_t comm)
     spi_latch();
     spi2_send(EN | valh);
     spi_latch();
-    timer1_del(dely);
+    timer1_delay(dely);
     //
     spi2_send(0);
     spi_latch();
-    timer1_del(dely);
+    timer1_delay(dely);
 }
 void lcd_command(uint8_t comm)
 {
@@ -152,13 +152,13 @@ void lcd_data(uint8_t comm)
 /////////
 void lcd_4_init()
 {
-    timer1_del(_5ms);
+    timer1_delay(5);
     lcd_set(0x30);
-    timer1_del(_5ms);
+    timer1_delay(5);
     lcd_set(0x30);
-    timer1_del(_39us);
+    timer1_delay(1);
     lcd_set(0x30);
-    timer1_del(_39us);
+    timer1_delay(1);
     lcd_set(0x20);
 
     lcd_command(DISP_OFF);
@@ -206,11 +206,11 @@ void lcd4_stop()
 {
     spi2_send(0);
     spi_latch();
-    timer1_del(dely);
+    timer1_delay(dely);
     GPIOC->ODR &= ~GPIO_ODR_ODR13;
-    timer1_del(dely);
+    timer1_delay(dely);
     GPIOC->ODR |= GPIO_ODR_ODR13;
-    timer1_del(dely);
+    timer1_delay(dely);
     spi1_stop();
 }
 

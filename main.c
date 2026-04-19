@@ -18,28 +18,45 @@
 #define txBuffSize 12
 char eusart_buff[txBuffSize];
 uint8_t cnt = 1;
-
-int main()
+void reset_regs()
 {
-    RCC->APB1ENR = 0;
-    RCC->APB2ENR = 0;
+    // RCC->APB1ENR = 0;
+    // RCC->APB2ENR = 0;
     GPIOC->CRH = 0;
     GPIOC->CRL = 0;
     GPIOA->CRH = 0;
     GPIOA->CRL = 0;
+    GPIOB->CRH = 0;
+    GPIOB->CRL = 0;
     GPIOC->ODR = 0;
     GPIOC->IDR = 0;
+    ADC1->CR1 = 0;
+    ADC1->CR2 = 0;
+    ADC1->SQR1 = 0;
+    ADC1->SQR2 = 0;
+    ADC1->SQR3 = 0;
+    ADC1->SMPR1 = 0;
+    ADC1->SMPR2 = 0;
+}
+int main()
+{
 
     clock_init_20mhz_apb();
-    SysTick_Init();
 
-    timer1_init();
-    timer1_del(_500ms);
-    timer1_del(_500ms);
+    RCC->APB2ENR = RCC_APB2ENR_IOPBEN | RCC_APB2ENR_TIM1EN | RCC_APB2ENR_IOPCEN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_ADC1EN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_AFIOEN;
+    RCC->APB1ENR |= RCC_APB1ENR_SPI2EN | RCC_APB1ENR_TIM3EN;
+    // reset_regs();
 
     eusart_init(U19200);
+    GPIOA->CRL = (P_P50MHZ << GPIO_CRL_MODE0_Pos);
+    // timer1_del(_500ms);
+
+    // eusart_send(i);
+
+    // timer1_del(_500ms);
+
     // ats_init();
-    adcInit();
+    // adcInit();
     // lcd4_init(BAUD_FCLK_64);
     // lcd_4_init();
     // write4Data("Welcome home", "welcome home");
@@ -48,24 +65,25 @@ int main()
     // setPinA(P_P2MHZ, 0);
     // GPIOC->CRH |= (P_P2MHZ << 24);
 
-    // for (uint8_t i = 0; i < 20; i++)
-    // {
-    //     getAdc();
-    //     timer1_del(_500ms);
-        
-    // }
-    
+    // GPIOB->CRH = GPIO_CRH_MODE8;                // k1
+    // GPIOB->CRH |= GPIO_CRH_MODE9;               // k2
+    // setPinB(P_P10MHZ,8);
+    // setPinB(P_P10MHZ, 9);
+    // lcd_adc_config();
 
+    // GPIOB->ODR = GPIO_ODR_ODR8 | GPIO_ODR_ODR9 | GPIO_ODR_ODR10 | GPIO_ODR_ODR11;
+    // timer1_del(_500ms);
+    // GPIOA->ODR =  GPIO_ODR_ODR0;
     while (1)
     {
         // lcd_command(CLEAR_DISP);
         // write4Char(get_ADC());
-        
-        getAdc();
-        timer1_del(_500ms);
-        timer1_del(_500ms);
+
+        // // getAdc();
         // run_ats();
-        // timer1_del(_500ms);
+        // timer1_delay(_5HZ / 20);
+        timer1_delay(_5HZ / 21);
+        GPIOA->ODR ^= GPIO_ODR_ODR0;
     }
     return 0;
 }

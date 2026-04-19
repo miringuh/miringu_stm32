@@ -207,13 +207,8 @@ void _delay_ms(uint32_t ms)
         }
 }
 //////////
-void timer1_del_init()
-{
-        timer1_init();
-}
-void _tmr_delay(uint16_t cyc){
-        timer1_del(cyc);
-}
+
+
 #endif // __RCC
 
     /*
