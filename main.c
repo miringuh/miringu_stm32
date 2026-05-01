@@ -4,16 +4,16 @@
 #include "portRemaps.h"
 // #include "tim1.h"
 // #include "advTm1.h"
-#include "adc.h"
+// #include "adc.h"
 #include "eusart.h"
 #include "gpio.h"
 #include "rcc_conf.h"
 // #include "lcdI2c.h"
-#include "spi_Lcd.h"
+// #include "spi_Lcd.h"
 // #include "i2c.h"
 // #include "dma.h"
-#include "adc.h"
-#include "changeover.h"
+#include "sdcard.h"
+// #include "changeover.h"
 
 #define txBuffSize 12
 char eusart_buff[txBuffSize];
@@ -43,51 +43,30 @@ int main()
 
     clock_init_20mhz_apb();
 
-    RCC->APB2ENR = RCC_APB2ENR_IOPBEN | RCC_APB2ENR_TIM1EN | RCC_APB2ENR_IOPCEN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_ADC1EN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_AFIOEN;
-    RCC->APB1ENR |= RCC_APB1ENR_SPI2EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM4EN;
+    RCC->APB2ENR = RCC_APB2ENR_IOPBEN | RCC_APB2ENR_TIM1EN | RCC_APB2ENR_IOPCEN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_ADC1EN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_AFIOEN | RCC_APB2ENR_USART1EN;
 
-    func_void(reset_regs);
+    RCC->APB1ENR = RCC_APB1ENR_SPI2EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM4EN;
 
+    spi2_init(BAUD_FCLK_64);
     eusart_init(U19200);
-    // GPIOC->CRH = (P_P50MHZ << GPIO_CRH_MODE13_Pos);
-    // setPinC(P_P50MHZ, 13);
-    gpioConfig(REG_C, P_P50MHZ,13);
-    // timer1_del(_500ms);
+    confPinB(P_P50MHZ, 0); // cs
 
-    // eusart_send(i);
+    sd_init();
+    sd_card_cond_8();   // 00 00 01 AA
+    read_opt_cond_41(); // 00 0001 0000
+    // read_ocr_58();
+    del = _3200HZ;
+    // for (uint32_t i = 0; i < 0x7FF; i++)
+    // {
+    // sdWrite_pos(i, "", 0, 8);
+    // }
 
-    // timer1_del(_500ms);
+    // sdRead(0);
+    sdWrite_String(0X7FF,"");
+    sdRead(0X7FF);
 
-    // ats_init();
-    // adcInit();
-    // lcd4_init(BAUD_FCLK_64);
-    // lcd_4_init();
-    // write4Data("Welcome home", "welcome home");
-    // lcd4_stop();
-    // setPinC(P_P2MHZ, 13);
-    // setPinA(P_P2MHZ, 0);
-    // GPIOC->CRH |= (P_P2MHZ << 24);
-
-    // GPIOB->CRH = GPIO_CRH_MODE8;                // k1
-    // GPIOB->CRH |= GPIO_CRH_MODE9;               // k2
-    // setPinB(P_P10MHZ,8);
-    // setPinB(P_P10MHZ, 9);
-    // lcd_adc_config();
-
-    // GPIOB->ODR = GPIO_ODR_ODR8 | GPIO_ODR_ODR9 | GPIO_ODR_ODR10 | GPIO_ODR_ODR11;
-    // timer1_del(_500ms);
-    // GPIOA->ODR =  GPIO_ODR_ODR0
-    ;
     while (1)
     {
-        // lcd_command(CLEAR_DISP);
-        // write4Char(get_ADC());
-
-        // // getAdc();
-        // run_ats();
-        // timer1_delay(_5HZ / 20);
-        timer4_delay(_5HZ);
-        GPIOC->ODR ^= GPIO_ODR_ODR13;
     }
     return 0;
 }

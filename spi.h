@@ -128,8 +128,8 @@ void spi1_setup()
 }
 void spi2_setup()
 { // mosi pb15 miso pb14 sck-pb13 ss-pb12 50mhz
-    // RCC->APB1ENR |= RCC_APB1ENR_SPI2EN;
-    // RCC->APB2ENR |= RCC_APB2ENR_AFIOEN | RCC_APB2ENR_IOPBEN;
+    RCC->APB1ENR |= RCC_APB1ENR_SPI2EN;
+    RCC->APB2ENR |= RCC_APB2ENR_AFIOEN | RCC_APB2ENR_IOPBEN;
     AFIO->MAPR |= (AFIO_MAPR_SWJ_CFG_JTAGDISABLE);
     AFIO->MAPR &= ~(AFIO_MAPR_SPI1_REMAP);
 }
@@ -303,29 +303,30 @@ SPI1-RX Channel3
 SPI2-TX Channel5
 SPI2-RX Channel4
 */
-char spi_buff[10];
-void DMA1_Channel2_IRQHandler()
+char spi_buff[512];
+void DMA1_Channel5_IRQHandler() // TX
 {
-    if ((DMA1->ISR & DMA_ISR_HTIF2)) // half txed
+    if ((DMA1->ISR & DMA_ISR_HTIF5)) // half txed
     {
-        DMA1->IFCR |= DMA_IFCR_CHTIF2;
+        DMA1->IFCR |= DMA_IFCR_CHTIF5;
     }
-    if ((DMA1->ISR & DMA_ISR_TCIF2)) // tx complete
+    if ((DMA1->ISR & DMA_ISR_TCIF5)) // tx complete
     {
-        DMA1->IFCR |= DMA_IFCR_CTCIF2;
+        DMA1->IFCR |= DMA_IFCR_CTCIF5;
     }
-    if ((DMA1->ISR & DMA_ISR_TEIF2)) // tx error
+    if ((DMA1->ISR & DMA_ISR_TEIF5)) // tx error
     {
-        DMA1->IFCR |= DMA_IFCR_CTEIF2;
+        DMA1->IFCR |= DMA_IFCR_CTEIF5;
     }
-    DMA1_Channel2->CCR &= ~DMAEN;
+    DMA1_Channel5->CCR &= ~DMAEN;
 }
-void DMA1_Channel3_IRQHandler()
+void DMA1_Channel4_IRQHandler() // RX
 {
-    if ((DMA1->ISR & DMA_ISR_TCIF3)) // tx complete
+    if ((DMA1->ISR & DMA_ISR_TCIF4)) // tx complete
     {
-        state = 1;
-        DMA1->IFCR |= DMA_IFCR_CTCIF3;
+        // state = 1;
+        DMA1->IFCR |= DMA_IFCR_CTCIF4;
+        // eusart_send(0x22);
     }
 }
 
@@ -343,51 +344,52 @@ void spi1_dma_tx_init(uint32_t baud, const char *msg) // SPI1-TX
     SPI1->CR1 |= SSM | MSTR | SSI;
     SPI1->CR1 |= SPI_CR1_LSBFIRST;
 
-    DMA1_Channel2->CPAR = (uint32_t)&USART1->DR;
-    DMA1_Channel2->CMAR = (uint32_t)spi_buff;
-    DMA1_Channel2->CNDTR = (strlen(msg));
-    DMA1_Channel2->CCR |= CIRC;                                     // 1-circ
-    DMA1_Channel2->CCR |= MINC;                                     // mem incr
-    DMA1_Channel2->CCR &= ~PINC;                                    // periph no incr
-    DMA1_Channel2->CCR |= DIR;                                      // 0=peri READ 1=mem READ
-    DMA1_Channel2->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem size
-    DMA1_Channel2->CCR |= DMA_CCR_PL_0;                             // high prioty
+    DMA1_Channel5->CPAR = (uint32_t)&SPI2->DR;
+    DMA1_Channel5->CMAR = (uint32_t)spi_buff;
+    DMA1_Channel5->CNDTR = (strlen(msg));
+    DMA1_Channel5->CCR |= CIRC;                                     // 1-circ
+    DMA1_Channel5->CCR |= MINC;                                     // mem incr
+    DMA1_Channel5->CCR &= ~PINC;                                    // periph no incr
+    DMA1_Channel5->CCR |= DIR;                                      // 0=peri READ 1=mem READ
+    DMA1_Channel5->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem size
+    DMA1_Channel5->CCR |= DMA_CCR_PL_0;                             // high prioty
     SPI1->CR2 |= SPI_CR2_TXDMAEN;                                   // spi1 Tx channel=2
 
-    DMA1_Channel2->CCR |= TEIEN | HTIEN | TCIEN;
-    NVIC_SetPriority(DMA1_Channel2_IRQn, 2);
-    NVIC_EnableIRQ(DMA1_Channel2_IRQn);
+    DMA1_Channel5->CCR |= TEIEN | HTIEN | TCIEN;
+    NVIC_SetPriority(DMA1_Channel5_IRQn, 2);
+    NVIC_EnableIRQ(DMA1_Channel5_IRQn);
     SPI1->CR1 |= SPE;
 }
 void spi1_dma_rx_init(uint32_t baud, const char *msg, uint16_t size) // SPI1-RX
 {
-    strcpy(buff, msg);
-    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-    spi0_setup();
+    strcpy(spi_buff, msg);
+    // RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+    // spi2_setup();
 
-    GPIOA->CRL = (MOSI_0 | MISO_0 | SCKL_0 | SS_0);
-    SPI1->CR1 = 0;
-    SPI1->CR2 = 0;
+    GPIOA->CRL = (MOSI_2 | MISO_2 | SCKL_2 | SS_2);
+    SPI2->CR1 = 0;
+    SPI2->CR2 = 0;
 
-    SPI1->CR1 = baud;
-    SPI1->CR1 |= SSM | MSTR | SSI;
-    SPI1->CR1 |= SPI_CR1_LSBFIRST;
+    SPI2->CR1 = baud;
+    SPI2->CR1 |= SSM | MSTR | SSI;
+    SPI2->CR1 |= SPI_CR1_LSBFIRST;
 
-    DMA1_Channel3->CPAR = (uint32_t)&USART1->DR;
-    DMA1_Channel3->CMAR = (uint32_t)spi_buff;
-    DMA1_Channel3->CNDTR = size;
-    DMA1_Channel3->CCR |= CIRC;                                     // 1-circ
-    DMA1_Channel3->CCR |= MINC;                                     // mem incr
-    DMA1_Channel3->CCR &= ~PINC;                                    // periph no incr
-    DMA1_Channel3->CCR &= ~DIR;                                     // 0=peri READ 1=mem READ
-    DMA1_Channel3->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem size
-    DMA1_Channel3->CCR |= DMA_CCR_PL_0;                             // high prioty
-    SPI1->CR2 |= SPI_CR2_RXDMAEN;                                   // spi1 Tx channel=2
+    DMA1_Channel4->CPAR = (uint32_t)&SPI2->DR;
+    DMA1_Channel4->CMAR = (uint32_t)spi_buff;
+    DMA1_Channel4->CNDTR = size;
+    DMA1_Channel4->CCR |= CIRC;                                     // 1-circ
+    DMA1_Channel4->CCR |= MINC;                                     // mem incr
+    DMA1_Channel4->CCR &= ~PINC;                                    // periph no incr
+    DMA1_Channel4->CCR &= ~DIR;                                     // 0=peri READ 1=mem READ
+    DMA1_Channel4->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem size
+    DMA1_Channel4->CCR |= DMA_CCR_PL_0;                             // high prioty
+    SPI2->CR2 |= SPI_CR2_RXDMAEN;                                   // spi1 Tx channel=2
 
     DMA1_Channel3->CCR |= TEIEN | HTIEN | TCIEN;
-    NVIC_SetPriority(DMA1_Channel3_IRQn, 2);
-    NVIC_EnableIRQ(DMA1_Channel3_IRQn);
-    SPI1->CR1 |= SPE;
+    NVIC_SetPriority(DMA1_Channel4_IRQn, 2);
+    NVIC_EnableIRQ(DMA1_Channel4_IRQn);
+    SPI2->CR1 |= SPE;
+    
 }
 
 #endif // _SSPI

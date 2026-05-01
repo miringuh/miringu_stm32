@@ -19,9 +19,8 @@ OBJS = $(SRCS:.c=.o)
 OBJS := $(OBJS:.s=.o)
 
 # Compiler Flags
-CFLAGS = -mcpu=cortex-m3 -mthumb -O0 -g \
-         -Wall -Wextra \
-         -ffreestanding -nostdlib 
+CFLAGS = -mcpu=cortex-m3 -mthumb -O0 -g -Wall -Wextra -ffreestanding -nostdlib 
+# 		  
 	
 # Linker Flags
 # LDFLAGS = -T linker.ld -nostdlib 

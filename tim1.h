@@ -65,13 +65,13 @@
 #define _165HZ _5HZ / 33     //
 #define _160HZ _5HZ / 32     // 6.25ms
 #define _155HZ _5HZ / 31     //
-#define _150HZ _5HZ / 30     //7ms
+#define _150HZ _5HZ / 30     // 7ms
 #define _145HZ _5HZ / 29     //
 #define _140HZ _5HZ / 28     //
 #define _135HZ _5HZ / 27     //
 #define _130HZ _5HZ / 26     //
 #define _125HZ _5HZ / 25     //
-#define _120HZ _5HZ / 24     //8.3ms
+#define _120HZ _5HZ / 24     // 8.3ms
 #define _115HZ _5HZ / 23     //
 #define _110HZ _5HZ / 22     //
 #define _105HZ _5HZ / 21     //
