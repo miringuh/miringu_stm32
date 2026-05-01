@@ -45,10 +45,13 @@ int main()
 
     RCC->APB2ENR = RCC_APB2ENR_IOPBEN | RCC_APB2ENR_TIM1EN | RCC_APB2ENR_IOPCEN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_ADC1EN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_AFIOEN;
     RCC->APB1ENR |= RCC_APB1ENR_SPI2EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM4EN;
-    // reset_regs();
+
+    func_void(reset_regs);
 
     eusart_init(U19200);
-    GPIOC->CRH = (P_P50MHZ << GPIO_CRH_MODE13_Pos);
+    // GPIOC->CRH = (P_P50MHZ << GPIO_CRH_MODE13_Pos);
+    // setPinC(P_P50MHZ, 13);
+    gpioConfig(REG_C, P_P50MHZ,13);
     // timer1_del(_500ms);
 
     // eusart_send(i);

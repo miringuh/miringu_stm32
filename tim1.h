@@ -63,15 +63,15 @@
 #define _175HZ _5HZ / 35     //
 #define _170HZ _5HZ / 34     //
 #define _165HZ _5HZ / 33     //
-#define _160HZ _5HZ / 32     //
+#define _160HZ _5HZ / 32     // 6.25ms
 #define _155HZ _5HZ / 31     //
-#define _150HZ _5HZ / 30     //
+#define _150HZ _5HZ / 30     //7ms
 #define _145HZ _5HZ / 29     //
 #define _140HZ _5HZ / 28     //
 #define _135HZ _5HZ / 27     //
 #define _130HZ _5HZ / 26     //
 #define _125HZ _5HZ / 25     //
-#define _120HZ _5HZ / 24     //
+#define _120HZ _5HZ / 24     //8.3ms
 #define _115HZ _5HZ / 23     //
 #define _110HZ _5HZ / 22     //
 #define _105HZ _5HZ / 21     //
@@ -79,7 +79,7 @@
 #define _50HZ _5HZ / 10      //
 #define _40HZ _5HZ / 8       // 25 ms
 #define _35HZ _5HZ / 7       //
-#define _30HZ _5HZ / 6       //
+#define _30HZ _5HZ / 6       // 33.3ms
 #define _25HZ _5HZ / 5       // 40 ms
 #define _20HZ _5HZ / 4       // 50 ms
 #define _15HZ _5HZ / 3       //

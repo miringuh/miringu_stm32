@@ -208,7 +208,6 @@ void _delay_ms(uint32_t ms)
 }
 //////////
 
-
 #endif // __RCC
 
     /*

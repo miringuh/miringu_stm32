@@ -83,7 +83,7 @@ void spi_latch()
 void lcd4_init(uint8_t baud) // SPI2
 {
     // RCC->APB2ENR |= RCC_APB2ENR_SPI1EN | RCC_APB2ENR_IOPCEN;
-    setPinC(P_P50MHZ, 13);
+    confPinC(P_P50MHZ, 13);
     spi2_init(baud);
     spi2_send(0);
     spi_latch();
