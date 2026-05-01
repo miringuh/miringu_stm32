@@ -248,7 +248,7 @@ void ADC_Init(uint32_t regv, uint32_t conf_mode, uint8_t pos)
     RCC->CFGR |= RCC_CFGR_ADCPRE_DIV8;
     ADC1->CR2 &= ~ADC_CR2_CONT;
     ADC1->CR2 |= ADC_CR2_ADON;
-    timer1_delay(50);
+    timer4_delay(50);
     ADC1->CR2 &= ~(ADC_CR2_ALIGN);
     // ADC1->CR2 |= (ADC_CR2_ALIGN);
     // Calibration
@@ -284,7 +284,7 @@ uint16_t get_ADC(void) // 12 bit
     write4Char((uint8_t)((val & 0x0F0) >> 4) | 0x30);
     write4Char((uint8_t)(val & 0x00F) | 0x30);
     write4Char(' ');
-    timer1_delay(500);
+    timer4_delay(500);
     ADC1->CR2 &= ~ADC_CR2_CAL;
     return ADC1->DR;
 }
@@ -326,7 +326,7 @@ void ADC_DMA_Init(void)
     ADC1->CR2 |= ADC_CR2_CONT | ADC_CR2_DMA;
     ADC1->CR2 |= ADC_CR2_ADON;
 
-    timer1_delay(50);
+    timer4_delay(50);
 
     // Calibration
     ADC1->CR2 |= ADC_CR2_CAL;
@@ -363,7 +363,7 @@ void ADC_MultiChannel_Init(void)
     ADC1->CR2 |= ADC_CR2_CONT; // Enable continuous conversion
     ADC1->CR2 |= ADC_CR2_ADON; // Enable ADC
 
-    timer1_delay(50);
+    timer4_delay(50);
 
     // Calibration
     ADC1->CR2 |= ADC_CR2_CAL;

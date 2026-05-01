@@ -37,8 +37,8 @@ void ats_delay(uint16_t cyc)
 {
     for (uint16_t i = 0; i < cyc; i++)
     {
-        timer1_delay(500);
-        timer1_delay(500);
+        timer4_delay(500);
+        timer4_delay(500);
     }
 }
 

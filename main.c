@@ -44,11 +44,11 @@ int main()
     clock_init_20mhz_apb();
 
     RCC->APB2ENR = RCC_APB2ENR_IOPBEN | RCC_APB2ENR_TIM1EN | RCC_APB2ENR_IOPCEN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_ADC1EN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_AFIOEN;
-    RCC->APB1ENR |= RCC_APB1ENR_SPI2EN | RCC_APB1ENR_TIM3EN;
+    RCC->APB1ENR |= RCC_APB1ENR_SPI2EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM4EN;
     // reset_regs();
 
     eusart_init(U19200);
-    GPIOA->CRL = (P_P50MHZ << GPIO_CRL_MODE0_Pos);
+    GPIOC->CRH = (P_P50MHZ << GPIO_CRH_MODE13_Pos);
     // timer1_del(_500ms);
 
     // eusart_send(i);
@@ -73,7 +73,8 @@ int main()
 
     // GPIOB->ODR = GPIO_ODR_ODR8 | GPIO_ODR_ODR9 | GPIO_ODR_ODR10 | GPIO_ODR_ODR11;
     // timer1_del(_500ms);
-    // GPIOA->ODR =  GPIO_ODR_ODR0;
+    // GPIOA->ODR =  GPIO_ODR_ODR0
+    ;
     while (1)
     {
         // lcd_command(CLEAR_DISP);
@@ -82,8 +83,8 @@ int main()
         // // getAdc();
         // run_ats();
         // timer1_delay(_5HZ / 20);
-        timer1_delay(_5HZ / 21);
-        GPIOA->ODR ^= GPIO_ODR_ODR0;
+        timer4_delay(_5HZ);
+        GPIOC->ODR ^= GPIO_ODR_ODR13;
     }
     return 0;
 }
