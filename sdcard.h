@@ -1,9 +1,13 @@
 #if !defined(_SD_CARD)
 #define _SD_CARD
 #include "/usr/lib/stm32/stm32F1xx_headers/stm32f1xx.h"
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+#include <ctype.h>
+#include <fcntl.h>
 #include "spi.h"
 #include "eusart.h"
 #include "tim1.h"
@@ -105,12 +109,12 @@
 #define RESP_ECC_ERROR 0X04
 #define RESP_ERROR_RANGE 0X08
 //
-uint8_t del = _400HZ; // 2.5ms
+uint8_t del = _1600HZ; // 625us
 uint8_t version = 0;
 uint8_t rd_buff[8];
 uint8_t mbuff[8];
 uint8_t csd_buff[16];
-uint8_t read_buff[512];
+char sd_buff[512];
 uint8_t response = 0;
 uint16_t TIMEOUT;
 uint16_t read_capacity = 0;
@@ -131,10 +135,12 @@ void power(uint8_t val) // pb0
     switch (val)
     {
     case 1:
-        GPIOB->BSRR = GPIO_BSRR_BS0;
+        GPIOB->BSRR = GPIO_BSRR_BS1;
+        timer4_delay(_5HZ);
         break;
     case 0:
-        GPIOB->BSRR = GPIO_BSRR_BR0;
+        GPIOB->BSRR = GPIO_BSRR_BR1;
+        timer4_delay(_5HZ);
         break;
     default:
         break;
@@ -181,6 +187,16 @@ void sd_init()
     // eusart_init(U19200);
     // spi2_init(BAUD_FCLK_64);
     // confPinB(P_P50MHZ, 0); // cs
+
+    // spi2_init(BAUD_FCLK_64);
+    // eusart_init(U19200);
+
+    timer4_delay(_1HZ);
+    timer4_delay(_1HZ);
+    timer4_delay(_1HZ);
+
+    GPIOB->CRL = (P_P50MHZ) | (P_P50MHZ << 4);
+    power(1);
     for (uint8_t i = 0; i < 10; i++)
     {
         spi2_send(0XFF);
@@ -215,8 +231,6 @@ void read_opt_cond_41() // 4
     GPIOB->BSRR = GPIO_BSRR_BS0;
     command(ACMD41, 0x00, 0x40000000, 0X95); // 2GB
     // command(ACMD41, 0x05, 0x40000000, 0X95); // 8GB
-
-    // _delay_ms(500);
     spi2_send(0XFF);
     spi2_send(0XFF);
     GPIOB->BSRR = GPIO_BSRR_BS0;
@@ -306,12 +320,12 @@ void sdErase(uint32_t addr_st, uint32_t addr_end)
 void stopSpi()
 {
     SPI2->CR1 &= ~SPE;
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = GPIO_BSRR_BR0;
     power(0);
 }
-
+//
 // READ
-uint8_t sdRead(uint32_t addr) // cmd17
+uint8_t sdRead(uint32_t addr) // cmd17 sd_buff
 {
     uint16_t ccn = 0x4FF;
     response = command(CMD17, 0x00, (addr << 9), 0X95); // 2GB
@@ -335,8 +349,8 @@ post:
     for (uint16_t i = 0; i < 512; i++)
     {
         response = spi2_send(0xFF);
-        eusart_send(response);
-        timer3_delay(del);
+        // eusart_send(response);
+        sd_buff[i] = response;
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
@@ -344,7 +358,7 @@ post:
     GPIOB->BSRR = GPIO_BSRR_BS0;
     return 0;
 }
-uint8_t *sdRead_buff(uint32_t addr, uint16_t posStr, uint16_t posEnd) // cmd17
+uint8_t *sdRead_buff(uint32_t addr, uint16_t posStr, uint16_t posEnd) // cmd17 sd_buff
 {
     uint16_t ccn = 0x4FF;
     response = command(CMD17, 0x00, (addr << 9), 0X95); // 2GB
@@ -370,17 +384,17 @@ post:
         response = spi2_send(0xFF);
         if (i >= posStr && i <= posEnd)
         {
-            eusart_send(response);
-            read_buff[i] = response;
+            // eusart_send(response);
+            sd_buff[i] = response;
         }
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
     chipStatus();
     GPIOB->BSRR = GPIO_BSRR_BS0;
-    return read_buff;
+    return 0;
 }
-uint8_t sdRead_pos(uint32_t addr, uint16_t posStr, uint16_t posEnd) // cmd17
+uint8_t sdRead_pos(uint32_t addr, uint16_t begins, uint16_t ends) // cmd17 sd_buff
 {
     uint16_t ccn = 0x4FF;
     response = command(CMD17, 0x00, (addr << 9), 0X95); // 2GB
@@ -405,9 +419,14 @@ post:
     {
         response = spi2_send(0xFF);
         timer3_delay(del);
-        if (i >= posStr && i <= posEnd)
+        if (i >= begins && i <= ends)
         {
-            eusart_send(response);
+            // eusart_send(response);
+            sd_buff[i] = response;
+        }
+        else
+        {
+            sd_buff[i] = response;
         }
     }
     spi2_send(0XFF);
@@ -417,9 +436,11 @@ post:
     return 0;
 }
 //
+// DMA
 void spi_dma_read(uint32_t addr) // not working
 {
     response = command(CMD17, 0x00, (addr << 9), 0X95); // 2GB
+
     char msg[514];
     spi1_dma_rx_init(BAUD_FCLK_64, msg, 514);
     for (uint16_t i = 0; i < 514; i++)
@@ -427,6 +448,11 @@ void spi_dma_read(uint32_t addr) // not working
         eusart_send(spi_buff[i]);
     }
 }
+void spi_dma_write(char *data)
+{
+    spi1_dma_tx_init(BAUD_FCLK_64, data, strlen(data));
+}
+//
 // WRITE
 void sdWrite_String(uint32_t addr, char *data) // cmd24
 {
@@ -444,7 +470,7 @@ void sdWrite_String(uint32_t addr, char *data) // cmd24
     }
     for (uint16_t y = i + 1; y < (512 - i); y++)
     {
-        // spi2_send(0X33);
+        spi2_send(0XFF);
     }
 
     spi2_send(0XFF);
@@ -472,7 +498,6 @@ void sdWrite_buff(uint32_t addr, char data[]) // cmd24
 {
     uint16_t ccn = 0x2FF;
     command(CMD24, 0x00, (addr << 9), 0X95); // 2GB
-
     response = spi2_send(0xFE);
     // eusart_send(response);
     for (uint16_t i = 0; i < 512; i++)
@@ -543,5 +568,98 @@ wrMem:
     chipStatus();
     GPIOB->BSRR = GPIO_BSRR_BS0;
 }
+//
+// BUFF nanipulate
+uint16_t comp_buff(char buff1[], char buff2[], uint16_t size)
+{
+    uint16_t cnt = 0;
+    for (uint16_t i = 0; i < size; i++)
+    {
+        if (buff1[i] != buff2[i])
+        {
+            cnt = 0;
+        }
+        if (buff1[i] == buff2[i])
+        {
+            cnt++;
+        }
+    }
+    return cnt;
+}
+uint16_t get_address(char mem_buff[], char my_word[], uint16_t size)
+{
+    uint16_t cnt = 0;
+    uint16_t posEnd = 0;
+    char buff[size];
 
+    for (uint16_t i = 0; i < 512; i++)
+    {
+        for (uint16_t j = 0; j < size; j++)
+        {
+            if (mem_buff[i] != my_word[j])
+            {
+                cnt = 0;
+            }
+            if (mem_buff[i] == my_word[j])
+            {
+                buff[j] = my_word[j];
+                posEnd = i;
+                // eusart_send(my_word[j]); //************
+                i++;
+                cnt++;
+            }
+        }
+        if (comp_buff(buff, my_word, size) == size)
+        {
+            break;
+        }
+    }
+    return (posEnd - size);
+}
+void sd_buff_modify(uint32_t addr, uint32_t pos, char *word)
+{
+    char buff[strlen(word)];
+    memset(sd_buff, 0, 512);
+    strcpy(buff, word);
+    sdRead(addr); // sd_buff
+    uint16_t cnt = 0;
+    do
+    {
+        sd_buff[pos + cnt] = buff[cnt];
+        cnt++;
+    } while (cnt != strlen(word));
+
+    sdWrite_buff(addr, sd_buff);
+}
+// Get the first word ocurrence
+uint16_t sd_get_addr(uint32_t addr, char *word)
+{
+    char buff[strlen(word)];
+    memset(sd_buff, 0, 512);
+    strcpy(buff, word);
+    sdRead(addr); // sd_buff
+    return get_address(sd_buff, buff, strlen(word));
+}
+void sd_read_Address(uint32_t addr, uint16_t pos, uint16_t size)
+{
+    sdRead_pos(addr, pos, (pos + size));
+}
+//
+//
 #endif // _SD_CARD
+
+/*
+uint8_t sd_get_buff_addr(uint32_t addr, char *word)
+{
+    char buff[strlen(word)];
+    strcpy(buff, word);
+    sdRead(addr); // sd_buff
+    FILE *fd = fopen("sd_data.bin", "w");
+    fprintf(fd, "%s", sd_buff);
+    fclose(fd);
+    return 0;
+}
+
+
+
+*/

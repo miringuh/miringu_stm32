@@ -101,6 +101,127 @@ channel 7== USART2_TX, I2C1_RX, TIM2_CH2, TIM2_CH4, TIM4_UP
 // void DMA1_IRQHandler()
 // {
 // }
+void DMA1_Channel1_IRQHandler() // tx
+{
+    if ((DMA1->ISR & DMA_ISR_HTIF1)) // half txed
+    {
+        DMA1->IFCR |= DMA_IFCR_CHTIF1;
+    }
+    if ((DMA1->ISR & DMA_ISR_TCIF1)) // tx complete
+    {
+        DMA1->IFCR |= DMA_IFCR_CTCIF1;
+        DMA1_Channel1->CCR &= ~DMAEN;
+    }
+    if ((DMA1->ISR & DMA_ISR_TEIF1)) // tx error
+    {
+        DMA1->IFCR |= DMA_IFCR_CTEIF1;
+        DMA1_Channel1->CCR &= ~DMAEN;
+    }
+}
+void DMA1_Channel2_IRQHandler() // tx
+{
+    if ((DMA1->ISR & DMA_ISR_HTIF2)) // half txed
+    {
+        DMA1->IFCR |= DMA_IFCR_CHTIF2;
+    }
+    if ((DMA1->ISR & DMA_ISR_TCIF2)) // tx complete
+    {
+        DMA1->IFCR |= DMA_IFCR_CTCIF2;
+        DMA1_Channel2->CCR &= ~DMAEN;
+    }
+    if ((DMA1->ISR & DMA_ISR_TEIF2)) // tx error
+    {
+        DMA1->IFCR |= DMA_IFCR_CTEIF2;
+        DMA1_Channel2->CCR &= ~DMAEN;
+    }
+}
+void DMA1_Channel3_IRQHandler() // tx
+{
+    if ((DMA1->ISR & DMA_ISR_HTIF3)) // half txed
+    {
+        DMA1->IFCR |= DMA_IFCR_CHTIF3;
+    }
+    if ((DMA1->ISR & DMA_ISR_TCIF3)) // tx complete
+    {
+        DMA1->IFCR |= DMA_IFCR_CTCIF3;
+        DMA1_Channel3->CCR &= ~DMAEN;
+    }
+    if ((DMA1->ISR & DMA_ISR_TEIF3)) // tx error
+    {
+        DMA1->IFCR |= DMA_IFCR_CTEIF3;
+        DMA1_Channel4->CCR &= ~DMAEN;
+    }
+}
+void DMA1_Channel4_IRQHandler() // tx
+{
+    if ((DMA1->ISR & DMA_ISR_HTIF4)) // half txed
+    {
+        DMA1->IFCR |= DMA_IFCR_CHTIF4;
+    }
+    if ((DMA1->ISR & DMA_ISR_TCIF4)) // tx complete
+    {
+        DMA1->IFCR |= DMA_IFCR_CTCIF4;
+        DMA1_Channel4->CCR &= ~DMAEN;
+    }
+    if ((DMA1->ISR & DMA_ISR_TEIF4)) // tx error
+    {
+        DMA1->IFCR |= DMA_IFCR_CTEIF4;
+        DMA1_Channel4->CCR &= ~DMAEN;
+    }
+}
+void DMA1_Channel5_IRQHandler() // tx
+{
+    if ((DMA1->ISR & DMA_ISR_HTIF5)) // half txed
+    {
+        DMA1->IFCR |= DMA_IFCR_CHTIF5;
+    }
+    if ((DMA1->ISR & DMA_ISR_TCIF5)) // tx complete
+    {
+        DMA1->IFCR |= DMA_IFCR_CTCIF5;
+        DMA1_Channel5->CCR &= ~DMAEN;
+    }
+    if ((DMA1->ISR & DMA_ISR_TEIF5)) // tx error
+    {
+        DMA1->IFCR |= DMA_IFCR_CTEIF5;
+        DMA1_Channel5->CCR &= ~DMAEN;
+    }
+}
+void DMA1_Channel6_IRQHandler() // tx
+{
+    if ((DMA1->ISR & DMA_ISR_HTIF6)) // half txed
+    {
+        DMA1->IFCR |= DMA_IFCR_CHTIF6;
+    }
+    if ((DMA1->ISR & DMA_ISR_TCIF6)) // tx complete
+    {
+        DMA1->IFCR |= DMA_IFCR_CTCIF6;
+        DMA1_Channel6->CCR &= ~DMAEN;
+    }
+    if ((DMA1->ISR & DMA_ISR_TEIF6)) // tx error
+    {
+        DMA1->IFCR |= DMA_IFCR_CTEIF6;
+        DMA1_Channel6->CCR &= ~DMAEN;
+    }
+}
+void DMA1_Channel7_IRQHandler() // tx
+{
+    if ((DMA1->ISR & DMA_ISR_HTIF7)) // half txed
+    {
+        DMA1->IFCR |= DMA_IFCR_CHTIF7;
+    }
+    if ((DMA1->ISR & DMA_ISR_TCIF7)) // tx complete
+    {
+        DMA1->IFCR |= DMA_IFCR_CTCIF7;
+        DMA1_Channel7->CCR &= ~DMAEN;
+    }
+    if ((DMA1->ISR & DMA_ISR_TEIF7)) // tx error
+    {
+        DMA1->IFCR |= DMA_IFCR_CTEIF7;
+        DMA1_Channel7->CCR &= ~DMAEN;
+    }
+}
+
+//
 void channel1(uint32_t phaddr, uint32_t memaddr, uint16_t buffSize)
 {
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
