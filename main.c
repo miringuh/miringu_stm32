@@ -2,7 +2,7 @@
 
 #include "spi.h"
 #include "portRemaps.h"
-// #include "tim1.h"
+#include "tim1.h"
 // #include "advTm1.h"
 // #include "adc.h"
 #include "eusart.h"
@@ -12,7 +12,7 @@
 // #include "spi_Lcd.h"
 // #include "i2c.h"
 // #include "dma.h"
-#include "sdcard.h"
+// #include "sdcard.h"
 // #include "changeover.h"
 
 #define txBuffSize 12
@@ -48,52 +48,23 @@ void reset_regs()
 }
 int main()
 {
-
+    reset_regs();
     clock_init_20mhz_apb();
-    RCC->APB2ENR = RCC_APB2ENR_IOPBEN | RCC_APB2ENR_TIM1EN | RCC_APB2ENR_IOPCEN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_ADC1EN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_AFIOEN | RCC_APB2ENR_USART1EN;
+    // RCC->APB2ENR = RCC_APB2ENR_IOPBEN | RCC_APB2ENR_TIM1EN | RCC_APB2ENR_IOPCEN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_ADC1EN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_AFIOEN | RCC_APB2ENR_USART1EN;
 
     RCC->APB1ENR = RCC_APB1ENR_SPI2EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM4EN;
+    RCC->APB2ENR = RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPCEN;
 
-    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-    spi2_init(BAUD_FCLK_64);
     eusart_init(U19200);
-
-    timer4_delay(_10HZ);
-    timer4_delay(_10HZ);
-    timer4_delay(_10HZ);
-
-    sd_init();
-    sd_card_cond_8();   // 00 00 01 AA
-    read_opt_cond_41(); // 00 0001 0000
-    // read_ocr_58();
-    // get_csd();
-
-    del = _3200HZ;
-
-    // sdWrite_String(0,"welcome preagain again");
-    // sdWrite_pos(0, "welcome", 20, 27);
-    // sd_get_buff_addr(1, "welcome again");
-
-    // sdRead(0);
-    // sdRead(1);
-    // sdRead(2);
-
-    // uint16_t addr= sd_get_buff_addr(0, "again");
-    // eusart_send(addr);
-
-    /*
-    0........512-----   I
-    0 1 2 3 4 5 6 7 8 9 ---J (cnt)
-
-    */
-    // buffer_add(0,30,"hello testing");
-    // sdRead(0);
-    eusart_send(sd_get_addr(0, "again"));
-
-    stopSpi();
-
+    // eusartString ("welcome");
+    confPinC(P_P10MHZ, 13);
+    // timer4();
     while (1)
     {
+        GPIOC->BSRR = GPIO_BSRR_BS13;
+        timer1_delay(_5HZ);
+        GPIOC->BSRR = GPIO_BSRR_BR13;
+        timer1_delay(_5HZ);
     }
     return 0;
 }

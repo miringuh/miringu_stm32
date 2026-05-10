@@ -32,20 +32,20 @@ CRH   15  |14  |13  |12  |11  |10 |9  |8
 ////////// SET PIN CONFS
 #define REG_A 1
 #define REG_B 2
-#define REG_C 3 
+#define REG_C 3
 void confPinC(uint8_t conf_mode, uint8_t pin)
 {
-    // RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
+    RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
     switch (pin)
     {
     case 13:
-        ATOMIC_MODIFY_REG(GPIOC->CRH, 0, (conf_mode << 20));
+        WRITE_REG(GPIOC->CRH, (conf_mode << 20) | READ_REG(GPIOC->CRH));
         break;
     case 14:
-        ATOMIC_MODIFY_REG(GPIOC->CRH, 0, (conf_mode << 24));
+        WRITE_REG(GPIOC->CRH, (conf_mode << 24) | READ_REG(GPIOC->CRH));
         break;
     case 15:
-        ATOMIC_MODIFY_REG(GPIOC->CRH, 0, (conf_mode << 28));
+        WRITE_REG(GPIOC->CRH, (conf_mode << 28) | READ_REG(GPIOC->CRH));
         break;
     default:
 
@@ -58,52 +58,52 @@ void confPinB(uint8_t conf_mode, uint8_t pin)
     switch (pin)
     {
     case 0:
-        ATOMIC_MODIFY_REG(GPIOB->CRL, 0, conf_mode);
+        WRITE_REG(GPIOB->CRL, conf_mode | READ_REG(GPIOB->CRL));
         break;
     case 1:
-        ATOMIC_MODIFY_REG(GPIOB->CRL, 0, (conf_mode << 4));
+        WRITE_REG(GPIOB->CRL, (conf_mode << 4) | READ_REG(GPIOB->CRL));
         break;
     // case 2:
     //     GPIOB->CRL |= (conf_mode << 8);
     //     break;
     case 3:
-        ATOMIC_MODIFY_REG(GPIOB->CRL, 0, (conf_mode << 12));
+        WRITE_REG(GPIOB->CRL, (conf_mode << 12) | READ_REG(GPIOB->CRL));
         break;
     case 4:
-        ATOMIC_MODIFY_REG(GPIOB->CRL, 0, (conf_mode << 14));
+        WRITE_REG(GPIOB->CRL, (conf_mode << 14) | READ_REG(GPIOB->CRL));
         break;
     case 5:
-        ATOMIC_MODIFY_REG(GPIOB->CRL, 0, (conf_mode << 20));
+        WRITE_REG(GPIOB->CRL, (conf_mode << 20) | READ_REG(GPIOB->CRL));
         break;
     case 6:
-        ATOMIC_MODIFY_REG(GPIOB->CRL, 0, (conf_mode << 24));
+        WRITE_REG(GPIOB->CRL, (conf_mode << 24) | READ_REG(GPIOB->CRL));
         break;
     case 7:
-        ATOMIC_MODIFY_REG(GPIOB->CRL, 0, (conf_mode << 28));
+        WRITE_REG(GPIOB->CRL, (conf_mode << 28) | READ_REG(GPIOB->CRL));
         break;
     case 8:
-        ATOMIC_MODIFY_REG(GPIOB->CRH, 0, conf_mode);
+        WRITE_REG(GPIOB->CRH, conf_mode | READ_REG(GPIOB->CRH));
         break;
     case 9:
-        ATOMIC_MODIFY_REG(GPIOB->CRH, 0, (conf_mode << 4));
+        WRITE_REG(GPIOB->CRH, (conf_mode << 4) | READ_REG(GPIOB->CRH));
         break;
     case 10:
-        ATOMIC_MODIFY_REG(GPIOB->CRH, 0, (conf_mode << 8));
+        WRITE_REG(GPIOB->CRH, (conf_mode << 8) | READ_REG(GPIOB->CRH));
         break;
     case 11:
-        ATOMIC_MODIFY_REG(GPIOB->CRH, 0, (conf_mode << 12));
+        WRITE_REG(GPIOB->CRH, (conf_mode << 12) | READ_REG(GPIOB->CRH));
         break;
     case 12:
-        ATOMIC_MODIFY_REG(GPIOB->CRH, 0, (conf_mode << 14));
+        WRITE_REG(GPIOB->CRH, (conf_mode << 14) | READ_REG(GPIOB->CRH));
         break;
     case 13:
-        ATOMIC_MODIFY_REG(GPIOB->CRH, 0, (conf_mode << 20));
+        WRITE_REG(GPIOB->CRH, (conf_mode << 20) | READ_REG(GPIOB->CRH));
         break;
     case 14:
-        ATOMIC_MODIFY_REG(GPIOB->CRH, 0, (conf_mode << 24));
+        WRITE_REG(GPIOB->CRH, (conf_mode << 24) | READ_REG(GPIOB->CRH));
         break;
     case 15:
-        ATOMIC_MODIFY_REG(GPIOB->CRH, 0, (conf_mode << 28));
+        WRITE_REG(GPIOB->CRH, (conf_mode << 28) | READ_REG(GPIOB->CRH));
         break;
     default:
         break;
@@ -115,52 +115,52 @@ void confPinA(uint8_t conf_mode, uint8_t pin)
     switch (pin)
     {
     case 0:
-        ATOMIC_MODIFY_REG(GPIOA->CRL, 0, (conf_mode));
+        WRITE_REG(GPIOA->CRL, (conf_mode) | READ_REG(GPIOA->CRL));
         break;
     case 1:
-        ATOMIC_MODIFY_REG(GPIOA->CRL, 0, (conf_mode << 4));
+        WRITE_REG(GPIOA->CRL, (conf_mode << 4) | READ_REG(GPIOA->CRL));
         break;
     case 2:
-        ATOMIC_MODIFY_REG(GPIOA->CRL, 0, (conf_mode << 8));
+        WRITE_REG(GPIOA->CRL, (conf_mode << 8) | READ_REG(GPIOA->CRL));
         break;
     case 3:
-        ATOMIC_MODIFY_REG(GPIOA->CRL, 0, (conf_mode << 12));
+        WRITE_REG(GPIOA->CRL, (conf_mode << 12) | READ_REG(GPIOA->CRL));
         break;
     case 4:
-        ATOMIC_MODIFY_REG(GPIOA->CRL, 0, (conf_mode << 14));
+        WRITE_REG(GPIOA->CRL, (conf_mode << 14) | READ_REG(GPIOA->CRL));
         break;
     case 5:
-        ATOMIC_MODIFY_REG(GPIOA->CRL, 0, (conf_mode << 20));
+        WRITE_REG(GPIOA->CRL, (conf_mode << 20) | READ_REG(GPIOA->CRL));
         break;
     case 6:
-        ATOMIC_MODIFY_REG(GPIOA->CRL, 0, (conf_mode << 24));
+        WRITE_REG(GPIOA->CRL, (conf_mode << 24) | READ_REG(GPIOA->CRL));
         break;
     case 7:
-        ATOMIC_MODIFY_REG(GPIOA->CRL, 0, (conf_mode << 28));
+        WRITE_REG(GPIOA->CRL, (conf_mode << 28) | READ_REG(GPIOA->CRL));
         break;
     case 8:
-        ATOMIC_MODIFY_REG(GPIOA->CRH, 0, (conf_mode));
+        WRITE_REG(GPIOA->CRH, (conf_mode) | READ_REG(GPIOA->CRH));
         break;
     case 9:
-        ATOMIC_MODIFY_REG(GPIOA->CRH, 0, (conf_mode << 4));
+        WRITE_REG(GPIOA->CRH, (conf_mode << 4) | READ_REG(GPIOA->CRH));
         break;
     case 10:
-        ATOMIC_MODIFY_REG(GPIOA->CRH, 0, (conf_mode << 8));
+        WRITE_REG(GPIOA->CRH, (conf_mode << 8) | READ_REG(GPIOA->CRH));
         break;
     case 11:
-        ATOMIC_MODIFY_REG(GPIOA->CRH, 0, (conf_mode << 12));
+        WRITE_REG(GPIOA->CRH, (conf_mode << 12) | READ_REG(GPIOA->CRH));
         break;
     case 12:
-        ATOMIC_MODIFY_REG(GPIOA->CRH, 0, (conf_mode << 14));
+        WRITE_REG(GPIOA->CRH, (conf_mode << 14) | READ_REG(GPIOA->CRH));
         break;
     // case 13:
-    //     ATOMIC_MODIFY_REG(GPIOA->CRH,0 , (conf_mode << 20));
+    //     WRITE_REG(GPIOA->CRH,0 , (conf_mode << 20)|READ_REG(GPIOA->CRH ));
     //     break;
     // case 14:
-    //     ATOMIC_MODIFY_REG(GPIOA->CRH,0 , (conf_mode << 24));
+    //     WRITE_REG(GPIOA->CRH,0 , (conf_mode << 24)|READ_REG( GPIOA->CRH));
     //     break;
     case 15:
-        ATOMIC_MODIFY_REG(GPIOA->CRH, 0, (conf_mode << 28));
+        WRITE_REG(GPIOA->CRH, (conf_mode << 28) | READ_REG(GPIOA->CRH));
         break;
     default:
         break;
@@ -195,9 +195,9 @@ void func_void_param(uint32_t val, callback2 cb)
     cb(val);
 }
 typedef void (*callback3)(uint32_t, uint32_t);
-void func_void_2param(uint32_t val0, uint32_t val1, callback3 cb)
+void func_void_2param(uint32_t v, uint32_t val1, callback3 cb)
 {
-    cb(val0, val1);
+    cb(v, val1);
 }
 /////
 typedef uint32_t (*callback4)(void);
@@ -211,9 +211,9 @@ uint32_t func_return_param(uint32_t val, callback5 cb)
     return cb(val);
 }
 typedef uint32_t (*callback6)(uint32_t, uint32_t);
-uint32_t func_return_2param(uint32_t val0, uint32_t val1, callback6 cb)
+uint32_t func_return_2param(uint32_t v, uint32_t val1, callback6 cb)
 {
-    return cb(val0, val1);
+    return cb(v, val1);
 }
 
 #endif // __GPIO

@@ -71,21 +71,21 @@ CRH   15  |14  |13  |12  |11  |10 |9  |8
 #define USART2_CTS_MAP0(VAL) WRITE_REG(GPIOA->CRL, VAL)        // PA0
 #define USART2_RTS_MAP0(VAL) WRITE_REG(GPIOA->CRL, (VAL << 4)) // PA1
 
-//////// USART1 ////
+//////// USART 0/1 ////
 #define USART1_TX_MAP0(VAL) WRITE_REG(GPIOA->CRH, (VAL << 4)) // PA9
 #define USART1_RX_MAP0(VAL) WRITE_REG(GPIOA->CRH, (VAL << 8)) // PA10
 
 #define USART1_TX_MAP1(VAL) WRITE_REG(GPIOB->CRL, (VAL << 24)) // PB6
 #define USART1_RX_MAP1(VAL) WRITE_REG(GPIOB->CRL, (VAL << 28)) // PB7
 
-//////// I2C1 /////////////////
+//////// I2C 0/1 /////////////////
 #define I2C1_SCL_MAP0(VAL) WRITE_REG(GPIOB->CRL, (VAL << 24)) // PB6
 #define I2C1_SDA_MAP0(VAL) WRITE_REG(GPIOB->CRL, (VAL << 28)) // PB7
 
 #define I2C1_SCL_MAP1(VAL) WRITE_REG(GPIOB->CRH, VAL)         // PB8
 #define I2C1_SDA_MAP1(VAL) WRITE_REG(GPIOB->CRH, (VAL << 4)) // PB9
 
-///////// SPI1 //////////////////
+///////// SPI 0/1 //////////////////
 #define SPI1_NSS_MAP0(VAL) WRITE_REG(GPIOA->CRL, (VAL << 16)) // PA4
 #define SPI1_SCK_MAP0(VAL) WRITE_REG(GPIOA->CRL, (VAL << 20)) // PA5
 #define SPI1_MISO_MAP0(VAL) WRITE_REG(GPIOA->CRL, (VAL << 24)) // PA6

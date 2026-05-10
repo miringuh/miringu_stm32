@@ -161,13 +161,13 @@ uint8_t command(uint8_t comm, uint8_t err_num, uint32_t args, uint8_t crc)
         spi2_send(crc);
         spi2_send(0XFF);
         response = spi2_send(0XFF);
-        // eusart_send(response);
+        eusart_send(response);
         if (response == err_num)
         {
             goto commData;
         }
         TIMEOUT--;
-        // _delay_us(200);
+        // timer4_delay(_50HZ);
     } while (TIMEOUT >= 1);
     eusart_send(0xee);
     eusart_send(response);
@@ -187,15 +187,15 @@ void sd_init()
     // eusart_init(U19200);
     // spi2_init(BAUD_FCLK_64);
     // confPinB(P_P50MHZ, 0); // cs
-
-    // spi2_init(BAUD_FCLK_64);
-    // eusart_init(U19200);
+    RCC->APB1ENR |= RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM4EN;
+    spi2_init(BAUD_FCLK_64);
+    eusart_init(U19200);
 
     timer4_delay(_1HZ);
     timer4_delay(_1HZ);
     timer4_delay(_1HZ);
 
-    GPIOB->CRL = (P_P50MHZ) | (P_P50MHZ << 4);
+    GPIOB->CRL |= (P_P50MHZ) | (P_P50MHZ << 4);
     power(1);
     for (uint8_t i = 0; i < 10; i++)
     {
@@ -212,7 +212,7 @@ void sd_card_cond_8() // 5 R7
     for (uint8_t i = 0; i < 4; i++)
     {
         response = spi2_send(0XFF);
-        // eusart_send(response);
+        eusart_send(response);
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
@@ -221,8 +221,21 @@ void sd_card_cond_8() // 5 R7
 void read_opt_cond_41() // 4
 {
     command(CMD55, 0x05, 0x00000000, 0X95); // 2GB
-    spi2_send(0XFF);
-    spi2_send(0XFF);
+    spi2_send(0xff);
+    spi2_send(0xff);
+    // for (uint16_t i = 0; i < 0x4ff; i++)
+    // {
+    //     if ((response & 0X7E) != 1)
+    //     {
+    //         eusart_send(spi2_send(0X55));
+    //     }
+    //     if ((response & 0X7E) == 1)
+    //     {
+    //         eusart_send(0XEE);
+    //         eusart_send(response);
+    //         break;
+    //     }
+    // }
     GPIOB->BSRR = GPIO_BSRR_BS0;
     command(ACMD41, 0x01, 0x40000000, 0X95); // 2GB
     // command(ACMD41, 0x05, 0x40000000, 0X95); // 8GB
@@ -248,9 +261,26 @@ void read_ocr_58()
     spi2_send(0XFF);
     GPIOB->BSRR = GPIO_BSRR_BS0;
 }
+void acmd_status13()
+{
+    response = 0;
+    command(CMD55, 0x05, 0x00000000, 0X95); // 2GB
+    spi2_send(0XFF);
+    spi2_send(0XFF);
+    return response;
+    GPIOB->BSRR = GPIO_BSRR_BS0;
+
+    // command(ACMD13, 0x01, 0x00000000, 0X95); // 2GB
+    command(ACMD41, 0x05, 0x40000000, 0X95); // 8GB
+    spi2_send(0XFF);
+    spi2_send(0XFF);
+
+    GPIOB->BSRR = GPIO_BSRR_BS0;
+}
 void get_csd()
 {
     command(CMD9, 0x00, 0x00000000, 0X95); // 2GB
+    // command(CMD9, 0x05, 0x40000000, 0X95); // 8GB
     for (uint8_t i = 16; i > 0; i--)
     {
         response = spi2_send(0XFF);
@@ -260,7 +290,7 @@ void get_csd()
     spi2_send(0XFF);
     spi2_send(0XFF);
     GPIOB->BSRR = GPIO_BSRR_BS0;
-    // getByteValue(csd_buff);
+    getByteValue(csd_buff);
     // getCsdValueV2(csd_buff);
     // getCsdValueV1(csd_buff);
 }

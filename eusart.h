@@ -183,11 +183,7 @@ void USART1_IRQHandler()
     {
         USART1->SR &= ~RXNE_FLAG;
     }
-    // dummy = USART1->SR;
-    // if ((USART1->SR & TXE_FLAG)) // 1- txed
-    // {
-    //     dummy = USART1->SR;
-    // }
+
 }
 ////// USART1_0 // tx-PA9 rx-PA10 //////
 void eusart_init(uint32_t bauds)
@@ -201,9 +197,8 @@ void eusart_init(uint32_t bauds)
     USART1->CR1 = TCIE | USART_RXNEIE; //| USART_TXEIE;
     USART1->CR1 |= TXEN | RXEN;
     USART1->CR1 |= EU;
-
-    // NVIC_SetPriority(USART1_IRQn, 2);
-    // NVIC_EnableIRQ(USART1_IRQn);
+    NVIC_SetPriority(USART1_IRQn, 2);
+    NVIC_EnableIRQ(USART1_IRQn);
 }
 uint8_t eusart_send(uint8_t val)
 {
@@ -608,7 +603,7 @@ void eusart0_dma_rx_init(uint32_t bauds, char *msg, uint16_t size)
     USART1->CR1 |= TXEN | RXEN | EU;
     DMA1_Channel5->CCR |= DMAEN;
 }
-// //
+
 #endif
 
 /*

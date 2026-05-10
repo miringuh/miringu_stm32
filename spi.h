@@ -260,8 +260,8 @@ void spi1_stop()
 void spi2_init(uint8_t baud)
 { // mosi pb15 miso pb14 sck-pb13 ss-pb12 50mhz
     spi2_setup();
-    GPIOB->CRH = MOSI_2 | MISO_2 | SCKL_2;
-    GPIOA->CRH = SS_2;
+    GPIOB->CRH |= MOSI_2 | MISO_2 | SCKL_2;
+    GPIOA->CRH |= SS_2;
     SPI2->CR1 = 0;
     SPI2->CR2 = 0;
     SPI2->CR1 = baud;
