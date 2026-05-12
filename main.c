@@ -14,6 +14,7 @@
 // #include "dma.h"
 // #include "sdcard.h"
 // #include "changeover.h"
+#include "timer_capture.h"
 
 #define txBuffSize 12
 char eusart_buff[txBuffSize];
@@ -50,21 +51,25 @@ int main()
 {
     reset_regs();
     clock_init_20mhz_apb();
-    // RCC->APB2ENR = RCC_APB2ENR_IOPBEN | RCC_APB2ENR_TIM1EN | RCC_APB2ENR_IOPCEN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_ADC1EN | RCC_APB2ENR_SPI1EN | RCC_APB2ENR_AFIOEN | RCC_APB2ENR_USART1EN;
 
-    RCC->APB1ENR = RCC_APB1ENR_SPI2EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM4EN;
+    // RCC->APB1ENR = RCC_APB1ENR_SPI2EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM4EN;
     RCC->APB2ENR = RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPCEN;
+    RCC->APB1ENR = RCC_APB1ENR_TIM2EN ;
 
     eusart_init(U19200);
-    // eusartString ("welcome");
-    confPinC(P_P10MHZ, 13);
+    // confPinA(P_P10MHZ, 1);
     // timer4();
+    // timer1_init();
+    // eusartString("welcome");
+    // TIM1->CR1 &= ~CEN;
+    timer2_ch1_init();
+    // timer2_ch2_init();
     while (1)
     {
-        GPIOC->BSRR = GPIO_BSRR_BS13;
-        timer1_delay(_5HZ);
-        GPIOC->BSRR = GPIO_BSRR_BR13;
-        timer1_delay(_5HZ);
+        // GPIOC->ODR ^= GPIO_ODR_ODR13;
+        // timer1_delay(2);
+        // GPIOC->BSRR = GPIO_BSRR_BR13;
+        // timer1_delay(2);
     }
     return 0;
 }

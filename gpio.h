@@ -27,9 +27,7 @@ CRL   7   |6   |5   |4   |3   |2  |1  |0
 POS   28  |24  |20  |16  |12  |8  |4  |0 **********
 CRH   15  |14  |13  |12  |11  |10 |9  |8
 */
-
-//
-////////// SET PIN CONFS
+//// SET PIN CONFS
 #define REG_A 1
 #define REG_B 2
 #define REG_C 3
@@ -54,7 +52,7 @@ void confPinC(uint8_t conf_mode, uint8_t pin)
 }
 void confPinB(uint8_t conf_mode, uint8_t pin)
 {
-    // RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
+    RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
     switch (pin)
     {
     case 0:

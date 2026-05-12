@@ -132,6 +132,7 @@ void u_baud(uint32_t baud)
 void usart1_pins_remap0() // tx-PA9 rx-PA10
 {
     RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_AFIOEN;
+    AFIO->MAPR = AFIO_MAPR_SWJ_CFG_2;
     AFIO->MAPR &= ~(AFIO_MAPR_USART1_REMAP);
     GPIOA->CRH |= (GPIO_CRH_CNF9_1 | GPIO_CRH_MODE9_0); // tx 10mhz AF_P_P
     GPIOA->CRH |= (GPIO_CRH_CNF10_0);                   // rx input float
@@ -139,6 +140,7 @@ void usart1_pins_remap0() // tx-PA9 rx-PA10
 void usart1_pins_remap1() // tx-PB6  rx-PB7
 {
     RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPBEN | RCC_APB2ENR_AFIOEN;
+    AFIO->MAPR = AFIO_MAPR_SWJ_CFG_2;
     AFIO->MAPR |= AFIO_MAPR_USART1_REMAP;
     GPIOB->CRL |= (GPIO_CRL_CNF6_1 | GPIO_CRL_MODE6_1); // tx 10mhz AF_P_P
     GPIOB->CRL |= (GPIO_CRL_CNF7_0);                    // rx input FLOAT
@@ -154,6 +156,7 @@ void usart2_pins_remap2() // tx-PA2  rx-PA3 cts-PA0 rts-PA1
 
     RCC->APB2ENR |= RCC_APB2ENR_IOPAEN | RCC_APB2ENR_AFIOEN;
     RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
+    AFIO->MAPR = AFIO_MAPR_SWJ_CFG_2;
     AFIO->MAPR &= ~AFIO_MAPR_USART2_REMAP;
 
     GPIOA->CRL |= (GPIO_CRL_CNF2_1 | GPIO_CRL_MODE2_Msk); // tx 50mhz AF_P_P
@@ -165,6 +168,7 @@ void usart3_pins_remap3() // tx-PB10  rx-PB11 cts-PB13 rts-PB14
 {
     RCC->APB2ENR |= RCC_APB2ENR_IOPBEN | RCC_APB2ENR_AFIOEN;
     RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
+    AFIO->MAPR = AFIO_MAPR_SWJ_CFG_2;
     AFIO->MAPR &= ~AFIO_MAPR_USART2_REMAP;
     GPIOB->CRH = (GPIO_CRH_CNF10_1 | GPIO_CRH_MODE10_Msk); // tx 50mhz AF_P_P
     GPIOB->CRH |= (GPIO_CRH_MODE14_Msk);                   // rts 50mhz P_P
@@ -183,7 +187,6 @@ void USART1_IRQHandler()
     {
         USART1->SR &= ~RXNE_FLAG;
     }
-
 }
 ////// USART1_0 // tx-PA9 rx-PA10 //////
 void eusart_init(uint32_t bauds)

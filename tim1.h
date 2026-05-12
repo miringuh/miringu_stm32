@@ -43,7 +43,7 @@
 #define COUNTER(REG, VAL) WRITE_REG(REG, VAL) // CNT[15:0]
 //
 //  TIMx_PSC prescaler
-// freq=fCK_PSC / (PSC[15:0] + 1).
+// timer_freq=fCK_PSC / (PSC[15:0] + 1).
 #define TIM_PRESC(REG, VAL) WRITE_REG(REG, VAL) // PRESC[15:0]
 //
 // TIMx_ARR auto-reload register
@@ -88,11 +88,23 @@
 // #define _4HZ 10000
 // #define _2HZ 20000
 #define _1HZ 100000
+/*
 
+2000 100hz 10ms
+4000 50hz 20ms
+8000 25hz 40ms
+
+
+0XFFFF 3.5hz MAX == 285 ms
+
+2000 100hz
+4000 50hz
+*/
 /*
 freq(hz)=Tclk/((PSC+1)(ARR+1))
 time(ms)=(1/hz)*1000
 */
+volatile uint16_t timer_freq;
 // TIMER 3
 void TIM3_IRQHandler(void)
 {
@@ -104,7 +116,7 @@ void TIM3_IRQHandler(void)
 };
 void timer3()
 {
-    // RCC->APB1ENR |= RCC_APB2ENR_TIM4EN ;//| RCC_APB2ENR_IOPCEN;
+    RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
     TIM3->CR1 &= ~CEN;
     TIM3->PSC = (20 - 1); // 1us (1ms=1000us)
     TIM3->ARR = 0xFFFFFFFF;
@@ -135,7 +147,7 @@ void TIM4_IRQHandler(void)
 };
 void timer4()
 {
-    // RCC->APB1ENR |= RCC_APB2ENR_TIM4EN ;//| RCC_APB2ENR_IOPCEN;
+    RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
     TIM4->CR1 &= ~CEN;
     TIM4->PSC = (20 - 1); // 1us 1ms=1000us
     TIM4->ARR = 0xFFFFFFFF;
@@ -148,6 +160,7 @@ void timer4()
     NVIC_SetPriority(TIM4_IRQn, 2);
     NVIC_EnableIRQ(TIM4_IRQn);
     TIM4->CR1 |= CEN;
+
 }
 void timer4_delay(uint16_t cyc)
 {
@@ -158,37 +171,48 @@ void timer4_delay(uint16_t cyc)
     }
 }
 // TIMER 1
-void TIM10_IRQHandler(void)
+void TIM1_UP_IRQHandler(void)
 {
     if ((TIM1->SR & TIM_SR_UIF))
     {
+        timer_freq++;
         TIM1->SR &= ~TIM_SR_UIF;
+        // eusart_send((TIM1->ARR & 0xFF00) >> 8);
+        // eusart_send((TIM1->ARR & 0x00FF));
+        // eusart_send(timer_freq);
     }
 };
-void timer1()
+void timer1_init()
 {
-    RCC->APB2ENR |= RCC_APB2ENR_TIM1EN; //| RCC_APB2ENR_IOPCEN;
+    // RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+    timer_freq = 0;
     TIM1->CR1 &= ~CEN;
     TIM1->PSC = (20 - 1); // 1us 1ms=1000us
-    TIM1->ARR = 0xFFFFFFFF;
+    TIM1->ARR = 0xFFFF;   // 65,535 MAX == 285 ms
+    // TIM1->ARR = 8000;
     TIM1->CNT = 0;
     TIM1->DIER = TIM_DIER_UIE | TIM_DIER_TIE;
     TIM1->CR1 = TIM_CR1_ARPE;
-    TIM1->CR1 &= !(TIM_CR1_OPM | TIM_CR1_UDIS); // cnt stops
+    TIM1->CR1 &= ~(TIM_CR1_OPM | TIM_CR1_UDIS); // cnt stops
     TIM1->EGR |= TIM_EGR_UG;
-    NVIC_SetPriority(TIM10_IRQn, 2);
-    NVIC_EnableIRQ(TIM10_IRQn);
+    NVIC_SetPriority(TIM1_UP_IRQn, 2);
+    NVIC_EnableIRQ(TIM1_UP_IRQn);
     TIM1->CR1 |= CEN;
+
 }
 void timer1_delay(uint16_t cyc)
 {
-    for (uint16_t i = 0; i < cyc; i++)
-    {
-        timer1();
-    }
+    // TIM1->CR1 |= CEN;
+    // TIM1->ARR = 0XFFFF;
+    TIM1->PSC = (20 - 1);
+    while (timer_freq != cyc)
+        ;
+    timer_freq = 0;
+    TIM1->EGR |= TIM_EGR_UG;
+    while ((TIM1->EGR == TIM_EGR_UG))
+        ;
+    // TIM1->CR1 &= ~CEN;
 }
 //
-void time1Capture(){
 
-}
 #endif // __TIMER
