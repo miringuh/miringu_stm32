@@ -305,14 +305,14 @@ void i2c_chipSel(uint8_t state)
     {
         GPIOC->ODR &= ~GPIO_ODR_ODR13;
     }
-    timer1_del(400000);
+    timer1_del(2);
 }
 
 void i2c1_init() // scl-PB6 sda-pb7
 {
     i2c_chipSel(off);
     i2c_chipSel(on);
-    timer1_del(_100ms);
+    timer1_del(2);
 
     setI2c1Pins_mapr0();
     I2C1->CR1 = 0;
@@ -376,7 +376,7 @@ void i2c1_start()
     I2C1->CR1 |= I2C_CR1_START;
     i2cdummy = I2C1->SR2;
     i2cdummy = I2C1->SR1;
-    timer1_del(_50ms);
+    timer1_del(2);
 
     // if ((I2C1->SR1 & I2C_SR1_BERR)) // 0-OK 1-MISS
     // {
@@ -401,7 +401,7 @@ uint8_t i2c1_getAddress(uint8_t address)
     i2cdummy = I2C1->SR2;
     i2cdummy = I2C1->SR1;
     I2C1->DR = address;
-    timer1_del(200);
+    timer1_del(2);
 
     // eusart_send((I2C1->SR1 & 0XFF00) >> 8);
     // eusart_send((I2C1->SR1 & 0X00FF));
@@ -447,7 +447,7 @@ uint8_t i2c1_send_address(uint8_t address)
     i2cdummy = I2C1->SR1;
     i2cdummy = I2C1->SR2;
     I2C1->DR = address;
-    timer1_del(200);
+    timer1_del(2);
     // eusart_send((I2C1->CR1 & 0XFF00) >> 8);
     // eusart_send((I2C1->CR1 & 0X00FF));
     // eusart_send((I2C1->SR1 & 0XFF00) >> 8);

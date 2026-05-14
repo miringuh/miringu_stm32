@@ -136,11 +136,11 @@ void power(uint8_t val) // pb0
     {
     case 1:
         GPIOB->BSRR = GPIO_BSRR_BS1;
-        timer4_delay(_5HZ);
+        timer4_delay(2);
         break;
     case 0:
         GPIOB->BSRR = GPIO_BSRR_BR1;
-        timer4_delay(_5HZ);
+        timer4_delay(2);
         break;
     default:
         break;
@@ -167,7 +167,7 @@ uint8_t command(uint8_t comm, uint8_t err_num, uint32_t args, uint8_t crc)
             goto commData;
         }
         TIMEOUT--;
-        // timer4_delay(_50HZ);
+        // timer4_delay(2Z);
     } while (TIMEOUT >= 1);
     eusart_send(0xee);
     eusart_send(response);
@@ -191,9 +191,9 @@ void sd_init()
     spi2_init(BAUD_FCLK_64);
     eusart_init(U19200);
 
-    timer4_delay(_1HZ);
-    timer4_delay(_1HZ);
-    timer4_delay(_1HZ);
+    timer4_delay(2);
+    timer4_delay(2);
+    timer4_delay(2);
 
     GPIOB->CRL |= (P_P50MHZ) | (P_P50MHZ << 4);
     power(1);

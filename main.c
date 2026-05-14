@@ -57,19 +57,21 @@ int main()
     RCC->APB1ENR = RCC_APB1ENR_TIM2EN ;
 
     eusart_init(U19200);
-    // confPinA(P_P10MHZ, 1);
-    // timer4();
-    // timer1_init();
+    confPinA(P_P10MHZ, 0);
+    timer1_init();
     // eusartString("welcome");
     // TIM1->CR1 &= ~CEN;
-    timer2_ch1_init();
+    
+    // timer2_ch1_init();
     // timer2_ch2_init();
+    // timer4();
     while (1)
     {
-        // GPIOC->ODR ^= GPIO_ODR_ODR13;
-        // timer1_delay(2);
-        // GPIOC->BSRR = GPIO_BSRR_BR13;
-        // timer1_delay(2);
+        // GPIOA->ODR ^= GPIO_ODR_ODR0;
+        GPIOA->BSRR = GPIO_BSRR_BS0;
+        timer1_delay(40);
+        GPIOA->BSRR = GPIO_BSRR_BR0;
+        timer1_delay(40);
     }
     return 0;
 }

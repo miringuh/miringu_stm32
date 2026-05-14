@@ -76,9 +76,9 @@ void func_lcd(uint8_t val, lcdfunc cb)
 void spi_latch()
 {
     GPIOC->ODR &= ~GPIO_ODR_ODR13;
-    timer3_delay(10);
+    timer3_delay(2);
     GPIOC->ODR |= GPIO_ODR_ODR13;
-    timer3_delay(10);
+    timer3_delay(2);
 }
 void lcd4_init(uint8_t baud) // SPI2
 {
@@ -87,7 +87,7 @@ void lcd4_init(uint8_t baud) // SPI2
     spi2_init(baud);
     spi2_send(0);
     spi_latch();
-    timer4_delay(50);
+    timer4_delay(5);
 }
 void lcd4_setup(uint8_t comm)
 {
@@ -156,9 +156,9 @@ void lcd_4_init()
     lcd_set(0x30);
     timer4_delay(5);
     lcd_set(0x30);
-    timer4_delay(1);
+    timer4_delay(2);
     lcd_set(0x30);
-    timer4_delay(1);
+    timer4_delay(2);
     lcd_set(0x20);
 
     lcd_command(DISP_OFF);

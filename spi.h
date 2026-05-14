@@ -110,9 +110,9 @@ void latch() // PC13
     //     GPIOC->CRH = GPIO_CRH_MODE13_1; // 2MHZ P_P
     // }
     GPIOC->ODR &= ~GPIO_ODR_ODR13;
-    _delay_ms(10000);
+    timer4_delay(10);
     GPIOC->ODR |= GPIO_ODR_ODR13;
-    _delay_ms(10000);
+    timer4_delay(10);
 }
 ////////////
 void spi0_setup()
