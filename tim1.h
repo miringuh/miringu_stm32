@@ -49,45 +49,7 @@
 // TIMx_ARR auto-reload register
 #define AUTO_RELOAD(REG, VAL) WRITE_REG(REG, VAL) // ARR[15:0]
 //
-#define _12800HZ _5HZ / 2560 // .07 us
-#define _6400HZ _5HZ / 1280  // .16 us
-#define _3200HZ _5HZ / 640   // .31 us
-#define _1600HZ _5HZ / 320   // .625 us
-#define _800HZ _5HZ / 160    // 1.25 ms
-#define _400HZ _5HZ / 80     // 2.5 ms
-#define _200HZ _5HZ / 40     // 5 ms
-#define _195HZ _5HZ / 39     //
-#define _190HZ _5HZ / 38     //
-#define _185HZ _5HZ / 37     //
-#define _180HZ _5HZ / 36     //
-#define _175HZ _5HZ / 35     //
-#define _170HZ _5HZ / 34     //
-#define _165HZ _5HZ / 33     //
-#define _160HZ _5HZ / 32     // 6.25ms
-#define _155HZ _5HZ / 31     //
-#define _150HZ _5HZ / 30     // 7ms
-#define _145HZ _5HZ / 29     //
-#define _140HZ _5HZ / 28     //
-#define _135HZ _5HZ / 27     //
-#define _130HZ _5HZ / 26     //
-#define _125HZ _5HZ / 25     //
-#define _120HZ _5HZ / 24     // 8.3ms
-#define _115HZ _5HZ / 23     //
-#define _110HZ _5HZ / 22     //
-#define _105HZ _5HZ / 21     //
-#define _100HZ _5HZ / 20     // 10 ms
-#define _50HZ _5HZ / 10      //
-#define _40HZ _5HZ / 8       // 25 ms
-#define _35HZ _5HZ / 7       //
-#define _30HZ _5HZ / 6       // 33.3ms
-#define _25HZ _5HZ / 5       // 40 ms
-#define _20HZ _5HZ / 4       // 50 ms
-#define _15HZ _5HZ / 3       //
-#define _10HZ _5HZ / 2       // 100 ms
-#define _5HZ 
-// #define _4HZ 10000
-// #define _2HZ 20000
-#define _1HZ 500
+
 /*
 20  25hz   40ms
 10  50hz   20ms
@@ -115,8 +77,8 @@ void timer3()
 {
     RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
     TIM3->CR1 &= ~CEN;
-    TIM3->PSC = (20 - 1); // 1us (1ms=1000us)
-    TIM3->ARR = 0xFFFF;
+    TIM3->PSC = 71; // 1us (1ms=1000us)
+    TIM3->ARR = 999;
     TIM3->CNT = 0;
     TIM3->DIER = TIM_DIER_UIE | TIM_DIER_TIE;
     TIM3->CR1 = TIM_CR1_ARPE;
@@ -130,7 +92,7 @@ void timer3()
 void timer3_delay(uint16_t cyc)
 {
     // TIM1->CR1 |= CEN;
-    while (timer_freq != cyc)
+    while (timer3_freq != cyc)
         ;
     timer3_freq = 0;
 
@@ -149,7 +111,7 @@ void timer4()
 {
     RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
     TIM4->CR1 &= ~CEN;
-    TIM4->PSC = (20 - 1); // 1us 1ms==1000us
+    TIM4->PSC = 71; // 1us 1ms==1000us
     TIM4->ARR = 999;//1ms
     TIM4->CNT = 0;
     TIM4->DIER = TIM_DIER_UIE ;//| TIM_DIER_TIE;
@@ -166,7 +128,7 @@ void timer4_delay(uint16_t cyc)
 {
 
     // TIM1->CR1 |= CEN;
-    while (timer_freq != cyc)
+    while (timer4_freq != cyc)
         ;
     timer4_freq = 0;
 
@@ -184,11 +146,10 @@ void TIM1_UP_IRQHandler(void)
 void timer1_init()
 {
     RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
-    timer_freq = 0;
+    timer1_freq = 0;
     TIM1->CR1 &= ~CEN;
-    TIM1->PSC = (20-1); // 1us 1ms=1000us
+    TIM1->PSC = 71; // 1us 1ms=1000us
     TIM1->ARR = 999;   //  
-    // TIM1->ARR = 8000;
     TIM1->CNT = 0;
     TIM1->DIER = TIM_DIER_UIE | TIM_DIER_TIE;
     TIM1->CR1 = TIM_CR1_ARPE;
@@ -202,7 +163,7 @@ void timer1_init()
 void timer1_delay(uint16_t cyc)
 {
     // TIM1->CR1 |= CEN;
-    while (timer_freq != cyc)
+    while (timer1_freq != cyc)
         ;
     timer1_freq = 0;
    

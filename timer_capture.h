@@ -49,41 +49,48 @@ Most Important Registers Per Use Case
 | Register | Controls     |
 | -------- | ------------ |
 | CCMR1    | CH1 + CH2    |
-| CCMR2    | CH3 + CH4    |
+| CCMR2    | CH3 + CH4    |_
 | CCER     | all channels |
 | CCR1     | CH1 value    |
 | CCR2     | CH2 value    |
 | CCR3     | CH3 value    |
 | CCR4     | CH4 value    |
-	or
+    or
 | Channel | CCMR        | CCR  | Enable Bit |
 | ------- | ----------- | ---- | ---------- |
 | CH1     | CCMR1 lower | CCR1 | CC1E       |
 | CH2     | CCMR1 upper | CCR2 | CC2E       |
 | CH3     | CCMR2 lower | CCR3 | CC3E       |
 | CH4     | CCMR2 upper | CCR4 | CC4E       |
-	
+
 */
 volatile uint32_t capture;
 void TIM2_IRQHandler(void)
 {
+    // eusart_send(TIM2->SR);
+
     if ((TIM2->SR & TIM_SR_CC1IF))
     {
         // timer_freq++;
         TIM2->SR &= ~TIM_SR_CC1IF;
         capture = TIM2->CCR1;
         // eusart_send((capture & 0xFF00) >> 8);
-        eusart_send((capture & 0x00FF));
+        // eusart_send(0xee);
     }
     if ((TIM2->SR & TIM_SR_CC2IF))
     {
-        // timer_freq++;
+        // timer1_freq++;
         TIM2->SR &= ~TIM_SR_CC2IF;
-        capture = TIM2->CCR2;
-        // eusart_send((capture & 0xFF00) >> 8);
-        eusart_send((capture & 0x00FF));
+        // capture = TIM2->CCR2;
+        capture = TIM2->CNT;
+        // eusart_send((capture & 0x0300) >> 8);
+        eusart_send(capture);
+        GPIOA->ODR ^= GPIO_ODR_ODR1;
+
+
     }
 };
+
 void timer2_ch1_init() // PA0 in
 {
     RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
@@ -92,20 +99,29 @@ void timer2_ch1_init() // PA0 in
 
     TIM2->CR1 &= ~CEN;
     TIM2->PSC = (20 - 1); // 1us 1ms=1000us
-    TIM2->ARR = 0xFFFFFFFF;
+    TIM2->ARR = 999;      // 10ms
 
     TIM2->CCMR1 |= TIM_CCMR1_CC1S_0; // ch1-input
-    TIM2->CCER |= TIM_CCER_CC1P;  // fall-edge
-    TIM2->CCER |= TIM_CCER_CC1E;  // en capture -->>Reg CCR1
-    TIM2->DIER |= TIM_DIER_CC1IE; // capture intr enable
+    TIM2->CCER |= TIM_CCER_CC1P;     // fall-edge
+    TIM2->CCER |= TIM_CCER_CC1E;     // en capture -->>Reg CCR1
+    TIM2->DIER |= TIM_DIER_CC1IE;    // capture intr enable
 
     // TIM2->CCMR1 |= TIM_CCMR1_IC1F_3; // filters
     // TIM2->CCMR1 |= TIM_CCMR1_IC1PSC_Msk ; // filters
     NVIC_EnableIRQ(TIM2_IRQn);
     NVIC_SetPriority(TIM2_IRQn, 1);
-    TIM2->CR1 |= TIM_CR1_CEN ;
+    TIM2->CR1 |= TIM_CR1_CEN;
     // REG--ch1 TIM2->CCR1
 }
+/*
+General purpose | TIM2
+CH2     | CCMR1 upper | CCR2 | CC2E
+CCMR1    | CH1 + CH2
+CCER     | all channels
+CCR2     | CH2 value
+Interrupt      | DIER SR
+
+*/
 void timer2_ch2_init() // pa1
 {
     RCC->APB2ENR |= RCC_APB2ENR_IOPAEN | RCC_APB2ENR_AFIOEN;
@@ -113,20 +129,18 @@ void timer2_ch2_init() // pa1
     AFIO->MAPR = AFIO_MAPR_SWJ_CFG_2;
     AFIO->MAPR &= ~(AFIO_MAPR_TIM2_REMAP);
 
-    confPinA(AF_P_P50MHZ, 1);
+    confPinA(P_P50MHZ, 1);
 
     TIM2->CR1 &= ~CEN;
-    TIM2->PSC = (20 - 1); // 1us 1ms=1000us
-    TIM2->ARR = 0xFFFFFFFF;
+    TIM2->PSC = 71; // 1us
+    TIM2->ARR = 284;      //   1ms = 1000us
 
-    TIM2->CCMR1 &= ~TIM_CCMR1_CC1S; // ch2-output
-    // TIM2->CCMR1 = TIM_CCMR1_ ; //** */
-    TIM2->CCER &= ~TIM_CCER_CC1P; // pin-high
-
-    TIM2->CCR2 = 0X03F;
-
+    TIM2->CCMR1 &= ~TIM_CCMR1_CC2S; // ch2-output
+    TIM2->CCMR1 |= TIM_CCMR1_OC2PE; // auto reload
     TIM2->DIER = TIM_DIER_CC2IE;
-    // TIM2->CCR2=
+    TIM2->CCER = TIM_CCER_CC2E | TIM_CCER_CC2P; // pin-high
+    TIM2->CCR2 = 0xFFFF;
+    TIM2->CNT = 0;
     NVIC_EnableIRQ(TIM2_IRQn);
     NVIC_SetPriority(TIM2_IRQn, 1);
     TIM2->CR1 |= CEN;

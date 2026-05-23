@@ -213,6 +213,16 @@ uint8_t eusart_send(uint8_t val)
     dummy = USART1->SR;
     return USART1->DR;
 }
+uint8_t eusart_int_send(int val)
+{
+    // wrVal = val;
+    USART1->DR = val;
+    while (!(USART1->SR & TXE_FLAG)) // 1 DR-->>reg
+    {
+    }
+    dummy = USART1->SR;
+    return USART1->DR;
+}
 void eusartString(char *mesg)
 {
     char buff[20];

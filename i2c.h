@@ -343,7 +343,7 @@ void i2c1_init() // scl-PB6 sda-pb7
         // i2c_chipSel(off);
         // i2c_chipSel(on);
         I2C1->CR1 = I2C_CR1_SWRST;
-        timer1_del(_100ms);
+        timer1_del(10);
         I2C1->CR1 &= ~I2C_CR1_SWRST;
 
         // Trise = (APB1 clock / 1000000) + 1
