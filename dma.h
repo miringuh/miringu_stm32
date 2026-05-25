@@ -98,13 +98,13 @@ channel 7== USART2_TX, I2C1_RX, TIM2_CH2, TIM2_CH4, TIM4_UP
 // DMA2 has 5 channels
 //
 //MEM-ADDRESS
-char *channel1_mem;
-char *channel2_mem;
-char *channel3_mem;
-char *channel4_mem;
-char *channel5_mem;
-char *channel6_mem;
-char *channel7_mem;
+volatile uint8_t channel1_ready =0;
+volatile uint8_t channel2_ready =0;
+volatile uint8_t channel3_ready =0;
+volatile uint8_t channel4_ready =0;
+volatile uint8_t channel5_ready =0;
+volatile uint8_t channel6_ready =0;
+volatile uint8_t channel7_ready =0;
 
 void DMA1_Channel1_IRQHandler() // tx
 {
@@ -157,6 +157,7 @@ void DMA1_Channel3_IRQHandler() // tx
         DMA1_Channel3->CCR &= ~DMAEN;
     }
 }
+
 void DMA1_Channel4_IRQHandler() // tx
 {
     if ((DMA1->ISR & DMA_ISR_HTIF4)) // half txed
@@ -166,36 +167,34 @@ void DMA1_Channel4_IRQHandler() // tx
     if ((DMA1->ISR & DMA_ISR_TCIF4)) // tx complete
     {
         DMA1->IFCR |= DMA_IFCR_CTCIF4;
+        channel4_ready =1;
         // DMA1_Channel4->CCR &= ~DMAEN;
     }
     if ((DMA1->ISR & DMA_ISR_TEIF4)) // tx error
     {
         DMA1->IFCR |= DMA_IFCR_CTEIF4;
-        // DMA1_Channel4->CCR &= ~DMAEN;
+        DMA1_Channel4->CCR &= ~DMAEN;
     }
 }
-void DMA1_Channel5_IRQHandler() // tx
-{
+void DMA1_Channel5_IRQHandler() // rx
+{ 
     if ((DMA1->ISR & DMA_ISR_HTIF5)) // half txed
     {
         DMA1->IFCR |= DMA_IFCR_CHTIF5;
-    GPIOC->BSRR = GPIO_BSRR_BS13;
-
     }
-    if ((DMA1->ISR & DMA_ISR_TCIF5)) // tx complete
+    if ((DMA1->ISR & DMA_ISR_TCIF5)) // rx complete
     {
         DMA1->IFCR |= DMA_IFCR_CTCIF5;
-        
+        channel5_ready = 1;       
         // DMA1_Channel5->CCR &= ~DMAEN;
-        GPIOC->BSRR = GPIO_BSRR_BR13;
     }
     if ((DMA1->ISR & DMA_ISR_TEIF5)) // tx error
     {
         DMA1->IFCR |= DMA_IFCR_CTEIF5;
-        // DMA1_Channel5->CCR &= ~DMAEN;
+        DMA1_Channel5->CCR &= ~DMAEN;
     }
-
 }
+
 void DMA1_Channel6_IRQHandler() // tx
 {
     if ((DMA1->ISR & DMA_ISR_HTIF6)) // half txed

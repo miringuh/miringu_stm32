@@ -1,7 +1,6 @@
 #if !defined(__TIMER)
 #define __TIMER
 #include "/usr/lib/stm32/stm32F1xx_headers/stm32f1xx.h"
-#include "eusart.h"
 #include "gpio.h"
 //
 //     TIMx->CR1  control register 1

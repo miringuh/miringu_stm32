@@ -83,9 +83,7 @@ void TIM2_IRQHandler(void)
         TIM2->SR &= ~TIM_SR_CC2IF;
         // capture = TIM2->CCR2;
         capture = TIM2->CNT;
-        // eusart_send((capture & 0x0300) >> 8);
         eusart_send(capture);
-        GPIOA->ODR ^= GPIO_ODR_ODR1;
 
 
     }
@@ -98,7 +96,7 @@ void timer2_ch1_init() // PA0 in
     confPinA(FLOAT_INP, 0);
 
     TIM2->CR1 &= ~CEN;
-    TIM2->PSC = (20 - 1); // 1us 1ms=1000us
+    TIM2->PSC = (71); // 1us 1ms=1000us
     TIM2->ARR = 999;      // 10ms
 
     TIM2->CCMR1 |= TIM_CCMR1_CC1S_0; // ch1-input
@@ -133,7 +131,7 @@ void timer2_ch2_init() // pa1
 
     TIM2->CR1 &= ~CEN;
     TIM2->PSC = 71; // 1us
-    TIM2->ARR = 284;      //   1ms = 1000us
+    TIM2->ARR = 99;      //   1ms = 1000us
 
     TIM2->CCMR1 &= ~TIM_CCMR1_CC2S; // ch2-output
     TIM2->CCMR1 |= TIM_CCMR1_OC2PE; // auto reload

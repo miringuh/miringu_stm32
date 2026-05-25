@@ -1,5 +1,5 @@
 #include "/home/jeff/STM32/stm32F1xx_headers/stm32f1xx.h"
-
+#include <string.h>
 #include "spi.h"
 #include "portRemaps.h"
 #include "tim1.h"
@@ -16,17 +16,21 @@
 // #include "changeover.h"
 #include "timer_capture.h"
 
-#define txBuffSize 12
-char eusart_buff[txBuffSize];
-// uint8_t cnt = 1;
-// char buffx[20];
-// char *getchar_2str(char a)
-// {
-//     char data[2] = {a, '\n'};
-//     strcpy(buffx, data);
-//     strcat(data, buffx);
-//     return data;
-// }
+#define TX_BUFFSIZE 7
+uint8_t tx_buffer[TX_BUFFSIZE];
+
+char buffx[20];
+char *buffn = " ";
+char data[2];
+
+char *getchar_2str(char a)
+{
+    data[0] = a;
+    data[1] = '/';
+    strcpy(buffx, data);
+    strcat(data, buffx);
+    return data;
+}
 void reset_regs()
 {
     // RCC->APB1ENR = 0;
@@ -47,43 +51,36 @@ void reset_regs()
     ADC1->SMPR1 = 0;
     ADC1->SMPR2 = 0;
 }
+
 int main()
 {
     reset_regs();
     clock_init_20mhz_apb();
 
-    // RCC->APB1ENR = RCC_APB1ENR_SPI2EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM4EN;
+    RCC->AHBENR = RCC_AHBENR_DMA1EN;
     RCC->APB2ENR = RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPCEN;
     RCC->APB1ENR = RCC_APB1ENR_TIM2EN;
-    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
 
     eusart_init(U19200);
-    confPinC(P_P50MHZ, 13);
+    // confPinA(P_P50MHZ, 1);
     timer1_init();
-    //  eusartString("welcome");
-    //  eusartString("welcome again");
-    //  TIM1->CR1 &= ~CEN;
+
     timer1_delay(600);
     // timer2_ch1_init();
-    //timer4();
     // timer2_ch2_init();
-    // eusart_send()
-    // char *msg = "welcome again and again";
-    // print(U19200, msg);
-    char *rxmem="hey ";
+
+    char buf[11];
+
+    char *msg = "welcome home";
+    strcpy(buf, msg);
+    resend_data(U19200, buf, print);
+   
+
+    eusart0_dma_rx_init(U19200, rx_buffer, 7);
     while (1)
     {
-        // rxmem = "send";
-        eusart0_dma_rx_init(U19200,rxmem,strlen(rxmem));
-        eusartString(rxmem);
-        // print(U19200, rxmem);
-
-        //  eusart_send(eusart_rd());
-         // GPIOA->ODR ^= GPIO_ODR_ODR0;
-         // GPIOA->BSRR = GPIO_BSRR_BS0;
-         // timer1_delay(40);
-         // GPIOA->BSRR = GPIO_BSRR_BR0;
-         // timer1_delay(40);
+        eusart0_dma_listener();
+       
     }
     return 0;
 }
