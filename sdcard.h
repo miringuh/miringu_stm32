@@ -1,6 +1,6 @@
 #if !defined(_SD_CARD)
 #define _SD_CARD
-#include "/usr/lib/stm32/stm32F1xx_headers/stm32f1xx.h"
+#include "/home/jeff/STM32Cube_FW_F1_V1.8.0/Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -222,20 +222,7 @@ void read_opt_cond_41() // 4
 {
     command(CMD55, 0x05, 0x00000000, 0X95); // 2GB
     spi2_send(0xff);
-    spi2_send(0xff);
-    // for (uint16_t i = 0; i < 0x4ff; i++)
-    // {
-    //     if ((response & 0X7E) != 1)
-    //     {
-    //         eusart_send(spi2_send(0X55));
-    //     }
-    //     if ((response & 0X7E) == 1)
-    //     {
-    //         eusart_send(0XEE);
-    //         eusart_send(response);
-    //         break;
-    //     }
-    // }
+    spi2_send(0xff); 
     GPIOB->BSRR = GPIO_BSRR_BS0;
     command(ACMD41, 0x01, 0x40000000, 0X95); // 2GB
     // command(ACMD41, 0x05, 0x40000000, 0X95); // 8GB
@@ -388,6 +375,7 @@ post:
     GPIOB->BSRR = GPIO_BSRR_BS0;
     return 0;
 }
+
 uint8_t *sdRead_buff(uint32_t addr, uint16_t posStr, uint16_t posEnd) // cmd17 sd_buff
 {
     uint16_t ccn = 0x4FF;

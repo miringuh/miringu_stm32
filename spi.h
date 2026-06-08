@@ -1,6 +1,6 @@
 #if !defined(_SSPI)
 #define _SSPI
-#include "/home/jeff/STM32/stm32F1xx_headers/stm32f1xx.h"
+#include "/home/jeff/STM32Cube_FW_F1_V1.8.0/Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h"
 #include "rcc_conf.h"
 #include "eusart.h"
 #include "gpio.h"
@@ -303,44 +303,38 @@ SPI1-RX Channel3
 SPI2-TX Channel5
 SPI2-RX Channel4
 */
-char spi_buff[512];
+char spi_buff[7];
 
-void spi1_dma_tx_init(uint32_t baud,const char *msg, uint16_t size) // SPI1-TX
+void spi2_dma_tx_init(const char *msg, uint16_t size) // SPI1-TX
 {
     // strcpy(spi_buff, msg);
-    // RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
 
     spi2_setup();
-    SPI2->CR1 = 0;
-    SPI2->CR2 = 0;
-    SPI2->CR1 = baud;
+    SPI2->CR2 |=SPI_CR2_TXDMAEN;
 
-    DMA1_Channel1->CCR &= ~DMAEN;
-    USART1->CR3 |= DMAT; // usart1 Tx channel=4
 
-    DMA1_Channel5->CPAR = (uint32_t)&SPI1->DR;
+    DMA1_Channel5->CPAR = (uint32_t)&SPI2->DR;
     DMA1_Channel5->CMAR = (uint32_t)msg;
     DMA1_Channel5->CNDTR = size;
-
     DMA1_Channel5->CCR &= ~MEM2MEM; // mem2mem
     DMA1_Channel5->CCR |= CIRC;     // 1-circ
-
     // DMA1_Channel5->CCR |= MEM2MEM; // mem2mem
     // DMA1_Channel5->CCR &= ~CIRC;   // 1-circ
-
     DMA1_Channel5->CCR |= MINC;  // mem incr
     DMA1_Channel5->CCR &= ~PINC; // per incr
     DMA1_Channel5->CCR |= DIR;   // 0=peri READ 1=mem READ
 
-    DMA1_Channel5->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem size
+    DMA1_Channel5->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem
     DMA1_Channel5->CCR |= DMA_CCR_PL_0;                             // high prioty
+    channel5_ready = 0;
 
     DMA1_Channel5->CCR |= TCIEN | TEIEN | HTIEN;
     NVIC_SetPriority(DMA1_Channel5_IRQn, 2);
     NVIC_EnableIRQ(DMA1_Channel5_IRQn);
-    SPI2->CR1 |= SPE;
-    DMA1_Channel5->CCR = DMAEN;
+    DMA1_Channel5->CCR |= DMAEN;
 }
+
 void spi1_dma_rx_init(uint32_t baud, const char *msg, uint16_t size) // SPI1-RX
 {
     // strcpy(spi_buff, msg);

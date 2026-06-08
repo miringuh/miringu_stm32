@@ -1,6 +1,6 @@
 #if !defined(_PORT_REMAPS)
 #define _PORT_REMAPS
-#include "/home/jeff/STM32/stm32F1xx_headers/stm32f1xx.h"
+#include "/home/jeff/STM32Cube_FW_F1_V1.8.0/Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
@@ -15,7 +15,7 @@ POS   28  |24  |20  |16  |12  |8  |4  |0 **********
 CRH   15  |14  |13  |12  |11  |10 |9  |8
 
     timer ch
-ch1-    
+ch1-   
 */
 ///// TIMER1 ////////
 /*

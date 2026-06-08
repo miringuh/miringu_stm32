@@ -1,6 +1,6 @@
 #if !defined(__GPIO)
 #define __GPIO
-#include "/usr/lib/stm32/stm32F1xx_headers/stm32f1xx.h"
+#include "/home/jeff/STM32Cube_FW_F1_V1.8.0/Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h"
 
 #define P_P2MHZ 0b0010 // CNFn<>MODEn
 #define O_D2MHZ 0b0110

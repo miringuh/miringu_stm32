@@ -1,6 +1,6 @@
 #if !defined(__ADVTIM1)
 #define __ADVTIM1
-#include "/usr/lib/stm32/stm32F1xx_headers/stm32f1xx.h"
+#include "/home/jeff/STM32Cube_FW_F1_V1.8.0/Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h"
 #include "eusart.h"
 /*
 The Time Base Unit includes:
@@ -98,7 +98,7 @@ The Time Base Unit includes:
 #define UG TIM_EGR_TG
 //
 //     TIM1_CNT [15:0]
-#define TIM1_CNT_REG(REG,VAL) WRITE_REG(REG,VAL)
+#define TIM1_CNT_REG(REG, VAL) WRITE_REG(REG, VAL)
 //     TIM1_PSC [15:0]  The counter clock frequency (CK_CNT) is equal to fCK_PSC / (PSC[15:0] + 1).
 #define TIM1_PSC_REG(REG, VAL) WRITE_REG(REG, VAL)
 // ARR is the value to be loaded in the actual auto-reload register.

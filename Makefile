@@ -20,7 +20,7 @@ OBJS := $(OBJS:.s=.o)
 
 # Compiler Flags
 CFLAGS = -mcpu=cortex-m3 -mthumb -O0 -g -Wall -Wextra -ffreestanding -nostdlib 
-# 		  
+#-I /home/jeff/STM32Cube_FW_F1_V1.8.0/Drivers/CMSIS/Device/ST/STM32F1xx/Include/
 	
 # Linker Flags
 # LDFLAGS = -T linker.ld -nostdlib 
@@ -87,3 +87,6 @@ disasm: $(TARGET).elf
 
 #OBJDUMP=arm-none-eabi-objdump -d ${FILE}.bin
 #HEXER=arm-none-eabi-objcopy -O ihex ${FILE}.bin ${FILE}.hex+
+
+#  git config --global user.email "you@example.com"
+#  git config --global user.name "Your Name"

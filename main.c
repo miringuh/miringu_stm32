@@ -1,6 +1,6 @@
-#include "/home/jeff/STM32/stm32F1xx_headers/stm32f1xx.h"
+#include "/home/jeff/STM32Cube_FW_F1_V1.8.0/Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h"
 #include <string.h>
-#include "spi.h"
+// #include "spi.h"
 #include "portRemaps.h"
 #include "tim1.h"
 // #include "advTm1.h"
@@ -16,7 +16,7 @@
 // #include "changeover.h"
 #include "timer_capture.h"
 
-#define TX_BUFFSIZE 7
+#define TX_BUFFSIZE 8
 uint8_t tx_buffer[TX_BUFFSIZE];
 
 char buffx[20];
@@ -58,29 +58,35 @@ int main()
     clock_init_20mhz_apb();
 
     RCC->AHBENR = RCC_AHBENR_DMA1EN;
-    RCC->APB2ENR = RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPCEN;
+    RCC->APB2ENR = RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN;
     RCC->APB1ENR = RCC_APB1ENR_TIM2EN;
 
     eusart_init(U19200);
-    // confPinA(P_P50MHZ, 1);
+    confPinA(P_P50MHZ, 1);
+    
     timer1_init();
-
     timer1_delay(600);
+
     // timer2_ch1_init();
-    // timer2_ch2_init();
+    timer2_ch2_init();
 
-    char buf[11];
+    // char buf[11];
+    // char *msg = "welcome home";
+    // strcpy(buf, msg);
+    // resend_data(U19200, buf, print);
+    // msg = " hey welcome";
+    // strcpy(buf, msg);
+    // resend_data(U19200, buf, print);
 
-    char *msg = "welcome home";
-    strcpy(buf, msg);
-    resend_data(U19200, buf, print);
-   
+    // eusart0_dma_rx_init(U19200, rx_buffer, 8);
 
-    eusart0_dma_rx_init(U19200, rx_buffer, 7);
     while (1)
     {
-        eusart0_dma_listener();
-       
+        // eusart0_dma_listener();
+        // GPIOA->ODR ^= GPIO_ODR_ODR1;
+        // timer1_delay(300);
+        // GPIOA->BSRR = GPIO_BSRR_BR1;
+        // timer1_delay(1);
     }
     return 0;
 }

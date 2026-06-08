@@ -1,9 +1,10 @@
 #if !defined(_TIM_CAPT)
 #define _TIM_CAPT
-#include "/usr/lib/stm32/stm32F1xx_headers/stm32f1xx.h"
+#include "/home/jeff/STM32Cube_FW_F1_V1.8.0/Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h"
 // #include "portRemaps.h"
 #include "eusart.h"
 #include "gpio.h"
+
 /*
 | Register | Purpose                       |
 | -------- | ----------------------------- |
@@ -37,32 +38,33 @@
 4. What should happen at event?
 
 Most Important Registers Per Use Case
-| Use            | Main Registers |
-| -------------- | -------------- |
-| Delay          | PSC ARR CNT    |
-| Interrupt      | DIER SR        |
-| PWM            | CCR CCMR CCER  |
-| Input capture  | CCR CCMR CCER  |
-| External count | SMCR           |
-| One pulse      | CR1            |
+| Use            | Main Registers   |
+| -------------- | --------------   |
+| Delay          | PSC ARR CNT      |
+| Interrupt      | DIER SR          |
+| PWM            | CCRn CCMRn CCER    |
+| Input capture  | CCRn CCMRn CCER  |
+| External count | SMCR             |
+| One pulse      | CR1              |
 
 | Register | Controls     |
 | -------- | ------------ |
 | CCMR1    | CH1 + CH2    |
 | CCMR2    | CH3 + CH4    |_
-| CCER     | all channels |
+| CCER     | all channels |enable Reg
 | CCR1     | CH1 value    |
 | CCR2     | CH2 value    |
 | CCR3     | CH3 value    |
 | CCR4     | CH4 value    |
-    or
+--------------------------------------------
 | Channel | CCMR        | CCR  | Enable Bit |
 | ------- | ----------- | ---- | ---------- |
 | CH1     | CCMR1 lower | CCR1 | CC1E       |
 | CH2     | CCMR1 upper | CCR2 | CC2E       |
+--------------------------------------------
 | CH3     | CCMR2 lower | CCR3 | CC3E       |
 | CH4     | CCMR2 upper | CCR4 | CC4E       |
-
+--------------------------------------------
 */
 volatile uint32_t capture;
 void TIM2_IRQHandler(void)
@@ -73,7 +75,7 @@ void TIM2_IRQHandler(void)
     {
         // timer_freq++;
         TIM2->SR &= ~TIM_SR_CC1IF;
-        capture = TIM2->CCR1;
+        // capture = TIM2->CCR1;
         // eusart_send((capture & 0xFF00) >> 8);
         // eusart_send(0xee);
     }
@@ -84,8 +86,6 @@ void TIM2_IRQHandler(void)
         // capture = TIM2->CCR2;
         capture = TIM2->CNT;
         eusart_send(capture);
-
-
     }
 };
 
@@ -96,16 +96,16 @@ void timer2_ch1_init() // PA0 in
     confPinA(FLOAT_INP, 0);
 
     TIM2->CR1 &= ~CEN;
-    TIM2->PSC = (71); // 1us 1ms=1000us
-    TIM2->ARR = 999;      // 10ms
+    TIM2->PSC = 71;  // 1us 1ms=1000us
+    TIM2->ARR = 999; // 10ms
 
     TIM2->CCMR1 |= TIM_CCMR1_CC1S_0; // ch1-input
     TIM2->CCER |= TIM_CCER_CC1P;     // fall-edge
     TIM2->CCER |= TIM_CCER_CC1E;     // en capture -->>Reg CCR1
     TIM2->DIER |= TIM_DIER_CC1IE;    // capture intr enable
 
-    // TIM2->CCMR1 |= TIM_CCMR1_IC1F_3; // filters
-    // TIM2->CCMR1 |= TIM_CCMR1_IC1PSC_Msk ; // filters
+    TIM2->CCMR1 |= TIM_CCMR1_IC1F_3;     // filters
+    TIM2->CCMR1 |= TIM_CCMR1_IC1PSC_Msk; // filters
     NVIC_EnableIRQ(TIM2_IRQn);
     NVIC_SetPriority(TIM2_IRQn, 1);
     TIM2->CR1 |= TIM_CR1_CEN;
@@ -118,30 +118,34 @@ CCMR1    | CH1 + CH2
 CCER     | all channels
 CCR2     | CH2 value
 Interrupt      | DIER SR
-
 */
 void timer2_ch2_init() // pa1
 {
-    RCC->APB2ENR |= RCC_APB2ENR_IOPAEN | RCC_APB2ENR_AFIOEN;
     RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
-    AFIO->MAPR = AFIO_MAPR_SWJ_CFG_2;
-    AFIO->MAPR &= ~(AFIO_MAPR_TIM2_REMAP);
+    RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
+    confPinA(AF_P_P50MHZ, 1);
 
-    confPinA(P_P50MHZ, 1);
+    AFIO->MAPR |= AFIO_MAPR_SWJ_CFG_2;
+    AFIO->MAPR &= ~AFIO_MAPR_TIM2_REMAP;
+    TIM2->CCR2 = 0;
+    TIM2->CNT = 0;
+
+    AFIO->MAPR = AFIO_MAPR_TIM2_REMAP_0; // PA1
 
     TIM2->CR1 &= ~CEN;
-    TIM2->PSC = 71; // 1us
-    TIM2->ARR = 99;      //   1ms = 1000us
+    TIM2->PSC = 19; // 1us
+    TIM2->ARR = 99; //   1ms = 1000us
 
-    TIM2->CCMR1 &= ~TIM_CCMR1_CC2S; // ch2-output
-    TIM2->CCMR1 |= TIM_CCMR1_OC2PE; // auto reload
+    TIM2->CCMR1 &= ~TIM_CCMR1_CC2S;              // ch2-output
+    TIM2->CCMR1 |= (0X03 << TIM_CCMR1_OC2M_Pos); // toggle ocr2ref
+
+    TIM2->CCER &= ~TIM_CCER_CC2P;   // pin - high
+    TIM2->CCMR1 |= TIM_CCMR1_OC2PE; // Preload enable.
     TIM2->DIER = TIM_DIER_CC2IE;
-    TIM2->CCER = TIM_CCER_CC2E | TIM_CCER_CC2P; // pin-high
-    TIM2->CCR2 = 0xFFFF;
-    TIM2->CNT = 0;
     NVIC_EnableIRQ(TIM2_IRQn);
     NVIC_SetPriority(TIM2_IRQn, 1);
     TIM2->CR1 |= CEN;
 }
 
+//////
 #endif // _TIM_CAPT

@@ -1,11 +1,12 @@
 #if !defined(__DMA)
 #define __DMA
-#include "/home/jeff/STM32/stm32F1xx_headers/stm32f1xx.h"
+#include "/home/jeff/STM32Cube_FW_F1_V1.8.0/Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
 #include "gpio.h"
 // #include "eusart.h"
+
 /*
 usart1Tx-channel4(mem2mem)
 usart1Rx-channel5(mem2mem)
@@ -97,14 +98,14 @@ channel 7== USART2_TX, I2C1_RX, TIM2_CH2, TIM2_CH4, TIM4_UP
 */
 // DMA2 has 5 channels
 //
-//MEM-ADDRESS
-volatile uint8_t channel1_ready =0;
-volatile uint8_t channel2_ready =0;
-volatile uint8_t channel3_ready =0;
-volatile uint8_t channel4_ready =0;
-volatile uint8_t channel5_ready =0;
-volatile uint8_t channel6_ready =0;
-volatile uint8_t channel7_ready =0;
+// MEM-ADDRESS
+volatile uint8_t channel1_ready = 0;
+volatile uint8_t channel2_ready = 0;
+volatile uint8_t channel3_ready = 0;
+volatile uint8_t channel4_ready = 0;
+volatile uint8_t channel5_ready = 0;
+volatile uint8_t channel6_ready = 0;
+volatile uint8_t channel7_ready = 0;
 
 void DMA1_Channel1_IRQHandler() // tx
 {
@@ -115,6 +116,7 @@ void DMA1_Channel1_IRQHandler() // tx
     if ((DMA1->ISR & DMA_ISR_TCIF1)) // tx complete
     {
         DMA1->IFCR |= DMA_IFCR_CTCIF1;
+        channel1_ready = 1;
         DMA1_Channel1->CCR &= ~DMAEN;
     }
     if ((DMA1->ISR & DMA_ISR_TEIF1)) // tx error
@@ -132,6 +134,7 @@ void DMA1_Channel2_IRQHandler() // tx
     if ((DMA1->ISR & DMA_ISR_TCIF2)) // tx complete
     {
         DMA1->IFCR |= DMA_IFCR_CTCIF2;
+        channel2_ready = 1;
         DMA1_Channel2->CCR &= ~DMAEN;
     }
     if ((DMA1->ISR & DMA_ISR_TEIF2)) // tx error
@@ -149,6 +152,7 @@ void DMA1_Channel3_IRQHandler() // tx
     if ((DMA1->ISR & DMA_ISR_TCIF3)) // tx complete
     {
         DMA1->IFCR |= DMA_IFCR_CTCIF3;
+        channel3_ready = 1;
         DMA1_Channel3->CCR &= ~DMAEN;
     }
     if ((DMA1->ISR & DMA_ISR_TEIF3)) // tx error
@@ -157,7 +161,6 @@ void DMA1_Channel3_IRQHandler() // tx
         DMA1_Channel3->CCR &= ~DMAEN;
     }
 }
-
 void DMA1_Channel4_IRQHandler() // tx
 {
     if ((DMA1->ISR & DMA_ISR_HTIF4)) // half txed
@@ -167,8 +170,8 @@ void DMA1_Channel4_IRQHandler() // tx
     if ((DMA1->ISR & DMA_ISR_TCIF4)) // tx complete
     {
         DMA1->IFCR |= DMA_IFCR_CTCIF4;
-        channel4_ready =1;
-        // DMA1_Channel4->CCR &= ~DMAEN;
+        channel4_ready = 1;
+        DMA1_Channel4->CCR &= ~DMAEN;
     }
     if ((DMA1->ISR & DMA_ISR_TEIF4)) // tx error
     {
@@ -177,7 +180,7 @@ void DMA1_Channel4_IRQHandler() // tx
     }
 }
 void DMA1_Channel5_IRQHandler() // rx
-{ 
+{
     if ((DMA1->ISR & DMA_ISR_HTIF5)) // half txed
     {
         DMA1->IFCR |= DMA_IFCR_CHTIF5;
@@ -185,7 +188,7 @@ void DMA1_Channel5_IRQHandler() // rx
     if ((DMA1->ISR & DMA_ISR_TCIF5)) // rx complete
     {
         DMA1->IFCR |= DMA_IFCR_CTCIF5;
-        channel5_ready = 1;       
+        channel5_ready = 1;
         // DMA1_Channel5->CCR &= ~DMAEN;
     }
     if ((DMA1->ISR & DMA_ISR_TEIF5)) // tx error
@@ -194,7 +197,6 @@ void DMA1_Channel5_IRQHandler() // rx
         DMA1_Channel5->CCR &= ~DMAEN;
     }
 }
-
 void DMA1_Channel6_IRQHandler() // tx
 {
     if ((DMA1->ISR & DMA_ISR_HTIF6)) // half txed
@@ -204,7 +206,8 @@ void DMA1_Channel6_IRQHandler() // tx
     if ((DMA1->ISR & DMA_ISR_TCIF6)) // tx complete
     {
         DMA1->IFCR |= DMA_IFCR_CTCIF6;
-        DMA1_Channel6->CCR &= ~DMAEN;
+        channel6_ready = 1;
+        // DMA1_Channel6->CCR &= ~DMAEN;
     }
     if ((DMA1->ISR & DMA_ISR_TEIF6)) // tx error
     {
@@ -221,7 +224,8 @@ void DMA1_Channel7_IRQHandler() // tx
     if ((DMA1->ISR & DMA_ISR_TCIF7)) // tx complete
     {
         DMA1->IFCR |= DMA_IFCR_CTCIF7;
-        DMA1_Channel7->CCR &= ~DMAEN;
+        channel7_ready = 1;
+        // DMA1_Channel7->CCR &= ~DMAEN;
     }
     if ((DMA1->ISR & DMA_ISR_TEIF7)) // tx error
     {
@@ -270,4 +274,18 @@ void dma1set()
         }
     }
 }
+//
+typedef struct
+{
+    uint32_t reg_out;    // DMA1_Channel4->CPAR
+    uint32_t reg_in;     // DMA1_Channeln->CMAR
+    uint32_t buff_size;  // DMA1_Channeln->CNDTR
+    uint32_t mem_size;   // DMA1_Channeln->CCR
+    uint32_t per_size;   // DMA1_Channeln->CCR
+    uint32_t ccr;        // DMA1_Channeln->CCR
+    uint32_t ready_flag; // channeln_ready
+
+} dma_conf_t;
+
+
 #endif // __DMA

@@ -1,6 +1,6 @@
 #if !defined(__RCC)
 #define __RCC
-#include "/home/jeff/STM32/stm32F1xx_headers/stm32f1xx.h"
+#include "/home/jeff/STM32Cube_FW_F1_V1.8.0/Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h"
 #include "tim1.h"
 // RCC_CFGR
 // RCC->CFGR = RCC_CFGR_PLLMULL3

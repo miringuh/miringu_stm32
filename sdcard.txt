@@ -1,0 +1,13 @@
+
+512/8 == 64bytes
+
+64byte/8 (file name)==8 (chars)
+
+2,000,000,000/8 == 250,000,000 bytes (addr/filenames)
+
+250,000,000/64== 3,906,250 (sectors)/(clusters)
+
+
+0-------7 sectors==filenames
+
+

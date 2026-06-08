@@ -1,6 +1,6 @@
 #if !defined(__EUSART)
 #define __EUSART
-#include "/usr/lib/stm32/stm32F1xx_headers/stm32f1xx.h"
+#include "/home/jeff/STM32Cube_FW_F1_V1.8.0/Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h"
 #include "gpio.h"
 #include <stdlib.h>
 #include <stdint.h>
@@ -187,7 +187,7 @@ void USART1_IRQHandler()
     {
         // USART1->SR &= ~RXNE_FLAG;
         dummy = USART1->SR;
-        rdVal= USART1->DR;
+        rdVal = USART1->DR;
         // NVIC_DisableIRQ(USART1_IRQn);
     }
 }
@@ -208,14 +208,14 @@ void eusart_init(uint32_t bauds)
     usart1_pins_remap0(); /// PINS
     USART1->CR1 = 0;
     u_baud(bauds);
-    
-    USART1->CR2 = STOP_1;//stop_bit
+
+    USART1->CR2 = STOP_1; // stop_bit
     // USART1->CR3 = EIE;
-    USART1->CR1 &= ~M_SIZE;//0-8  1 -9bits
+    USART1->CR1 &= ~M_SIZE; // 0-8  1 -9bits
     USART1->CR1 = TCIE;
-    USART1->CR1 |= TXEN| RXEN;
-    USART1->CR1 |= USART_CR1_TE;//send idle frame
-    USART1->CR1 |=USART_CR1_UE|USART_CR1_RE;
+    USART1->CR1 |= TXEN | RXEN;
+    USART1->CR1 |= USART_CR1_TE; // send idle frame
+    USART1->CR1 |= USART_CR1_UE | USART_CR1_RE;
     NVIC_SetPriority(USART1_IRQn, 2);
     NVIC_EnableIRQ(USART1_IRQn);
 }
@@ -225,7 +225,7 @@ uint8_t eusart_send(uint8_t val)
     USART1->DR = val;
     while (!(USART1->SR & TXE_FLAG)) // 1 DR-->>reg
         ;
-    dummy = USART1->SR;    
+    dummy = USART1->SR;
     rdVal = USART1->DR;
     return USART1->DR;
 }
@@ -251,15 +251,15 @@ void eusartString(char *mesg)
 }
 uint8_t eusart_rd()
 {
-  
+
     rdVal = USART1->DR;
     while ((USART1->SR & FE_FLAG)) // 1=error
-    ;
+        ;
     while ((USART1->SR & NE_FLAG)) // 1=noise
-    ;
+        ;
     while (!(USART1->SR & RXNE_FLAG)) // 0=not recvd
-    ;
-    // 
+        ;
+    //
     return rdVal;
 }
 char eusart_char_rd()
@@ -275,7 +275,6 @@ char eusart_char_rd()
     //
     return rdVal;
 }
-
 //////////////////////////
 //////// USART1_1 // tx-PB6  rx-PB7
 void eusart_init_1(uint32_t bauds)
@@ -536,7 +535,6 @@ void eusart_close()
     USART1->CR1 = 0;
     RCC->APB2ENR &= ~(RCC_APB2ENR_USART1EN);
 }
-//
 ///// DMA ///////
 /* DMA TX OR RX
 usart1- TX=channel 4
@@ -567,10 +565,13 @@ void eusart0_dma_tx_init(uint32_t baud, char msg[], uint16_t size)
     DMA1_Channel4->CPAR = (uint32_t)&USART1->DR;
     DMA1_Channel4->CMAR = (uint32_t)msg;
     DMA1_Channel4->CNDTR = size;
+
     DMA1_Channel4->CCR &= ~MEM2MEM; // mem2mem
     DMA1_Channel4->CCR |= CIRC;     // 1-circ
+
     // DMA1_Channel4->CCR |= MEM2MEM; // mem2mem
     // DMA1_Channel4->CCR &= ~CIRC;   // 1-circ
+
     DMA1_Channel4->CCR |= MINC;  // mem incr
     DMA1_Channel4->CCR &= ~PINC; // per incr
     DMA1_Channel4->CCR |= DIR;   // 0=peri READ 1=mem READ
@@ -585,31 +586,24 @@ void eusart0_dma_tx_init(uint32_t baud, char msg[], uint16_t size)
     DMA1_Channel4->CCR |= DMAEN;
     timer1_delay(6);
 }
-
 void eusart0_dma_rx_init(uint32_t baud, char msg[], uint32_t size)
 {
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
     usart1_pins_remap0();
     u_baud(baud);
-    //
     // DMA1_Channel5->CCR &= ~DMAEN;
     USART1->CR1 |= USART_CR1_UE | USART_CR1_RE | USART_CR1_TE;
     USART1->CR3 = USART_CR3_DMAR;
-
     DMA1_Channel5->CPAR = (uint32_t)&USART1->DR;
     DMA1_Channel5->CMAR = (uint32_t)msg;
     DMA1_Channel5->CNDTR = size;
-
     DMA1_Channel5->CCR &= ~MEM2MEM; // mem2mem
     DMA1_Channel5->CCR |= CIRC;     // 1-circ
-
     // DMA1_Channel5->CCR |= MEM2MEM; // mem2mem
     // DMA1_Channel5->CCR &= ~CIRC;   // 1-circ
-
-    DMA1_Channel5->CCR |= MINC;  // mem incr
-    DMA1_Channel5->CCR &= ~PINC; // per incr
-    DMA1_Channel5->CCR &= ~DIR;  // 0=peri READ 1=mem READ
-
+    DMA1_Channel5->CCR |= MINC;                                     // mem incr
+    DMA1_Channel5->CCR &= ~PINC;                                    // per incr
+    DMA1_Channel5->CCR &= ~DIR;                                     // 0=peri READ 1=mem READ
     DMA1_Channel5->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem size
     DMA1_Channel5->CCR |= DMA_CCR_PL_1;                             // high prioty
     channel5_ready = 0;
@@ -620,26 +614,20 @@ void eusart0_dma_rx_init(uint32_t baud, char msg[], uint32_t size)
     NVIC_EnableIRQ(DMA1_Channel5_IRQn);
 }
 ///////////////////////////////////
-///////////////////////////////////
-typedef void (*Printn)(char[], uint32_t);
-void txsend_data(char data[], uint32_t size, Printn cb)
-{
-    cb(data, size);
-}
-//////////////////////////////////////////
-//////////////////////////////////////////
+
 void print(uint32_t baud, char *msg)
 {
     char buf[strlen(msg)];
     strcpy(buf, msg);
     eusart0_dma_tx_init(baud, msg, sizeof(buf));
 }
+//
 typedef void (*re_Print)(uint32_t, char[]);
 void resend_data(uint32_t baud, char data[], re_Print cb)
 {
     cb(baud, data);
 }
-////////////////////////////
+//
 void eusart0_dma_listener()
 {
     if (channel5_ready)
@@ -650,10 +638,7 @@ void eusart0_dma_listener()
         {
             eusart_send(rx_buffer[i]);
         }
-        
     }
-  
 }
-///
-///
+
 #endif

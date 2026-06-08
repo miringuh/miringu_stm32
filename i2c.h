@@ -1,6 +1,6 @@
 #if !defined(__I2C)
 #define __I2C
-#include "/usr/lib/stm32/stm32F1xx_headers/stm32f1xx.h"
+#include "/home/jeff/STM32Cube_FW_F1_V1.8.0/Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
