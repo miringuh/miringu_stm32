@@ -88,5 +88,5 @@ disasm: $(TARGET).elf
 #OBJDUMP=arm-none-eabi-objdump -d ${FILE}.bin
 #HEXER=arm-none-eabi-objcopy -O ihex ${FILE}.bin ${FILE}.hex+
 
-#  git config --global user.email "you@example.com"
-#  git config --global user.name "Your Name"
+# git config --global user.email "miringuhjeff@gmail.com"
+# git config --global user.name "miringuh"

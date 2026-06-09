@@ -21,6 +21,7 @@
 #define FLOAT_INP 0b0100 // DEFAULT
 #define INP_PPULL 0b1000
 //
+// #define PORT_IO(REG,VAL) WRITE_REG()
 /*
 MODES @ gpio.h 2MHZ 10MHZ or 50MHZ
 CRL   7   |6   |5   |4   |3   |2  |1  |0
@@ -28,137 +29,133 @@ POS   28  |24  |20  |16  |12  |8  |4  |0 **********
 CRH   15  |14  |13  |12  |11  |10 |9  |8
 */
 //// SET PIN CONFS
+
 #define REG_A 1
 #define REG_B 2
 #define REG_C 3
-void confPinC(uint8_t conf_mode, uint8_t pin)
+void confPinC(uint16_t conf_mode, uint8_t pin)
 {
     RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
     switch (pin)
     {
     case 13:
-        WRITE_REG(GPIOC->CRH, (conf_mode << 20) | READ_REG(GPIOC->CRH));
+        GPIOC->CRH = (conf_mode << GPIO_CRH_MODE13_Pos);
         break;
     case 14:
-        WRITE_REG(GPIOC->CRH, (conf_mode << 24) | READ_REG(GPIOC->CRH));
+        GPIOB->CRH = (conf_mode << GPIO_CRH_MODE14_Pos);
         break;
     case 15:
-        WRITE_REG(GPIOC->CRH, (conf_mode << 28) | READ_REG(GPIOC->CRH));
+        GPIOB->CRH = (conf_mode << GPIO_CRH_MODE15_Pos);
         break;
     default:
 
         break;
     }
 }
-void confPinB(uint8_t conf_mode, uint8_t pin)
+void confPinB(uint16_t conf_mode, uint8_t pin)
 {
     RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
     switch (pin)
     {
     case 0:
-        WRITE_REG(GPIOB->CRL, conf_mode | READ_REG(GPIOB->CRL));
+        GPIOB->CRL = (conf_mode << GPIO_CRL_MODE0_Pos);
         break;
     case 1:
-        WRITE_REG(GPIOB->CRL, (conf_mode << 4) | READ_REG(GPIOB->CRL));
+        GPIOB->CRL = (conf_mode << GPIO_CRL_MODE1_Pos);
         break;
-    // case 2:
-    //     GPIOB->CRL |= (conf_mode << 8);
-    //     break;
     case 3:
-        WRITE_REG(GPIOB->CRL, (conf_mode << 12) | READ_REG(GPIOB->CRL));
+        GPIOB->CRL = (conf_mode << GPIO_CRL_MODE3_Pos);
         break;
     case 4:
-        WRITE_REG(GPIOB->CRL, (conf_mode << 14) | READ_REG(GPIOB->CRL));
+        GPIOB->CRL = (conf_mode << GPIO_CRL_MODE4_Pos);
         break;
     case 5:
-        WRITE_REG(GPIOB->CRL, (conf_mode << 20) | READ_REG(GPIOB->CRL));
+        GPIOB->CRL = (conf_mode << GPIO_CRL_MODE5_Pos);
         break;
     case 6:
-        WRITE_REG(GPIOB->CRL, (conf_mode << 24) | READ_REG(GPIOB->CRL));
+        GPIOB->CRL = (conf_mode << GPIO_CRL_MODE6_Pos);
         break;
     case 7:
-        WRITE_REG(GPIOB->CRL, (conf_mode << 28) | READ_REG(GPIOB->CRL));
+        GPIOB->CRL = (conf_mode << GPIO_CRL_MODE7_Pos);
         break;
     case 8:
-        WRITE_REG(GPIOB->CRH, conf_mode | READ_REG(GPIOB->CRH));
+        GPIOB->CRH = (conf_mode << GPIO_CRH_MODE8_Pos);
         break;
     case 9:
-        WRITE_REG(GPIOB->CRH, (conf_mode << 4) | READ_REG(GPIOB->CRH));
+        GPIOB->CRH = (conf_mode << GPIO_CRH_MODE9_Pos);
         break;
     case 10:
-        WRITE_REG(GPIOB->CRH, (conf_mode << 8) | READ_REG(GPIOB->CRH));
+        GPIOB->CRH = (conf_mode << GPIO_CRH_MODE10_Pos);
         break;
     case 11:
-        WRITE_REG(GPIOB->CRH, (conf_mode << 12) | READ_REG(GPIOB->CRH));
+        GPIOB->CRH = (conf_mode << GPIO_CRH_MODE11_Pos);
         break;
     case 12:
-        WRITE_REG(GPIOB->CRH, (conf_mode << 14) | READ_REG(GPIOB->CRH));
+        GPIOB->CRH = (conf_mode << GPIO_CRH_MODE12_Pos);
         break;
     case 13:
-        WRITE_REG(GPIOB->CRH, (conf_mode << 20) | READ_REG(GPIOB->CRH));
+        GPIOB->CRH = (conf_mode << GPIO_CRH_MODE13_Pos);
         break;
     case 14:
-        WRITE_REG(GPIOB->CRH, (conf_mode << 24) | READ_REG(GPIOB->CRH));
+        GPIOB->CRH = (conf_mode << GPIO_CRH_MODE14_Pos);
         break;
     case 15:
-        WRITE_REG(GPIOB->CRH, (conf_mode << 28) | READ_REG(GPIOB->CRH));
+        GPIOB->CRH = (conf_mode << GPIO_CRH_MODE15_Pos);
         break;
     default:
         break;
     }
+
 }
-void confPinA(uint8_t conf_mode, uint8_t pin)
+void confPinA(uint16_t conf_mode, uint8_t pin)
 {
     RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
+    // uint32_t mem_l = GPIOA->CRL;
+    // uint32_t mem_h = GPIOA->CRH;
+
     switch (pin)
     {
     case 0:
-        WRITE_REG(GPIOA->CRL, (conf_mode) | READ_REG(GPIOA->CRL));
+        GPIOA->CRL = (conf_mode << GPIO_CRL_MODE0_Pos);
         break;
     case 1:
-        WRITE_REG(GPIOA->CRL, (conf_mode << 4) | READ_REG(GPIOA->CRL));
+        GPIOA->CRL = (conf_mode << GPIO_CRL_MODE1_Pos);
         break;
     case 2:
-        WRITE_REG(GPIOA->CRL, (conf_mode << 8) | READ_REG(GPIOA->CRL));
+        GPIOA->CRL = (conf_mode << GPIO_CRL_MODE2_Pos);
         break;
     case 3:
-        WRITE_REG(GPIOA->CRL, (conf_mode << 12) | READ_REG(GPIOA->CRL));
+        GPIOA->CRL = (conf_mode << GPIO_CRL_MODE3_Pos);
         break;
     case 4:
-        WRITE_REG(GPIOA->CRL, (conf_mode << 14) | READ_REG(GPIOA->CRL));
+        GPIOA->CRL = (conf_mode << GPIO_CRL_MODE4_Pos);
         break;
     case 5:
-        WRITE_REG(GPIOA->CRL, (conf_mode << 20) | READ_REG(GPIOA->CRL));
+        GPIOA->CRL = (conf_mode << GPIO_CRL_MODE5_Pos);
         break;
     case 6:
-        WRITE_REG(GPIOA->CRL, (conf_mode << 24) | READ_REG(GPIOA->CRL));
+        GPIOA->CRL = (conf_mode << GPIO_CRL_MODE6_Pos);
         break;
     case 7:
-        WRITE_REG(GPIOA->CRL, (conf_mode << 28) | READ_REG(GPIOA->CRL));
+        GPIOA->CRL = (conf_mode << GPIO_CRL_MODE7_Pos);
         break;
     case 8:
-        WRITE_REG(GPIOA->CRH, (conf_mode) | READ_REG(GPIOA->CRH));
+        GPIOA->CRH = (conf_mode << GPIO_CRH_MODE8_Pos);
         break;
     case 9:
-        WRITE_REG(GPIOA->CRH, (conf_mode << 4) | READ_REG(GPIOA->CRH));
+        GPIOA->CRH = (conf_mode << GPIO_CRH_MODE9_Pos);
         break;
     case 10:
-        WRITE_REG(GPIOA->CRH, (conf_mode << 8) | READ_REG(GPIOA->CRH));
+        GPIOA->CRH = (conf_mode << GPIO_CRH_MODE10_Pos);
         break;
     case 11:
-        WRITE_REG(GPIOA->CRH, (conf_mode << 12) | READ_REG(GPIOA->CRH));
+        GPIOA->CRH = (conf_mode << GPIO_CRH_MODE11_Pos);
         break;
     case 12:
-        WRITE_REG(GPIOA->CRH, (conf_mode << 14) | READ_REG(GPIOA->CRH));
+        GPIOA->CRH = (conf_mode << GPIO_CRH_MODE12_Pos);
         break;
-    // case 13:
-    //     WRITE_REG(GPIOA->CRH,0 , (conf_mode << 20)|READ_REG(GPIOA->CRH ));
-    //     break;
-    // case 14:
-    //     WRITE_REG(GPIOA->CRH,0 , (conf_mode << 24)|READ_REG( GPIOA->CRH));
-    //     break;
     case 15:
-        WRITE_REG(GPIOA->CRH, (conf_mode << 28) | READ_REG(GPIOA->CRH));
+        GPIOA->CRH = (conf_mode << GPIO_CRH_MODE15_Pos);
         break;
     default:
         break;

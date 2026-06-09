@@ -85,8 +85,10 @@ void TIM2_IRQHandler(void)
         TIM2->SR &= ~TIM_SR_CC2IF;
         // capture = TIM2->CCR2;
         capture = TIM2->CNT;
-        eusart_send(capture);
+        // eusart_send((capture & 0xff00) >> 8);
+        // eusart_send((capture & 0xff));
     }
+    eusart_send((GPIOA->IDR & 0xff));
 };
 
 void timer2_ch1_init() // PA0 in
@@ -104,8 +106,9 @@ void timer2_ch1_init() // PA0 in
     TIM2->CCER |= TIM_CCER_CC1E;     // en capture -->>Reg CCR1
     TIM2->DIER |= TIM_DIER_CC1IE;    // capture intr enable
 
-    TIM2->CCMR1 |= TIM_CCMR1_IC1F_3;     // filters
-    TIM2->CCMR1 |= TIM_CCMR1_IC1PSC_Msk; // filters
+    // TIM2->CCMR1 |= TIM_CCMR1_IC1F_3;     // filters
+    // TIM2->CCMR1 |= TIM_CCMR1_IC1PSC_Msk; // filters
+
     NVIC_EnableIRQ(TIM2_IRQn);
     NVIC_SetPriority(TIM2_IRQn, 1);
     TIM2->CR1 |= TIM_CR1_CEN;
@@ -121,25 +124,30 @@ Interrupt      | DIER SR
 */
 void timer2_ch2_init() // pa1
 {
-    RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
-    RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
-    confPinA(AF_P_P50MHZ, 1);
-
-    AFIO->MAPR |= AFIO_MAPR_SWJ_CFG_2;
-    AFIO->MAPR &= ~AFIO_MAPR_TIM2_REMAP;
-    TIM2->CCR2 = 0;
+    // RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
+    // RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
+    // AFIO->MAPR = AFIO_MAPR_SWJ_CFG_2;
+    // AFIO->MAPR |= (0X00 << AFIO_MAPR_TIM2_REMAP_Pos); // PA1
     TIM2->CNT = 0;
+    TIM2->CR1 = 0;
+    TIM2->CCMR1 = 0;
+    TIM2->CCER = 0;
+    GPIOA->CRL = (AF_P_P50MHZ << GPIO_CRL_MODE1_Pos); // pA1
 
-    AFIO->MAPR = AFIO_MAPR_TIM2_REMAP_0; // PA1
+    TIM2->PSC = 19;  // 1us
+    TIM2->ARR = 999; //   1ms = 1000us
+    TIM2->CCR2 = 400;
+    TIM2->CNT = 0;
+    TIM2->CR1 = TIM_CR1_ARPE | TIM_CR1_URS;
+    TIM2->CR1 |= (0 << TIM_CR1_CMS_Pos);
+    TIM1->CR1 &= ~(TIM_CR1_OPM | TIM_CR1_UDIS | TIM_DIR | TIM_CR1_URS); // cnt stops
 
-    TIM2->CR1 &= ~CEN;
-    TIM2->PSC = 19; // 1us
-    TIM2->ARR = 99; //   1ms = 1000us
+    TIM2->CCMR1 &= ~TIM_CCMR1_CC2S; // ch2-output
 
-    TIM2->CCMR1 &= ~TIM_CCMR1_CC2S;              // ch2-output
     TIM2->CCMR1 |= (0X03 << TIM_CCMR1_OC2M_Pos); // toggle ocr2ref
+    TIM2->CCER &= ~TIM_CCER_CC2P;                // pin -high
+    TIM2->CCER |= TIM_CCER_CC2E;                 // PIN out en
 
-    TIM2->CCER &= ~TIM_CCER_CC2P;   // pin - high
     TIM2->CCMR1 |= TIM_CCMR1_OC2PE; // Preload enable.
     TIM2->DIER = TIM_DIER_CC2IE;
     NVIC_EnableIRQ(TIM2_IRQn);

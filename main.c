@@ -35,21 +35,21 @@ void reset_regs()
 {
     // RCC->APB1ENR = 0;
     // RCC->APB2ENR = 0;
-    GPIOC->CRH = 0;
-    GPIOC->CRL = 0;
-    GPIOA->CRH = 0;
-    GPIOA->CRL = 0;
-    GPIOB->CRH = 0;
-    GPIOB->CRL = 0;
-    GPIOC->ODR = 0;
-    GPIOC->IDR = 0;
-    ADC1->CR1 = 0;
-    ADC1->CR2 = 0;
-    ADC1->SQR1 = 0;
-    ADC1->SQR2 = 0;
-    ADC1->SQR3 = 0;
-    ADC1->SMPR1 = 0;
-    ADC1->SMPR2 = 0;
+    CLEAR_REG(GPIOC->CRH);
+    CLEAR_REG(GPIOC->CRL);
+    CLEAR_REG(GPIOA->CRH);
+    CLEAR_REG(GPIOA->CRL);
+    CLEAR_REG(GPIOB->CRH);
+    CLEAR_REG(GPIOB->CRL);
+    CLEAR_REG(GPIOC->ODR);
+    CLEAR_REG(GPIOC->IDR);
+    CLEAR_REG(ADC1->CR1);
+    CLEAR_REG(ADC1->CR2);
+    CLEAR_REG(ADC1->SQR1);
+    CLEAR_REG(ADC1->SQR2);
+    CLEAR_REG(ADC1->SQR3);
+    CLEAR_REG(ADC1->SMPR1);
+    CLEAR_REG(ADC1->SMPR2);
 }
 
 int main()
@@ -57,15 +57,15 @@ int main()
     reset_regs();
     clock_init_20mhz_apb();
 
-    RCC->AHBENR = RCC_AHBENR_DMA1EN;
+    // RCC->AHBENR = RCC_AHBENR_DMA1EN;
     RCC->APB2ENR = RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN;
     RCC->APB1ENR = RCC_APB1ENR_TIM2EN;
 
+
     eusart_init(U19200);
-    confPinA(P_P50MHZ, 1);
-    
-    timer1_init();
-    timer1_delay(600);
+
+    // timer1_init();
+    // timer1_delay(600);
 
     // timer2_ch1_init();
     timer2_ch2_init();
@@ -79,11 +79,11 @@ int main()
     // resend_data(U19200, buf, print);
 
     // eusart0_dma_rx_init(U19200, rx_buffer, 8);
-
+    
     while (1)
     {
         // eusart0_dma_listener();
-        // GPIOA->ODR ^= GPIO_ODR_ODR1;
+        // GPIOA->ODR ^= GPIO_ODR_ODR4;
         // timer1_delay(300);
         // GPIOA->BSRR = GPIO_BSRR_BR1;
         // timer1_delay(1);
