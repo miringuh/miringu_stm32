@@ -41,7 +41,6 @@ void ats_delay(uint16_t cyc)
         timer4_delay(500);
     }
 }
-
 void lcd_char2hex(uint16_t val) // 12bit
 {
 

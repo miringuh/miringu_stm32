@@ -260,8 +260,10 @@ void spi1_stop()
 void spi2_init(uint8_t baud)
 { // mosi pb15 miso pb14 sck-pb13 ss-pb12 50mhz
     spi2_setup();
-    GPIOB->CRH |= MOSI_2 | MISO_2 | SCKL_2;
-    GPIOA->CRH |= SS_2;
+    GPIOB->CRH = (AF_P_P50MHZ << GPIO_CRH_MODE15_Pos); // MOSI
+    GPIOB->CRH |= (INP_PPULL << GPIO_CRH_MODE14_Pos);   // MIS0
+    GPIOB->CRH |= (AF_P_P50MHZ << GPIO_CRH_MODE13_Pos); // MOSI
+    GPIOB->CRH |= (AF_P_P50MHZ << GPIO_CRH_MODE12_Pos); // SS
     SPI2->CR1 = 0;
     SPI2->CR2 = 0;
     SPI2->CR1 = baud;
@@ -309,11 +311,8 @@ void spi2_dma_tx_init(const char *msg, uint16_t size) // SPI1-TX
 {
     // strcpy(spi_buff, msg);
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-
     spi2_setup();
     SPI2->CR2 |=SPI_CR2_TXDMAEN;
-
-
     DMA1_Channel5->CPAR = (uint32_t)&SPI2->DR;
     DMA1_Channel5->CMAR = (uint32_t)msg;
     DMA1_Channel5->CNDTR = size;
@@ -335,20 +334,17 @@ void spi2_dma_tx_init(const char *msg, uint16_t size) // SPI1-TX
     DMA1_Channel5->CCR |= DMAEN;
 }
 
-void spi1_dma_rx_init(uint32_t baud, const char *msg, uint16_t size) // SPI1-RX
+void spi2_dma_rx_init(uint32_t baud, const char *msg, uint16_t size) // SPI1-RX
 {
     // strcpy(spi_buff, msg);
     // RCC->AHBENR |= RCC_AHBENR_DMA1EN;
     // spi2_setup();
-
     // GPIOA->CRL = (MOSI_2 | MISO_2 | SCKL_2 | SS_2);
     // SPI2->CR1 = 0;
     // SPI2->CR2 = 0;
-
     SPI2->CR1 = baud;
     SPI2->CR1 |= SSM | MSTR | SSI;
     SPI2->CR1 |= SPI_CR1_LSBFIRST;
-
     DMA1_Channel4->CPAR = (uint32_t)&SPI2->DR;
     DMA1_Channel4->CMAR = (uint32_t)msg;
     DMA1_Channel4->CNDTR = size;
@@ -359,7 +355,6 @@ void spi1_dma_rx_init(uint32_t baud, const char *msg, uint16_t size) // SPI1-RX
     DMA1_Channel4->CCR &= ~(DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0); // peri/mem size
     DMA1_Channel4->CCR |= DMA_CCR_PL_0;                         // high prioty
     SPI2->CR2 |= SPI_CR2_RXDMAEN;                               // spi1 Tx channel=2
-
     DMA1_Channel4->CCR |= TCIEN;
     NVIC_SetPriority(DMA1_Channel4_IRQn, 2);
     NVIC_EnableIRQ(DMA1_Channel4_IRQn);

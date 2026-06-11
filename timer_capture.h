@@ -4,7 +4,6 @@
 // #include "portRemaps.h"
 #include "eusart.h"
 #include "gpio.h"
-
 /*
 | Register | Purpose                       |
 | -------- | ----------------------------- |

@@ -76,7 +76,7 @@ void timer3()
 {
     RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
     TIM3->CR1 &= ~CEN;
-    TIM3->PSC = 71; // 1us (1ms=1000us)
+    TIM3->PSC = 19; // 1us (1ms=1000us)
     TIM3->ARR = 999;
     TIM3->CNT = 0;
     TIM3->DIER = TIM_DIER_UIE | TIM_DIER_TIE;
@@ -90,12 +90,9 @@ void timer3()
 }
 void timer3_delay(uint16_t cyc)
 {
-    // TIM1->CR1 |= CEN;
     while (timer3_freq != cyc)
         ;
     timer3_freq = 0;
-
-    // TIM1->CR1 &= ~CEN;
 }
 // TIMER 4
 void TIM4_IRQHandler(void)
@@ -110,27 +107,22 @@ void timer4()
 {
     RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
     TIM4->CR1 &= ~CEN;
-    TIM4->PSC = 71;  // 1us 1ms==1000us
+    TIM4->PSC = 19;  // 1us 1ms==1000us
     TIM4->ARR = 999; // 1ms
     TIM4->CNT = 0;
     TIM4->DIER = TIM_DIER_UIE; //| TIM_DIER_TIE;
     TIM4->CR1 = TIM_CR1_ARPE;
     TIM4->CR1 &= !(TIM_CR1_OPM | TIM_CR1_UDIS); // cnt stops
     TIM4->EGR |= TIM_EGR_UG;
-
     NVIC_SetPriority(TIM4_IRQn, 2);
     NVIC_EnableIRQ(TIM4_IRQn);
     TIM4->CR1 |= CEN;
 }
 void timer4_delay(uint16_t cyc)
 {
-
-    // TIM1->CR1 |= CEN;
     while (timer4_freq != cyc)
         ;
     timer4_freq = 0;
-
-    // TIM1->CR1 &= ~CEN;
 }
 //////////////////////////////////
 // TIMER 1
@@ -179,7 +171,6 @@ void timer1_delay(uint16_t cyc)
     timer1_freq = 0;
 }
 ////////////////////
-
 void timer1_Pwm()
 {
     RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;

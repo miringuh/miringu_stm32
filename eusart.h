@@ -174,7 +174,6 @@ void usart3_pins_remap3() // tx-PB10  rx-PB11 cts-PB13 rts-PB14
     GPIOB->CRH |= (GPIO_CRH_CNF11_0);                      // rx input FLOAT
     GPIOB->CRH |= (GPIO_CRH_CNF13_0);                      // cts input FLOAT
 }
-
 ///////////////////////
 void USART1_IRQHandler()
 {

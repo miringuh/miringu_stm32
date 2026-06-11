@@ -1,13 +1,47 @@
+/// 2GB SDCARD
+2,000,000,000/514 == 3,891,050 sectors
+filenames==> @13 bytes  xx....txt (13-byte file + 4-byte filetype)
+filenames_addr 3bytes xx_xx_xx 
+filename + file_addr=16 bytes
 
-512/8 == 64bytes
+files_locations @sector= 32
 
-64byte/8 (file name)==8 (chars)
+@filename reserve =@4 sectors 2048 bytes  (@cluster== 4 sectors)
 
-2,000,000,000/8 == 250,000,000 bytes (addr/filenames)
+reserve 20 sectors for filenames & addresses
+    640 files Max
+/////////////////
+reserve addr 0
 
-250,000,000/64== 3,906,250 (sectors)/(clusters)
+files & fileAddresses 20 sectors
+filename + fileaddr==16 bytes --> 4 sectors(2048 bytes)
+     1--------20 (sectors)**==640files
+
+--              ------sector 1---- 
+(file_num×4)+21−4      file_num  sector locations
+------------------------------------------------------
+     0--------15  byte file 1    --> 21,22,23,24
+    16--------31  byte file 2    --> 25,26,27,28
+        "--"
+        "--"
+  496--------512 byte file 32    --> 145,146,147,148 
+
+--              ------sector 20----
+(file_num×4)+21−4      file_num      sector locations
+------------------------------------------------------
+     0--------15 byte file 608   --> 2449,2450,2451,2452 
+    16--------31 byte file 609   --> 2453,2454,2455,2456 
+        "---"
+        "---"
+    496-------512 byte file 640  --> 2577,2578,2579,2580
 
 
-0-------7 sectors==filenames
+
+------initialisation-----
+read a filename from sector 0---20
+    if found read fileAdrress
+goto file addr and read 2048 bytes(4 sectors)
+edit and send back to sdcard    
+if not edited *** dont write back
 
 
