@@ -56,12 +56,10 @@ int main()
 {
     reset_regs();
     clock_init_20mhz_apb();
-
+    SysTick_Init();
     RCC->AHBENR = RCC_AHBENR_DMA1EN;
     RCC->APB2ENR = RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_IOPBEN;
-    RCC->APB1ENR = RCC_APB1ENR_TIM4EN;
-
-    eusart_init(U19200);
+    RCC->APB1ENR = RCC_APB1ENR_TIM4EN; //| RCC_APB1ENR_BKPEN;
 
     // timer1_init();
     // timer1_delay(600);
@@ -74,46 +72,48 @@ int main()
     // msg = " hey welcome";
     // strcpy(buf, msg);
     // resend_data(U19200, buf, print);
-    timer4();
-    timer4_delay(900);
 
+    timer4();
+    timer4_delay(8000);
+    eusart_init(U19200);
+    
     // sd_init();
     // sd_card_cond_8();
     // read_opt_cond_41();
+    // spi2_init(BAUD_FCLK_16);
 
-    // resetCard(0);
-    // sdRead(0); // sd_buff
-
-    // sdWrite_String(8, " ");
-    // sdWrite_String(9, " ");
-    // sdWrite_String(10, " ");
-    // sdWrite_String(11, " ");
+    // EraseCard(0);
+    // EraseCard(1);
+    // EraseCard(2);
+    // EraseCard(3);
 
     // char buff[512];
-    // char *fs = "tester0.txt";
-    // strcpy(buff, fs);
-    // make_file(buff, sd_buff);
-    // sdRead(0);
-    // sdRead(1);
-
-    // fs = "tester1.txt";
-    // strcpy(buff, fs);
-    // make_file(buff, sd_buff);
-
-    // sdRead(0);
-    // sdRead(1);
-
-    // fs = "tester3.txt";
+    // char *fs = "testerdev1.txt";
     // strcpy(buff, fs);
     // make_file(buff);
+
+    // fs = "testerdev2.txt";
+    // strcpy(buff, fs);
+    // make_file(buff);
+
+    // fs = "testerdev3.txt";
+    // strcpy(buff, fs);
+    // make_file(buff, sd_buff);
+    // sdWrite_pos_buff(1, fs, 16);
+    // sdWrite_pos_buff(1, fs, 32);
+
+    // sdWrite_pos_buff(1, "Welcome", 8);
+    // sdWrite_pos_buff(2, "belcome", 8);
+    // sdWrite_pos_buff(3, "velcome", 16);
+    // sdWrite_pos_buff(1, "welcome3", 128);
+    char *fname="algeria";
+    print(U19200, fname);
+    fname = "Aphabet";
+    print(U19200, fname);
     // sdRead(0);
     // sdRead(1);
     // sdRead(2);
-    // sdRead(10);
-    // sdRead(11);
 
-
-    
     while (1)
     {
         // eusart0_dma_listener();

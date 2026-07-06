@@ -120,8 +120,8 @@ void timer4()
 }
 void timer4_delay(uint16_t cyc)
 {
-    while (timer4_freq != cyc)
-        ;
+    while (timer4_freq < cyc)
+    ;
     timer4_freq = 0;
 }
 //////////////////////////////////

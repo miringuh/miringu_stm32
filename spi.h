@@ -310,8 +310,9 @@ char spi_buff[7];
 void spi2_dma_tx_init(const char *msg, uint16_t size) // SPI1-TX
 {
     // strcpy(spi_buff, msg);
-    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-    spi2_setup();
+    // RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+    // spi2_setup();
+
     SPI2->CR2 |=SPI_CR2_TXDMAEN;
     DMA1_Channel5->CPAR = (uint32_t)&SPI2->DR;
     DMA1_Channel5->CMAR = (uint32_t)msg;
@@ -343,8 +344,8 @@ void spi2_dma_rx_init(uint32_t baud, const char *msg, uint16_t size) // SPI1-RX
     // SPI2->CR1 = 0;
     // SPI2->CR2 = 0;
     SPI2->CR1 = baud;
-    SPI2->CR1 |= SSM | MSTR | SSI;
-    SPI2->CR1 |= SPI_CR1_LSBFIRST;
+    // SPI2->CR1 |= SSM | MSTR | SSI;
+    // SPI2->CR1 |= SPI_CR1_LSBFIRST;
     DMA1_Channel4->CPAR = (uint32_t)&SPI2->DR;
     DMA1_Channel4->CMAR = (uint32_t)msg;
     DMA1_Channel4->CNDTR = size;
