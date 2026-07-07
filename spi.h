@@ -310,13 +310,14 @@ char spi_buff[7];
 void spi2_dma_tx_init(const char *msg, uint16_t size) // SPI1-TX
 {
     // strcpy(spi_buff, msg);
-    // RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-    // spi2_setup();
+    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+    spi2_setup();
 
     SPI2->CR2 |=SPI_CR2_TXDMAEN;
     DMA1_Channel5->CPAR = (uint32_t)&SPI2->DR;
     DMA1_Channel5->CMAR = (uint32_t)msg;
     DMA1_Channel5->CNDTR = size;
+
     DMA1_Channel5->CCR &= ~MEM2MEM; // mem2mem
     DMA1_Channel5->CCR |= CIRC;     // 1-circ
     // DMA1_Channel5->CCR |= MEM2MEM; // mem2mem
@@ -327,14 +328,27 @@ void spi2_dma_tx_init(const char *msg, uint16_t size) // SPI1-TX
 
     DMA1_Channel5->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem
     DMA1_Channel5->CCR |= DMA_CCR_PL_0;                             // high prioty
+    
+    DMA1_Channel5->CCR |= TCIEN | TEIEN | HTIEN;
     channel5_ready = 0;
 
-    DMA1_Channel5->CCR |= TCIEN | TEIEN | HTIEN;
     NVIC_SetPriority(DMA1_Channel5_IRQn, 2);
     NVIC_EnableIRQ(DMA1_Channel5_IRQn);
     DMA1_Channel5->CCR |= DMAEN;
 }
-
+void dma_spi_send(char msg[], uint16_t size)
+{
+    DMA1_Channel5->CPAR = (uint32_t)&SPI2->DR;
+    DMA1_Channel5->CMAR = (uint32_t)msg;
+    DMA1_Channel5->CNDTR = size;
+    NVIC_SetPriority(DMA1_Channel5_IRQn, 2);
+    NVIC_EnableIRQ(DMA1_Channel5_IRQn);
+    DMA1_Channel5->CCR |= DMAEN;
+    while (channel5_ready == 0)
+    {
+    }
+    channel5_ready = 0;
+}
 void spi2_dma_rx_init(uint32_t baud, const char *msg, uint16_t size) // SPI1-RX
 {
     // strcpy(spi_buff, msg);

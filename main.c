@@ -111,7 +111,7 @@ int main()
     char *fname="_algeria";
     dma_uart_send(fname,strlen(fname));
 
-    fname = "Aphabet";
+    fname = "Alphabets";
     dma_uart_send(fname,strlen(fname));
 
     fname = "_nigeria";
