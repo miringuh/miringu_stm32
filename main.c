@@ -106,13 +106,19 @@ int main()
     // sdWrite_pos_buff(2, "belcome", 8);
     // sdWrite_pos_buff(3, "velcome", 16);
     // sdWrite_pos_buff(1, "welcome3", 128);
-    char *fname="algeria";
-    print(U19200, fname);
+    eusart0_dma_tx_init(U19200);
+    
+    char *fname="_algeria";
+    dma_uart_send(fname,strlen(fname));
+
     fname = "Aphabet";
-    print(U19200, fname);
+    dma_uart_send(fname,strlen(fname));
+
+    fname = "_nigeria";
+    dma_uart_send(fname, strlen(fname));
     // sdRead(0);
-    // sdRead(1);
-    // sdRead(2);
+    // // sdRead(1);
+    // // sdRead(2);
 
     while (1)
     {

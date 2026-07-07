@@ -178,6 +178,7 @@ void DMA1_Channel4_IRQHandler() // tx
         DMA1->IFCR |= DMA_IFCR_CTEIF4;
         DMA1_Channel4->CCR &= ~DMAEN;
     }
+
 }
 void DMA1_Channel5_IRQHandler() // rx
 {
@@ -189,7 +190,7 @@ void DMA1_Channel5_IRQHandler() // rx
     {
         DMA1->IFCR |= DMA_IFCR_CTCIF5;
         channel5_ready = 1;
-        // DMA1_Channel5->CCR &= ~DMAEN;
+        DMA1_Channel5->CCR &= ~DMAEN;
     }
     if ((DMA1->ISR & DMA_ISR_TEIF5)) // tx error
     {
@@ -286,6 +287,5 @@ typedef struct
     uint32_t ready_flag; // channeln_ready
 
 } dma_conf_t;
-
 
 #endif // __DMA

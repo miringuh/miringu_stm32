@@ -553,7 +553,7 @@ usart3- RX=channel 3
 #define RX_BUFFSIZE 7
 char rx_buffer[RX_BUFFSIZE];
 
-void eusart0_dma_tx_init(uint32_t baud, char msg[], uint16_t size)
+void eusart0_dma_tx_init(uint32_t baud)
 {
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
     usart1_pins_remap0();
@@ -561,9 +561,9 @@ void eusart0_dma_tx_init(uint32_t baud, char msg[], uint16_t size)
     USART1->CR1 |= TXEN | EU;
     USART1->CR3 |= DMAT; // usart1 Tx channel=4
 
-    DMA1_Channel4->CPAR = (uint32_t)&USART1->DR;
-    DMA1_Channel4->CMAR = (uint32_t)msg;
-    DMA1_Channel4->CNDTR = size;
+    // DMA1_Channel4->CPAR = (uint32_t)&USART1->DR;
+    // DMA1_Channel4->CMAR = (uint32_t)msg;
+    // DMA1_Channel4->CNDTR = size;
 
     DMA1_Channel4->CCR &= ~MEM2MEM; // mem2mem
     DMA1_Channel4->CCR |= CIRC;     // 1-circ
@@ -577,13 +577,26 @@ void eusart0_dma_tx_init(uint32_t baud, char msg[], uint16_t size)
 
     DMA1_Channel4->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem
     DMA1_Channel4->CCR |= DMA_CCR_PL_0;                             // high prioty
+    DMA1_Channel4->CCR |= TCIEN | TEIEN | HTIEN;
     channel4_ready = 0;
 
-    DMA1_Channel4->CCR |= TCIEN | TEIEN | HTIEN;
+    // timer1_delay(6);
+}
+void dma_uart_send(char msg[], uint16_t size)
+{
+    DMA1_Channel4->CPAR = (uint32_t)&USART1->DR;
+    DMA1_Channel4->CMAR = (uint32_t)msg;
+    DMA1_Channel4->CNDTR = size;
     NVIC_SetPriority(DMA1_Channel4_IRQn, 2);
     NVIC_EnableIRQ(DMA1_Channel4_IRQn);
     DMA1_Channel4->CCR |= DMAEN;
-    timer1_delay(6);
+    while (channel4_ready==0)
+    {
+        
+    }
+    channel4_ready = 0;
+    
+
 }
 void eusart0_dma_rx_init(uint32_t baud, char msg[], uint32_t size)
 {
@@ -614,11 +627,11 @@ void eusart0_dma_rx_init(uint32_t baud, char msg[], uint32_t size)
 }
 ///////////////////////////////////
 
-void print(uint32_t baud, char *msg)
+void print(char *msg)
 {
     char buf[strlen(msg)];
     strcpy(buf, msg);
-    eusart0_dma_tx_init(baud, msg, sizeof(buf));
+    dma_uart_send( msg, sizeof(msg));
 }
 //
 typedef void (*re_Print)(uint32_t, char[]);

@@ -443,28 +443,6 @@ post:
 }
 //
 // DMA
-void DMA1_Channel5_IRQHandler() // tx
-{
-    if ((DMA1->ISR & DMA_ISR_HTIF5)) // half txed
-    {
-        DMA1->IFCR |= DMA_IFCR_CHTIF5;
-        // eusartString("half\n");
-    }
-    if ((DMA1->ISR & DMA_ISR_TCIF5)) // tx complete
-    {
-        DMA1->IFCR |= DMA_IFCR_CTCIF5;
-        channel5_ready = 1;
-        // eusartString("full\n");
-
-        DMA1_Channel5->CCR &= ~DMAEN;
-    }
-    if ((DMA1->ISR & DMA_ISR_TEIF5)) // tx error
-    {
-        DMA1->IFCR |= DMA_IFCR_CTEIF5;
-        DMA1_Channel5->CCR &= ~DMAEN;
-        eusartString("error\n");
-    }
-}
 
 void spi_dma_read(uint32_t addr) // not working
 {
@@ -753,7 +731,7 @@ uint32_t readFromFile(char filename[])
         for (uint8_t i = 0; i < 4; i++)
         {
             sdRead(addr + i); // sd_buff
-            eusart0_dma_tx_init(U19200, sd_buff, 512);
+            // eusart0_dma_tx_init(U19200, sd_buff, 512);
         }
     }
     return addr;
