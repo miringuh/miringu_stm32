@@ -351,17 +351,16 @@ char *sdRead(uint32_t addr) // cmd17 sd_buff
 post:
     for (uint16_t i = 0; i < 512; i++)
     {
-        response = spi2_send(0xFF);
-        eusart_send(response);
+        response = spi2_send(0XFF);
         sd_buff[i] = response;
+        eusart_send(sd_buff[i]);
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
-    spi2_send(0XFF);
-    spi2_send(0XFF);
+
     chipStatus();
-    // eusart0_dma_tx_init(U19200, sd_buff, 512); //******
     GPIOB->BSRR = GPIO_BSRR_BS0;
+
     return sd_buff;
 }
 uint8_t *sdRead_buff(uint32_t addr, uint16_t posStr, uint16_t posEnd) // cmd17 sd_buff
@@ -469,7 +468,7 @@ void EraseCard(uint32_t addr) // cmd17 sd_buff
     response = spi2_send(0xFE);
     for (uint16_t i = 0; i <= 512; i++)
     {
-        spi2_send(0xFF);
+        spi2_send(0XFF);
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
@@ -486,9 +485,9 @@ wrMem:
     for (uint16_t i = 0; i < 0xFFFE; i++)
     {
         GPIOB->BSRR = GPIO_BSRR_BS0; // This is critical WHY?? don know why.....
+        spi2_send(0XFF);
     }
-    spi2_send(0XFF);
-    spi2_send(0XFF);
+  
     chipStatus();
     GPIOB->BSRR = GPIO_BSRR_BS0;
     timer4_delay(1000);
@@ -540,9 +539,8 @@ wrMem:
 }
 void sdWrite_pos_buff(uint32_t addr, char buff[], uint16_t posStr)
 {
-    uint8_t count = 0;
+    uint16_t count = 0;
     uint16_t ccn = 0x2FF;
-
     sdRead(addr); // sd_buff
     EraseCard(addr);
     for (uint16_t i = 0; i <= strlen(buff); i++)
@@ -550,18 +548,16 @@ void sdWrite_pos_buff(uint32_t addr, char buff[], uint16_t posStr)
         sd_buff[posStr + i] = buff[count];
         count++;
     }
-
     command(CMD24, 0x00, (addr << 9), 0X95); // 2GB
     response = spi2_send(0xFE);
-
-    for (uint16_t i = 0; i <= 512; i++)
-    {
-        spi2_send(sd_buff[i]);
-    }
-    // spi_dma_write(sd_buff);
+    // for (uint16_t i = 0; i <= 512; i++)
+    // {
+    //     spi2_send(sd_buff[i]);
+    // }
+    dma_spi_send(sd_buff, 512);
+    
     spi2_send(0XFF);
     spi2_send(0XFF);
-
     do
     {
         response = spi2_send(0XFF);
@@ -576,13 +572,10 @@ wrMem:
     for (uint16_t i = 0; i < 0xFFFE; i++)
     {
         GPIOB->BSRR = GPIO_BSRR_BS0; // This is critical WHY?? don know why.....
+        spi2_send(0XFF);
     }
-    spi2_send(0XFF);
-    spi2_send(0XFF);
     chipStatus();
     GPIOB->BSRR = GPIO_BSRR_BS0;
-    // spi2_send(0XFF);
-    // spi2_send(0XFF);
     timer4_delay(1000);
 }
 
@@ -731,7 +724,6 @@ uint32_t readFromFile(char filename[])
         for (uint8_t i = 0; i < 4; i++)
         {
             sdRead(addr + i); // sd_buff
-            // eusart0_dma_tx_init(U19200, sd_buff, 512);
         }
     }
     return addr;

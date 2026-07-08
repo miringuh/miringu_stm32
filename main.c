@@ -19,7 +19,7 @@
 #define TX_BUFFSIZE 8
 uint8_t tx_buffer[TX_BUFFSIZE];
 
-char buffxn[20];
+char buffxn[200];
 char *buffn = " ";
 char data[2];
 
@@ -65,68 +65,39 @@ int main()
     // timer1_delay(600);
     // timer2_ch1_init();
     // timer2_ch2_init();
-    // char buf[11];
-    // char *msg = "welcome home";
-    // strcpy(buf, msg);
-    // resend_data(U19200, buf, print);
-    // msg = " hey welcome";
-    // strcpy(buf, msg);
-    // resend_data(U19200, buf, print);
-
     timer4();
     timer4_delay(8000);
     eusart_init(U19200);
-    
-    // sd_init();
-    // sd_card_cond_8();
-    // read_opt_cond_41();
-    // spi2_init(BAUD_FCLK_16);
+   
+    // eusart0_dma_tx_init(U19200);
+    spi2_dma_tx_init();
 
+    sd_init();
+    sd_card_cond_8();
+    read_opt_cond_41();
+    spi2_init(BAUD_FCLK_16);
     // EraseCard(0);
     // EraseCard(1);
     // EraseCard(2);
     // EraseCard(3);
 
-    // char buff[512];
-    // char *fs = "testerdev1.txt";
-    // strcpy(buff, fs);
-    // make_file(buff);
-
-    // fs = "testerdev2.txt";
-    // strcpy(buff, fs);
-    // make_file(buff);
-
-    // fs = "testerdev3.txt";
-    // strcpy(buff, fs);
-    // make_file(buff, sd_buff);
-    // sdWrite_pos_buff(1, fs, 16);
-    // sdWrite_pos_buff(1, fs, 32);
-
-    // sdWrite_pos_buff(1, "Welcome", 8);
-    // sdWrite_pos_buff(2, "belcome", 8);
-    // sdWrite_pos_buff(3, "velcome", 16);
-    // sdWrite_pos_buff(1, "welcome3", 128);
-    eusart0_dma_tx_init(U19200);
+    sdWrite_pos_buff(1, "Welcome0", 0);
+    sdWrite_pos_buff(1, "welcome1", 32);
+    sdWrite_pos_buff(1, "welcome2", 64);
     
-    char *fname="_algeria";
-    dma_uart_send(fname,strlen(fname));
-
-    fname = "Alphabets";
-    dma_uart_send(fname,strlen(fname));
-
-    fname = "_nigeria";
-    dma_uart_send(fname, strlen(fname));
     // sdRead(0);
-    // // sdRead(1);
-    // // sdRead(2);
-
+    sdRead(1);
+    // sdRead(2);
+    
+    
     while (1)
     {
-        // eusart0_dma_listener();
+        // eusart0_dma_listener(buffxn);
         // GPIOA->ODR ^= GPIO_ODR_ODR4;
         // timer1_delay(300);
         // GPIOA->BSRR = GPIO_BSRR_BR1;
         // timer1_delay(1);
+        // timer4_delay(1);
     }
     return 0;
 }
