@@ -9,7 +9,7 @@
 #include "gpio.h"
 #include "rcc_conf.h"
 // #include "lcdI2c.h"
-// #include "spi_Lcd.h"
+#include "spi_Lcd.h"
 // #include "i2c.h"
 #include "dma.h"
 #include "sdcard.h"
@@ -19,7 +19,7 @@
 #define TX_BUFFSIZE 8
 uint8_t tx_buffer[TX_BUFFSIZE];
 
-char buffxn[200];
+char buffxn[20];
 char *buffn = " ";
 char data[2];
 
@@ -65,39 +65,32 @@ int main()
     // timer1_delay(600);
     // timer2_ch1_init();
     // timer2_ch2_init();
-    timer4();
-    timer4_delay(8000);
-    eusart_init(U19200);
-   
-    // eusart0_dma_tx_init(U19200);
-    spi2_dma_tx_init();
 
-    sd_init();
-    sd_card_cond_8();
-    read_opt_cond_41();
-    spi2_init(BAUD_FCLK_16);
+    timer4();
+    timer4_delay(4000);
+    eusart_init(U19200);
+
+    // eusart0_dma_tx_init(U19200);
+    // spi2_dma_tx_init(BAUD_FCLK_32);
+    // sd_init(BAUD_FCLK_64);
+    // sd_card_cond_8();
+    // read_opt_cond_41();
+    // spi2_init(BAUD_FCLK_32);
     // EraseCard(0);
     // EraseCard(1);
     // EraseCard(2);
     // EraseCard(3);
-
-    sdWrite_pos_buff(1, "Welcome0", 0);
-    sdWrite_pos_buff(1, "welcome1", 32);
-    sdWrite_pos_buff(1, "welcome2", 64);
-    
+    // sdWrite_pos_buff(1, "Welcome0", 0);
+    // sdWrite_pos_buff(2, "Welcome2", 0);
+    // sdWrite_pos_buff(1, "welcome1", 32);
+    // sdWrite_pos_buff(2, "welcome3", 32);
     // sdRead(0);
-    sdRead(1);
+    // sdRead(1);
     // sdRead(2);
-    
-    
+
     while (1)
     {
-        // eusart0_dma_listener(buffxn);
-        // GPIOA->ODR ^= GPIO_ODR_ODR4;
-        // timer1_delay(300);
-        // GPIOA->BSRR = GPIO_BSRR_BR1;
-        // timer1_delay(1);
-        // timer4_delay(1);
+
     }
     return 0;
 }

@@ -593,6 +593,7 @@ void dma_uart_send(char msg[], uint16_t size)
     }
     channel4_ready = 0;
 }
+//
 void eusart0_dma_rx_init(uint32_t baud, char msg[])
 {
     // RCC->AHBENR |= RCC_AHBENR_DMA1EN;

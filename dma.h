@@ -190,7 +190,7 @@ void DMA1_Channel5_IRQHandler() // rx
     {
         DMA1->IFCR |= DMA_IFCR_CTCIF5;
         channel5_ready = 1;
-        // DMA1_Channel5->CCR &= ~DMAEN;
+        DMA1_Channel5->CCR &= ~DMAEN;
     }
     if ((DMA1->ISR & DMA_ISR_TEIF5)) // tx error
     {

@@ -108,6 +108,9 @@
 #define RESP_ECC_ERROR 0X04
 #define RESP_ERROR_RANGE 0X08
 //
+#define CS_ON GPIO_BSRR_BR0
+#define CS_OFF GPIO_BSRR_BS0
+//
 uint16_t del = 1000; // 625us
 uint8_t version = 0;
 uint8_t rd_buff[8];
@@ -141,7 +144,7 @@ void power(uint8_t val) // pb0
 }
 uint8_t command(uint8_t comm, uint8_t err_num, uint32_t args, uint8_t crc)
 {
-    GPIOB->BSRR = GPIO_BSRR_BR0; // CS
+    GPIOB->BSRR = CS_ON; // CS
     TIMEOUT = 0X6FF;
     do
     {
@@ -165,7 +168,7 @@ uint8_t command(uint8_t comm, uint8_t err_num, uint32_t args, uint8_t crc)
     eusart_send(response);
     eusart_send(comm);
     SPI2->CR1 &= ~SPE;
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
     power(0);
     return (0);
 commData:
@@ -173,14 +176,13 @@ commData:
     return response;
 }
 
-void sd_init()
+void sd_init(uint16_t baud)
 {
     GPIOB->CRL = (P_P50MHZ << GPIO_CRL_MODE0_Pos);  // CS
     GPIOB->CRL |= (P_P50MHZ << GPIO_CRL_MODE1_Pos); // POWER
 
-    spi2_init(BAUD_FCLK_64);
-
-    timer4_delay(20);
+    spi2_init(baud);
+    timer4_delay(2);
 
     power(1);
     for (uint8_t i = 0; i < 10; i++)
@@ -190,7 +192,7 @@ void sd_init()
     command(CMD0, 0x01, 0x0000, 0X95); // 2GB
     spi2_send(0XFF);
     spi2_send(0XFF);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
 }
 void sd_card_cond_8() // 5 R7
 {
@@ -202,24 +204,24 @@ void sd_card_cond_8() // 5 R7
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
 }
 void read_opt_cond_41() // 4
 {
     command(CMD55, 0x05, 0x00000000, 0X95); // 2GB
     spi2_send(0xff);
     spi2_send(0xff);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
     command(ACMD41, 0x01, 0x40000000, 0X95); // 2GB
     // command(ACMD41, 0x05, 0x40000000, 0X95); // 8GB
     spi2_send(0XFF);
     spi2_send(0XFF);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
     command(ACMD41, 0x00, 0x40000000, 0X95); // 2GB
     // command(ACMD41, 0x05, 0x40000000, 0X95); // 8GB
     spi2_send(0XFF);
     spi2_send(0XFF);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
 }
 void read_ocr_58()
 {
@@ -232,7 +234,7 @@ void read_ocr_58()
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
 }
 void acmd_status13()
 {
@@ -241,14 +243,14 @@ void acmd_status13()
     spi2_send(0XFF);
     spi2_send(0XFF);
     // return response;
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
 
     command(ACMD13, 0x01, 0x00000000, 0X95); // 2GB
     // command(ACMD41, 0x05, 0x40000000, 0X95); // 8GB
     spi2_send(0XFF);
     spi2_send(0XFF);
 
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
 }
 void get_csd()
 {
@@ -262,7 +264,7 @@ void get_csd()
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
     // getByteValue(csd_buff);
     // getCsdValueV2(csd_buff);
     // getCsdValueV1(csd_buff);
@@ -272,31 +274,33 @@ void optionCrc(uint8_t val)
     command(CMD59, 0x00, (0x00 | val), 0X95);
     spi2_send(0XFF);
     spi2_send(0XFF);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
 }
 void set_wr_blk_erase(uint32_t address)
 { // 1=crc-on 0=crc-off
     command(CMD55, 0x00, 0x00, 0X95);
     spi2_send(0XFF);
     spi2_send(0XFF);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
     command(ACMD23, 0x00, (address << 9), 0X95);
     for (uint16_t i = 0; i < 0xFFFE; i++)
     {
-        GPIOB->BSRR = GPIO_BSRR_BS0;
+        GPIOB->BSRR = CS_OFF;
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
 }
 uint8_t chipStatus()
 {
     command(CMD13, 0x00, 0x0000, 0X95); // 2GB
-    // command(CMD13, 0x00, 0x0000, 0X95); // 8GB
     spi2_send(0XFF);
     spi2_send(0XFF);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
-    timer4_delay(200);
+    for (uint16_t i = 0; i < 0xFF; i++)
+    {
+        GPIOB->BSRR = CS_OFF; // This is critical WHY?? don know why.....
+        timer4_delay(2);
+    }
     return response;
 }
 void stopTrans() // INCASE OF MULTY WR
@@ -304,27 +308,27 @@ void stopTrans() // INCASE OF MULTY WR
     command(CMD12, 0x01, 0x00000000, 0X95); // 2GB
     spi2_send(0XFF);
     spi2_send(0XFF);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
 }
 void sdErase(uint32_t addr_st, uint32_t addr_end)
 {
     command(CMD32, 0x00, (addr_st << 9), 0X95); // start addr
     spi2_send(0XFF);
     spi2_send(0XFF);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
     command(CMD33, 0x00, (addr_end << 9), 0X95); // end addr
     spi2_send(0XFF);
     spi2_send(0XFF);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
     command(CMD38, 0x00, 0x00, 0X95); // erase
     spi2_send(0XFF);
     spi2_send(0XFF);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
 }
 void stopSpi()
 {
     SPI2->CR1 &= ~SPE;
-    GPIOB->BSRR = GPIO_BSRR_BR0;
+    GPIOB->BSRR = CS_ON;
     power(0);
 }
 //
@@ -342,7 +346,7 @@ char *sdRead(uint32_t addr) // cmd17 sd_buff
         }
         ccn--;
     } while (ccn >= 1);
-    GPIOB->BSRR = GPIO_BSRR_BS0; // cs
+    GPIOB->BSRR = CS_OFF; // cs
     SPI2->CR1 &= ~SPE;
     eusart_send(0Xee);
     eusart_send(response);
@@ -354,12 +358,20 @@ post:
         response = spi2_send(0XFF);
         sd_buff[i] = response;
         eusart_send(sd_buff[i]);
+        timer4_delay(2);
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
-
+    for (uint16_t i = 0; i < 0xFF; i++)
+    {
+        GPIOB->BSRR = CS_OFF; // This is critical WHY?? don know why.....
+        timer4_delay(4);
+    }
+    spi2_send(0XFF);
+    spi2_send(0XFF);
     chipStatus();
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
+    timer4_delay(1000);
 
     return sd_buff;
 }
@@ -376,7 +388,7 @@ uint8_t *sdRead_buff(uint32_t addr, uint16_t posStr, uint16_t posEnd) // cmd17 s
         }
         ccn--;
     } while (ccn >= 1);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
     SPI2->CR1 &= ~SPE;
     eusart_send(0Xee);
     eusart_send(response);
@@ -396,7 +408,7 @@ post:
     spi2_send(0XFF);
     spi2_send(0XFF);
     chipStatus();
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
     return 0;
 }
 uint8_t sdRead_pos(uint32_t addr, uint16_t begins, uint16_t ends) // cmd17 sd_buff
@@ -412,7 +424,7 @@ uint8_t sdRead_pos(uint32_t addr, uint16_t begins, uint16_t ends) // cmd17 sd_bu
         }
         ccn--;
     } while (ccn >= 1);
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
     SPI2->CR1 &= ~SPE;
     eusart_send(0Xee);
     eusart_send(response);
@@ -437,7 +449,7 @@ post:
     spi2_send(0XFF);
     spi2_send(0XFF);
     chipStatus();
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
     return 0;
 }
 //
@@ -453,23 +465,25 @@ void spi_dma_read(uint32_t addr) // not working
         eusart_send(spi_buff[i]);
     }
 }
-void spi_dma_write(char data[])
-{
-    // RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-    // spi2_init(BAUD_FCLK_16);
-    spi2_dma_tx_init(data, 512);
-    timer1_delay(6);
-}
+// void spi_dma_write(char data[])
+// {
+//     // RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+//     // spi2_init(BAUD_FCLK_16);
+//     spi2_dma_tx_init(data, 512);
+//     timer1_delay(6);
+// }
 //
 void EraseCard(uint32_t addr) // cmd17 sd_buff
 {
     uint16_t ccn = 0x2FF;
     command(CMD24, 0x00, (addr << 9), 0X95); // 2GB
     response = spi2_send(0xFE);
-    for (uint16_t i = 0; i <= 512; i++)
+    for (uint16_t i = 0; i < 512; i++)
     {
         spi2_send(0XFF);
     }
+    // dma_spi_send(sd_buff, 512);
+
     spi2_send(0XFF);
     spi2_send(0XFF);
     do
@@ -482,14 +496,16 @@ void EraseCard(uint32_t addr) // cmd17 sd_buff
         ccn--;
     } while (ccn >= 1);
 wrMem:
-    for (uint16_t i = 0; i < 0xFFFE; i++)
+    for (uint16_t i = 0; i < 0xFF; i++)
     {
-        GPIOB->BSRR = GPIO_BSRR_BS0; // This is critical WHY?? don know why.....
-        spi2_send(0XFF);
+        GPIOB->BSRR = CS_OFF; // This is critical WHY?? don know why.....
+        timer4_delay(4);
     }
-  
+    spi2_send(0XFF);
+    spi2_send(0XFF);
+
     chipStatus();
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
     timer4_delay(1000);
 }
 //
@@ -530,12 +546,12 @@ void sdWrite_String(uint32_t addr, char data[]) // cmd24
 wrMem:
     for (uint16_t i = 0; i < 0xFFFE; i++)
     {
-        GPIOB->BSRR = GPIO_BSRR_BS0; // This is critical WHY?? don know why.....
+        GPIOB->BSRR = CS_OFF; // This is critical WHY?? don know why.....
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
     chipStatus();
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
 }
 void sdWrite_pos_buff(uint32_t addr, char buff[], uint16_t posStr)
 {
@@ -543,19 +559,18 @@ void sdWrite_pos_buff(uint32_t addr, char buff[], uint16_t posStr)
     uint16_t ccn = 0x2FF;
     sdRead(addr); // sd_buff
     EraseCard(addr);
-    for (uint16_t i = 0; i <= strlen(buff); i++)
+    for (uint16_t i = 0; i < strlen(buff); i++)
     {
         sd_buff[posStr + i] = buff[count];
         count++;
     }
     command(CMD24, 0x00, (addr << 9), 0X95); // 2GB
     response = spi2_send(0xFE);
-    // for (uint16_t i = 0; i <= 512; i++)
-    // {
-    //     spi2_send(sd_buff[i]);
-    // }
-    dma_spi_send(sd_buff, 512);
-    
+
+    for (uint16_t i = 0; i < 512; i++)
+    {
+        spi2_send(sd_buff[i]);
+    }    
     spi2_send(0XFF);
     spi2_send(0XFF);
     do
@@ -568,14 +583,16 @@ void sdWrite_pos_buff(uint32_t addr, char buff[], uint16_t posStr)
         ccn--;
     } while (ccn >= 1);
 wrMem:
-
-    for (uint16_t i = 0; i < 0xFFFE; i++)
+    for (uint16_t i = 0; i < 0xFF; i++)
     {
-        GPIOB->BSRR = GPIO_BSRR_BS0; // This is critical WHY?? don know why.....
-        spi2_send(0XFF);
+        GPIOB->BSRR = CS_OFF; // This is critical WHY?? don know why.....
+        // spi2_send(0XFF);
+        timer4_delay(4);
     }
+    spi2_send(0XFF);
+    spi2_send(0XFF);
     chipStatus();
-    GPIOB->BSRR = GPIO_BSRR_BS0;
+    GPIOB->BSRR = CS_OFF;
     timer4_delay(1000);
 }
 

@@ -288,7 +288,6 @@ uint16_t get_ADC(void) // 12 bit
     ADC1->CR2 &= ~ADC_CR2_CAL;
     return ADC1->DR;
 }
-
 ///
 // dma channel 1 == ADC1
 ///
