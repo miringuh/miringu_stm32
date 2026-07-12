@@ -155,6 +155,7 @@ uint8_t command(uint8_t comm, uint8_t err_num, uint32_t args, uint8_t crc)
         spi2_send((uint8_t)(args & 0x000000FF));
         spi2_send(crc);
         spi2_send(0XFF);
+        spi2_send(0XFF);
         response = spi2_send(0XFF);
         // eusart_send(response);
         if (response == err_num)
@@ -357,25 +358,20 @@ post:
     {
         response = spi2_send(0XFF);
         sd_buff[i] = response;
-        eusart_send(sd_buff[i]);
+        // eusart_send(sd_buff[i]);
         timer4_delay(2);
     }
-    spi2_send(0XFF);
-    spi2_send(0XFF);
-    for (uint16_t i = 0; i < 0xFF; i++)
+    for (uint16_t i = 0; i < 0xFFFE; i++)
     {
         GPIOB->BSRR = CS_OFF; // This is critical WHY?? don know why.....
-        timer4_delay(4);
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
     chipStatus();
     GPIOB->BSRR = CS_OFF;
-    timer4_delay(1000);
-
     return sd_buff;
 }
-uint8_t *sdRead_buff(uint32_t addr, uint16_t posStr, uint16_t posEnd) // cmd17 sd_buff
+void sdRead_buff(uint32_t addr, uint16_t posStr, uint16_t posEnd) // cmd17 sd_buff
 {
     uint16_t ccn = 0x4FF;
     response = command(CMD17, 0x00, (addr << 9), 0X95); // 2GB
@@ -393,23 +389,24 @@ uint8_t *sdRead_buff(uint32_t addr, uint16_t posStr, uint16_t posEnd) // cmd17 s
     eusart_send(0Xee);
     eusart_send(response);
     power(0);
-    return 0;
+    // return 0;
 post:
-
     for (uint16_t i = 0; i < 512; i++)
     {
         response = spi2_send(0xFF);
-        if (i >= posStr && i <= posEnd)
+        sd_buff[i] = response;
+        if ((i >= posStr) & (i <= posEnd))
         {
             sd_buff[i] = response;
-            eusart_send(sd_buff[i]);
+            // eusart_send(sd_buff[i]);
         }
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
     chipStatus();
     GPIOB->BSRR = CS_OFF;
-    return 0;
+    // dma_uart_send(sd_buff, 512);
+    // return 0;
 }
 uint8_t sdRead_pos(uint32_t addr, uint16_t begins, uint16_t ends) // cmd17 sd_buff
 {
@@ -435,7 +432,7 @@ post:
     for (uint16_t i = 0; i < 512; i++)
     {
         response = spi2_send(0xFF);
-        timer4_delay(del);
+        timer4_delay(10);
         if (i >= begins && i <= ends)
         {
             sd_buff[i] = response;
@@ -475,15 +472,15 @@ void spi_dma_read(uint32_t addr) // not working
 //
 void EraseCard(uint32_t addr) // cmd17 sd_buff
 {
-    uint16_t ccn = 0x2FF;
+    uint16_t ccn = 0x4FF;
     command(CMD24, 0x00, (addr << 9), 0X95); // 2GB
     response = spi2_send(0xFE);
+
     for (uint16_t i = 0; i < 512; i++)
     {
-        spi2_send(0XFF);
+        spi2_send(0xFF);
+        // timer4_delay(1);
     }
-    // dma_spi_send(sd_buff, 512);
-
     spi2_send(0XFF);
     spi2_send(0XFF);
     do
@@ -496,17 +493,16 @@ void EraseCard(uint32_t addr) // cmd17 sd_buff
         ccn--;
     } while (ccn >= 1);
 wrMem:
-    for (uint16_t i = 0; i < 0xFF; i++)
+    for (uint16_t i = 0; i < 0xFFFE; i++)
     {
         GPIOB->BSRR = CS_OFF; // This is critical WHY?? don know why.....
-        timer4_delay(4);
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
-
     chipStatus();
     GPIOB->BSRR = CS_OFF;
-    timer4_delay(1000);
+    spi2_send(0XFF);
+    spi2_send(0XFF);
 }
 //
 // WRITE BUFF
@@ -556,10 +552,12 @@ wrMem:
 void sdWrite_pos_buff(uint32_t addr, char buff[], uint16_t posStr)
 {
     uint16_t count = 0;
-    uint16_t ccn = 0x2FF;
+    uint16_t ccn = 0x4FF;
+
     sdRead(addr); // sd_buff
     EraseCard(addr);
-    for (uint16_t i = 0; i < strlen(buff); i++)
+
+    for (uint16_t i = 0; i <= strlen(buff); i++)
     {
         sd_buff[posStr + i] = buff[count];
         count++;
@@ -570,7 +568,8 @@ void sdWrite_pos_buff(uint32_t addr, char buff[], uint16_t posStr)
     for (uint16_t i = 0; i < 512; i++)
     {
         spi2_send(sd_buff[i]);
-    }    
+        // timer4_delay(1);
+    }
     spi2_send(0XFF);
     spi2_send(0XFF);
     do
@@ -583,17 +582,16 @@ void sdWrite_pos_buff(uint32_t addr, char buff[], uint16_t posStr)
         ccn--;
     } while (ccn >= 1);
 wrMem:
-    for (uint16_t i = 0; i < 0xFF; i++)
+    for (uint16_t i = 0; i < 0xFFFE; i++)
     {
         GPIOB->BSRR = CS_OFF; // This is critical WHY?? don know why.....
-        // spi2_send(0XFF);
-        timer4_delay(4);
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
     chipStatus();
     GPIOB->BSRR = CS_OFF;
-    timer4_delay(1000);
+    spi2_send(0XFF);
+    spi2_send(0XFF);
 }
 
 // BUFF nanipulate
@@ -665,179 +663,41 @@ uint32_t counter = 0;
 uint32_t countx = 0;
 uint32_t addr_jump = 0;
 uint32_t addr = 0;
-char buff1[3];
-
-typedef struct
-{
-    uint32_t file_adrr;
-} file_out_t;
-typedef file_out_t file_n;
-
-file_n compareFile(char file_buff[], char fname[])
-{
-    file_out_t file_t;
-    uint32_t file_addr;
-    for (uint8_t i = 0; i < 10; i++)
-    {
-        if (file_buff[i] != fname[i])
-        {
-            goto ends;
-        }
-        i += 6;
-    }
-    file_addr = ((file_buff[11] & 0x00000F) << 24);
-    file_addr += ((file_buff[12] & 0x00000F) << 20);
-    file_addr += ((file_buff[13] & 0x00000F) << 16);
-    file_addr += ((file_buff[14] & 0x00000F) << 12);
-    file_addr += ((file_buff[15] & 0x00000F) << 8);
-    file_addr += (file_buff[16] & 0x00000F);
-    file_t.file_adrr = file_addr;
-    return file_t;
-ends:
-    file_t.file_adrr = 0;
-    return file_t;
-}
-void eusart0_dma_buff_listener(char buff[], uint16_t size)
-{
-    if (channel5_ready)
-    {
-        channel5_ready = 0;
-        sd_buff[size - 1] = buff[size - 1];
-    }
-}
 //
-
-uint32_t getFileAddress(char filename[]) // 0==error
-{
-    // sd_buff[512];
-    file_out_t file_out;
-    file_out.file_adrr = 0;
-    for (uint16_t i = 1; i < 20; i++)
-    {
-        sdRead(i); /// sd_buff
-        for (uint8_t j = 0; j < 32; j++)
-        {
-            compareFile(sd_buff, filename);
-            if (file_out.file_adrr >= 1)
-            {
-                return file_out.file_adrr;
-                break;
-            }
-        }
-    }
-
-    return file_out.file_adrr;
-}
-
-uint32_t readFromFile(char filename[])
-{
-    uint32_t addr = getFileAddress(filename);
-    if (addr == 0)
-    {
-        goto ends;
-    }
-    if (addr != 0)
-    {
-        for (uint8_t i = 0; i < 4; i++)
-        {
-            sdRead(addr + i); // sd_buff
-        }
-    }
-    return addr;
-ends:
-    eusartString("file not found");
-    return 1;
-}
-
-uint32_t set_file_addr()
-{
-    sdRead(0);
-    addr = ((sd_buff[2] & 0xFF));
-    addr |= ((sd_buff[1] & 0xFF));
-    addr |= (sd_buff[0] & 0xFF);
-
-    // addr = 0;
-    // eusart_send((addr & 0xff0000) >> 16);
-    // eusart_send((addr & 0x00ff00) >> 8);
-    // eusart_send(addr & 0x0000ff);
-
-    if (addr >= 0xFFFFFE)
-    {
-        char val = ('0' - 0x30);
-        buff1[0] = val;
-        buff1[1] = val;
-        buff1[2] = val;
-        sd_buff[0] = buff1[0];
-        sd_buff[1] = buff1[1];
-        sd_buff[2] = buff1[2];
-    }
-    if (addr <= 0xFFFFFD)
-    {
-        addr += 0x01;
-        buff1[0] = (char)(addr & 0xFF0000) >> 16;
-        buff1[1] = (char)(addr & 0xFF00) >> 8;
-        buff1[2] = (char)(addr & 0xFF);
-        sd_buff[0] = buff1[0];
-        sd_buff[1] = buff1[1];
-        sd_buff[2] = buff1[2];
-        countx += 16;
-    }
-    sdWrite_pos_buff(0, sd_buff, 0);
-    return addr;
-}
-void make_file(char data_file[])
-{
-    set_file_addr();
-    char *fname_loc = strcat(data_file, buff1);
-
-    if (countx <= 511)
-    {
-        sdWrite_pos_buff(1, fname_loc, countx);
-    }
-    if ((countx >= 512) & (countx >= 1023))
-    {
-        sdWrite_pos_buff(2, fname_loc, countx);
-    }
-    if ((countx >= 1024) & (countx >= 1536))
-    {
-        sdWrite_pos_buff(3, fname_loc, countx);
-    }
-}
 //
-void write_on_file(char filename[])
+uint32_t get_file_addr()
 {
-    uint32_t addr = readFromFile(filename);
+    sdRead_buff(0, 0, 3); // sd_buff
+    uint32_t address;
+    address = (sd_buff[0] & 0xFF);
+    address |= ((sd_buff[1] & 0xFF) << 8);
+    address |= ((sd_buff[2] & 0xFF) << 16);
 
-    while (channel4_ready == 0)
-    {
-        eusart0_dma_buff_listener(sd_buff, 512);
-    }
-    char buff[4];
-    sdRead(addr); // sd_buff
-    addr |= ((sd_buff[0] & 0x00000F) << 16);
-    addr |= ((sd_buff[1] & 0x00000F) << 12);
-    addr |= ((sd_buff[2] & 0x00000F) << 8);
-    addr |= (sd_buff[3] & 0x00000F);
-    //
-    if (addr == 0)
-    {
-        buff[0] = 0x00;
-        buff[1] = 0x00;
-        buff[2] = 0x00;
-        buff[3] = 0x01;
-    }
-    if (addr >= 1)
-    {
-        buff[0] |= (counter & 0X00F000 >> 16);
-        buff[1] |= (counter & 0X000F00 >> 12);
-        buff[2] |= (counter & 0X0000F0 >> 8);
-        buff[3] |= (counter & 0X00000F);
-    }
-    sdWrite_pos_buff(addr, buff, 0);
-    counter += 1;
-    addr = counter;
-    // addr++
-    // sdWrite_buff(addr, sd_buff);
+    return address;
+}
+void set_file_addr(uint32_t addr, uint32_t f_addr, uint16_t pos)
+{
+    char buff[3];
+    buff[3] = ((f_addr & 0xFF0000) >> 16);
+    buff[2] = ((f_addr & 0x00FF00) >> 8);
+    buff[1] = ((f_addr & 0x0000FF));
+    sdWrite_pos_buff(addr, buff, pos);
+}
+void write_fname(uint32_t addr, char file[], uint16_t pos)
+{
+    // char buff[3];
+
+    // sdRead_buff(0, 0, 3); // sd_buff
+
+    // buff[0] = '0';
+    // buff[1] = '0';
+    // buff[2] = '0';
+
+    // file[ssize + 1] = buff[2];
+    // file[ssize + 2] = buff[1];
+    // file[ssize + 3] = buff[0];
+    // strcat(file, buff);
+    sdWrite_pos_buff(addr, file, pos);
 }
 //--------------------------------------
 

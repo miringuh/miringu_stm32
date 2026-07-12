@@ -19,7 +19,7 @@
 #define TX_BUFFSIZE 8
 uint8_t tx_buffer[TX_BUFFSIZE];
 
-char buffxn[20];
+char buffxn[120];
 char *buffn = " ";
 char data[2];
 
@@ -67,30 +67,49 @@ int main()
     // timer2_ch2_init();
 
     timer4();
-    timer4_delay(4000);
-    eusart_init(U19200);
+    timer4_delay(5000);
 
-    // eusart0_dma_tx_init(U19200);
+    eusart_init(U19200);
+    eusart0_dma_tx_init(U19200);
     // spi2_dma_tx_init(BAUD_FCLK_32);
-    // sd_init(BAUD_FCLK_64);
-    // sd_card_cond_8();
-    // read_opt_cond_41();
-    // spi2_init(BAUD_FCLK_32);
+
+    sd_init(BAUD_FCLK_128);
+    sd_card_cond_8();
+    read_opt_cond_41();
+
+    spi2_init(BAUD_FCLK_16);
+    // timer4_delay(500);
+
     // EraseCard(0);
     // EraseCard(1);
     // EraseCard(2);
     // EraseCard(3);
-    // sdWrite_pos_buff(1, "Welcome0", 0);
-    // sdWrite_pos_buff(2, "Welcome2", 0);
-    // sdWrite_pos_buff(1, "welcome1", 32);
-    // sdWrite_pos_buff(2, "welcome3", 32);
+
+    sdWrite_pos_buff(1, "welcome1", 0);
+    // sdWrite_pos_buff(1, "Welcome1", 16);
+    sdWrite_pos_buff(1, "welcome2", 32);
+  
+    // char *file = "Welcome0";
+    // strcpy(buffxn,file);
+    // write_fname(1, buffxn,1);
+
+    // file = "Welcome1";
+    // strcpy(buffxn, file);
+    // write_fname(1, buffxn, 32);
+
+    // file = "Welcome2";
+    // strcpy(buffxn, file);
+    // write_fname(1, buffxn, 32);
+
     // sdRead(0);
-    // sdRead(1);
+    // dma_uart_send(sd_buff, 512);
+    sdRead(1);
+    dma_uart_send(sd_buff, 512);
+
     // sdRead(2);
 
     while (1)
     {
-
     }
     return 0;
 }
