@@ -71,7 +71,7 @@ int main()
 
     eusart_init(U19200);
     eusart0_dma_tx_init(U19200);
-    // spi2_dma_tx_init(BAUD_FCLK_32);
+    // spi2_dma_tx_init(BAUD_FCLK_16);
 
     sd_init(BAUD_FCLK_128);
     sd_card_cond_8();
@@ -81,14 +81,16 @@ int main()
     // timer4_delay(500);
 
     // EraseCard(0);
-    // EraseCard(1);
+    EraseCard(1);
     // EraseCard(2);
     // EraseCard(3);
 
+    
+
     sdWrite_pos_buff(1, "welcome1", 0);
     // sdWrite_pos_buff(1, "Welcome1", 16);
-    sdWrite_pos_buff(1, "welcome2", 32);
-  
+    // sdWrite_pos_buff(1, "welcome2", 32);
+
     // char *file = "Welcome0";
     // strcpy(buffxn,file);
     // write_fname(1, buffxn,1);

@@ -269,7 +269,7 @@ void spi2_init(uint8_t baud)
     SPI2->CR1 = baud;
     SPI2->CR1 |= SSM | MSTR | SSI;
 
-    SPI2->CR2 = RXNEIE | ERRIE | SSOE;// | TXEIE;
+    SPI2->CR2 = RXNEIE | ERRIE | SSOE; // | TXEIE;
     NVIC_SetPriority(SPI2_IRQn, 2);
     NVIC_EnableIRQ(SPI2_IRQn);
     SPI2->CR1 |= SPE;
@@ -315,7 +315,7 @@ void spi2_dma_tx_init(uint8_t baud) // SPI1-TX
     SPI2->CR2 = 0;
     SPI2->CR1 = baud;
     SPI2->CR1 |= SSM | MSTR | SSI;
-    SPI2->CR1 |= SPE;//******
+    SPI2->CR1 |= SPE;
 
     SPI2->CR2 |= SPI_CR2_TXDMAEN;
     // DMA1_Channel5->CPAR = (uint32_t)&SPI2->DR;
@@ -324,15 +324,16 @@ void spi2_dma_tx_init(uint8_t baud) // SPI1-TX
 
     DMA1_Channel5->CCR &= ~MEM2MEM; // mem2mem
     DMA1_Channel5->CCR |= CIRC;     // 1-circ
+
     // DMA1_Channel5->CCR |= MEM2MEM; // mem2mem
     // DMA1_Channel5->CCR &= ~CIRC;   // 1-circ
+
     DMA1_Channel5->CCR |= MINC;  // mem incr
     DMA1_Channel5->CCR &= ~PINC; // per incr
     DMA1_Channel5->CCR |= DIR;   // 0=peri READ 1=mem READ
 
     DMA1_Channel5->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem
     DMA1_Channel5->CCR |= DMA_CCR_PL_0;                             // high prioty
-
     DMA1_Channel5->CCR |= TCIEN | TEIEN | HTIEN;
     channel5_ready = 0;
 
@@ -345,15 +346,15 @@ void dma_spi_send(char msg[], uint16_t size)
     DMA1_Channel5->CPAR = (uint32_t)&SPI2->DR;
     DMA1_Channel5->CMAR = (uint32_t)msg;
     DMA1_Channel5->CNDTR = size;
+    channel5_ready = 0;
     NVIC_SetPriority(DMA1_Channel5_IRQn, 2);
     NVIC_EnableIRQ(DMA1_Channel5_IRQn);
+    SPI2->CR1 |= SPE;
     DMA1_Channel5->CCR |= DMAEN;
 
-    while (channel5_ready == 0)
-    {
-    }
+    while (channel5_ready == 1)
+        ;
 
-    channel5_ready = 0;
 }
 void spi2_dma_rx_init(uint32_t baud, const char *msg, uint16_t size) // SPI1-RX
 {

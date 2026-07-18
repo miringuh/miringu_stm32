@@ -125,6 +125,7 @@ uint16_t read_capacity = 0;
 uint8_t chipStatus();
 void stopTrans();
 void EraseCard(uint32_t addr);
+void spi_dma_write(char data[], uint16_t ssize);
 
 void power(uint8_t val) // pb0
 {
@@ -142,10 +143,26 @@ void power(uint8_t val) // pb0
         break;
     }
 }
+
+void set_dma_comm(uint8_t comm, uint32_t args, uint8_t crc)
+{
+    char data[8];
+    data[0] = (comm);
+    data[1] = ((char)((args & 0xFF000000) >> 24));
+    data[2] = ((char)((args & 0x00FF0000) >> 16));
+    data[3] = ((char)((args & 0x0000FF00) >> 8));
+    data[4] = ((char)(args & 0x000000FF));
+    data[5] = (crc);
+    data[6] = (0XFF);
+    data[7] = (0XFF);
+    spi_dma_write(data, 8);
+}
+
 uint8_t command(uint8_t comm, uint8_t err_num, uint32_t args, uint8_t crc)
 {
     GPIOB->BSRR = CS_ON; // CS
-    TIMEOUT = 0X6FF;
+    TIMEOUT = 0XFFE;
+    // spi_dma_write(sd_buff, 512);
     do
     {
         spi2_send(comm);
@@ -156,6 +173,7 @@ uint8_t command(uint8_t comm, uint8_t err_num, uint32_t args, uint8_t crc)
         spi2_send(crc);
         spi2_send(0XFF);
         spi2_send(0XFF);
+
         response = spi2_send(0XFF);
         // eusart_send(response);
         if (response == err_num)
@@ -165,6 +183,7 @@ uint8_t command(uint8_t comm, uint8_t err_num, uint32_t args, uint8_t crc)
         TIMEOUT--;
         timer4_delay(4);
     } while (TIMEOUT >= 1);
+
     eusart_send(0xee);
     eusart_send(response);
     eusart_send(comm);
@@ -462,13 +481,11 @@ void spi_dma_read(uint32_t addr) // not working
         eusart_send(spi_buff[i]);
     }
 }
-// void spi_dma_write(char data[])
-// {
-//     // RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-//     // spi2_init(BAUD_FCLK_16);
-//     spi2_dma_tx_init(data, 512);
-//     timer1_delay(6);
-// }
+//
+void spi_dma_write(char data[], uint16_t ssize)
+{
+    dma_spi_send(data, ssize);
+}
 //
 void EraseCard(uint32_t addr) // cmd17 sd_buff
 {
@@ -527,6 +544,7 @@ void sdWrite_String(uint32_t addr, char data[]) // cmd24
     {
         spi2_send(buff[i]);
     }
+    // spi_dma_write(buff,512);
 
     spi2_send(0XFF);
     spi2_send(0XFF);
@@ -563,13 +581,15 @@ void sdWrite_pos_buff(uint32_t addr, char buff[], uint16_t posStr)
         count++;
     }
     command(CMD24, 0x00, (addr << 9), 0X95); // 2GB
-    response = spi2_send(0xFE);
 
+    response = spi2_send(0xFE);
     for (uint16_t i = 0; i < 512; i++)
     {
         spi2_send(sd_buff[i]);
         // timer4_delay(1);
     }
+    // spi_dma_write(sd_buff, 512);
+
     spi2_send(0XFF);
     spi2_send(0XFF);
     do
@@ -593,7 +613,6 @@ wrMem:
     spi2_send(0XFF);
     spi2_send(0XFF);
 }
-
 // BUFF nanipulate
 uint16_t comp_buff(char buff1[], char buff2[], uint16_t size)
 {
