@@ -21,7 +21,7 @@ uint8_t tx_buffer[TX_BUFFSIZE];
 
 char buffxn[120];
 char *buffn = " ";
-char data[2];
+char data[7];
 
 char *getchar_2str(char a)
 {
@@ -70,25 +70,29 @@ int main()
     timer4_delay(5000);
 
     eusart_init(U19200);
+    eusart0_dma_rx_init(U19200,8, data);
     eusart0_dma_tx_init(U19200);
+
     // spi2_dma_tx_init(BAUD_FCLK_16);
 
-    sd_init(BAUD_FCLK_128);
-    sd_card_cond_8();
-    read_opt_cond_41();
+    // sd_init(BAUD_FCLK_128);
+    // sd_card_cond_8();
+    // read_opt_cond_41();
 
-    spi2_init(BAUD_FCLK_16);
-    // timer4_delay(500);
+    // spi2_init(BAUD_FCLK_16);
 
     // EraseCard(0);
-    EraseCard(1);
+    // EraseCard(1);
     // EraseCard(2);
     // EraseCard(3);
 
-    
+    // sdWrite_pos_buff(1, "welcome back", 0);
+    // sdWrite_pos_buff(1, "welcome back", 16);
+    // sdWrite_pos_buff(1, "Test", 32);
+    // sdWrite_pos_buff(1, "welcome back", 48);
+    // sdWrite_pos_buff(1, "welcome back", 64);
 
-    sdWrite_pos_buff(1, "welcome1", 0);
-    // sdWrite_pos_buff(1, "Welcome1", 16);
+    // sdWrite_pos_buff(2, "Welcome home", 0);
     // sdWrite_pos_buff(1, "welcome2", 32);
 
     // char *file = "Welcome0";
@@ -105,13 +109,14 @@ int main()
 
     // sdRead(0);
     // dma_uart_send(sd_buff, 512);
-    sdRead(1);
-    dma_uart_send(sd_buff, 512);
-
+    // sdRead(1);
     // sdRead(2);
+    // dma_uart_send(sd_buff, 512);
 
+    // dma_uart_send("chip is ready",13);
     while (1)
     {
+        eusart0_dma_listener(data);
     }
     return 0;
 }

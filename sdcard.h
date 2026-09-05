@@ -172,8 +172,6 @@ uint8_t command(uint8_t comm, uint8_t err_num, uint32_t args, uint8_t crc)
         spi2_send((uint8_t)(args & 0x000000FF));
         spi2_send(crc);
         spi2_send(0XFF);
-        spi2_send(0XFF);
-
         response = spi2_send(0XFF);
         // eusart_send(response);
         if (response == err_num)
@@ -351,8 +349,8 @@ void stopSpi()
     GPIOB->BSRR = CS_ON;
     power(0);
 }
-//
-// READ BUFF
+
+//         READ BUFF
 char *sdRead(uint32_t addr) // cmd17 sd_buff
 {
     uint16_t ccn = 0x4FF;
@@ -378,7 +376,6 @@ post:
         response = spi2_send(0XFF);
         sd_buff[i] = response;
         // eusart_send(sd_buff[i]);
-        timer4_delay(2);
     }
     for (uint16_t i = 0; i < 0xFFFE; i++)
     {
@@ -468,9 +465,7 @@ post:
     GPIOB->BSRR = CS_OFF;
     return 0;
 }
-//
-// DMA
-
+//          DMA
 void spi_dma_read(uint32_t addr) // not working
 {
     response = command(CMD17, 0x00, (addr << 9), 0X95); // 2GB
@@ -481,7 +476,6 @@ void spi_dma_read(uint32_t addr) // not working
         eusart_send(spi_buff[i]);
     }
 }
-//
 void spi_dma_write(char data[], uint16_t ssize)
 {
     dma_spi_send(data, ssize);
@@ -496,7 +490,6 @@ void EraseCard(uint32_t addr) // cmd17 sd_buff
     for (uint16_t i = 0; i < 512; i++)
     {
         spi2_send(0xFF);
-        // timer4_delay(1);
     }
     spi2_send(0XFF);
     spi2_send(0XFF);
@@ -509,6 +502,7 @@ void EraseCard(uint32_t addr) // cmd17 sd_buff
         }
         ccn--;
     } while (ccn >= 1);
+
 wrMem:
     for (uint16_t i = 0; i < 0xFFFE; i++)
     {
@@ -520,9 +514,10 @@ wrMem:
     GPIOB->BSRR = CS_OFF;
     spi2_send(0XFF);
     spi2_send(0XFF);
+    timer4_delay(80);
 }
-//
-// WRITE BUFF
+
+//          WRITE BUFF
 void sdWrite_String(uint32_t addr, char data[]) // cmd24
 {
     char buff[512];
@@ -566,30 +561,36 @@ wrMem:
     spi2_send(0XFF);
     chipStatus();
     GPIOB->BSRR = CS_OFF;
+    timer4_delay(10000);
 }
 void sdWrite_pos_buff(uint32_t addr, char buff[], uint16_t posStr)
 {
     uint16_t count = 0;
     uint16_t ccn = 0x4FF;
+    memset(sd_buff, 0xFF, 512);
+    sdRead(addr);
 
-    sdRead(addr); // sd_buff
-    EraseCard(addr);
-
-    for (uint16_t i = 0; i <= strlen(buff); i++)
+    if (strlen(buff) < 12)
     {
-        sd_buff[posStr + i] = buff[count];
+        uint8_t cnt = 12 - strlen(buff);
+        for (uint8_t i = 0; i < cnt; i++)
+        {
+            sd_buff[(strlen(buff) + posStr)+i] = 0xFF;
+        }
+    }
+
+    for (uint16_t j = posStr; j < (strlen(buff) + posStr); j++)
+    {
+        sd_buff[j] = buff[count];
         count++;
     }
     command(CMD24, 0x00, (addr << 9), 0X95); // 2GB
 
-    response = spi2_send(0xFE);
+    spi2_send(0xFE);
     for (uint16_t i = 0; i < 512; i++)
     {
         spi2_send(sd_buff[i]);
-        // timer4_delay(1);
     }
-    // spi_dma_write(sd_buff, 512);
-
     spi2_send(0XFF);
     spi2_send(0XFF);
     do
@@ -606,8 +607,6 @@ wrMem:
     {
         GPIOB->BSRR = CS_OFF; // This is critical WHY?? don know why.....
     }
-    spi2_send(0XFF);
-    spi2_send(0XFF);
     chipStatus();
     GPIOB->BSRR = CS_OFF;
     spi2_send(0XFF);
