@@ -67,56 +67,39 @@ int main()
     // timer2_ch2_init();
 
     timer4();
-    timer4_delay(5000);
+    timer4_delay(9000);
 
     eusart_init(U19200);
-    eusart0_dma_rx_init(U19200,8, data);
+    eusart0_dma_rx_init(U19200, 4, data);
     eusart0_dma_tx_init(U19200);
 
     // spi2_dma_tx_init(BAUD_FCLK_16);
 
-    // sd_init(BAUD_FCLK_128);
-    // sd_card_cond_8();
-    // read_opt_cond_41();
-
-    // spi2_init(BAUD_FCLK_16);
+    sd_init(BAUD_FCLK_128);
+    sd_card_cond_8();
+    read_opt_cond_41();
+    spi2_init(BAUD_FCLK_16);
 
     // EraseCard(0);
     // EraseCard(1);
     // EraseCard(2);
-    // EraseCard(3);
+    // EraseCard(1);
 
-    // sdWrite_pos_buff(1, "welcome back", 0);
-    // sdWrite_pos_buff(1, "welcome back", 16);
-    // sdWrite_pos_buff(1, "Test", 32);
-    // sdWrite_pos_buff(1, "welcome back", 48);
-    // sdWrite_pos_buff(1, "welcome back", 64);
-
-    // sdWrite_pos_buff(2, "Welcome home", 0);
-    // sdWrite_pos_buff(1, "welcome2", 32);
-
-    // char *file = "Welcome0";
-    // strcpy(buffxn,file);
-    // write_fname(1, buffxn,1);
-
-    // file = "Welcome1";
-    // strcpy(buffxn, file);
-    // write_fname(1, buffxn, 32);
-
-    // file = "Welcome2";
-    // strcpy(buffxn, file);
-    // write_fname(1, buffxn, 32);
+    // sdWrite_pos_buff(1, "first_file", 100, 0);
+    // sdWrite_pos_buff(1, "Second_file", 120, 16);
+    // sdWrite_pos_buff(1, "third_file", 140, 32);
+    // sdWrite_pos_buff(1, "fourth_file", 160, 48);
+    // sdWrite_pos_buff(1, "fifth file", 200, 64);
 
     // sdRead(0);
-    // dma_uart_send(sd_buff, 512);
     // sdRead(1);
     // sdRead(2);
+
     // dma_uart_send(sd_buff, 512);
 
-    // dma_uart_send("chip is ready",13);
     while (1)
     {
-        eusart0_dma_listener(data);
+        eusart0_sdma_listener(data);
     }
     return 0;
 }

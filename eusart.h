@@ -549,9 +549,7 @@ usart3- RX=channel 3
 // char buff[255];
 // volatile uint8_t state;
 //
-#define RX_BUFFSIZE 7
-char rx_buffer[RX_BUFFSIZE];
-int resv_len;
+
 void eusart0_dma_tx_init(uint32_t baud)
 {
     // RCC->AHBENR |= RCC_AHBENR_DMA1EN;
@@ -615,9 +613,8 @@ void eusart0_dma_rx_init(uint32_t baud, uint16_t msize, char msg[])
     NVIC_SetPriority(DMA1_Channel5_IRQn, 2);
     NVIC_EnableIRQ(DMA1_Channel5_IRQn);
 }
-
-///////////////////////////////////
-
+//////////////
+/////////////////////
 char *eusart0_dma_listener(char buff[])
 {
     if (channel5_ready)
