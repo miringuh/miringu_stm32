@@ -111,16 +111,11 @@
 #define CS_ON GPIO_BSRR_BR0
 #define CS_OFF GPIO_BSRR_BS0
 //
-uint16_t del = 1000; // 625us
-uint8_t version = 0;
 uint8_t rd_buff[8];
-uint8_t mbuff[8];
 uint8_t csd_buff[16];
 char sd_buff[512];
-char wr_buff[512];
 uint8_t response = 0;
 uint16_t TIMEOUT;
-uint16_t read_capacity = 0;
 //
 uint8_t chipStatus();
 void stopTrans();
@@ -360,7 +355,7 @@ void convertAddr(uint32_t addr, uint8_t pos)
 }
 uint8_t getHex(char val)
 {
-    uint8_t value=0;
+    uint8_t value = 0;
     if ((val >= 0x30) & (val <= 0X39)) // 0....9
     {
         value = val - 0X30;
@@ -424,6 +419,7 @@ post:
 void sdRead_buff(uint32_t addr, uint16_t posStr, uint16_t posEnd) // cmd17 sd_buff
 {
     uint16_t ccn = 0x4FF;
+    memset(sd_buff, 0xFF, 512);
     response = command(CMD17, 0x00, (addr << 9), 0X95); // 2GB
     do
     {
@@ -454,11 +450,12 @@ post:
     spi2_send(0XFF);
     chipStatus();
     GPIOB->BSRR = CS_OFF;
-    //dma_uart_send(sd_buff, (posEnd - posStr));
+    dma_uart_send(sd_buff, (posEnd - posStr));
 }
 uint8_t sdRead_pos(uint32_t addr, uint16_t begins, uint16_t ends) // cmd17 sd_buff
 {
     uint16_t ccn = 0x4FF;
+    memset(sd_buff, 0xFF, 512);
     response = command(CMD17, 0x00, (addr << 9), 0X95); // 2GB
     do
     {
@@ -599,7 +596,6 @@ void sdWrite_pos_buff(uint32_t addr, char buff[], uint32_t fd_addr, uint16_t pos
 {
     uint16_t count = 0;
     uint16_t ccn = 0x4FF;
-    memset(sd_buff, 0xFF, 512);
     sdRead(addr);
 
     if (strlen(buff) < 12) // filename
@@ -648,7 +644,7 @@ wrMem:
 }
 //
 // BUFF nanipulate
-uint16_t comp_buff(char buff1[], char buff2[], uint16_t size)
+uint8_t comp_buff(char buff1[], char buff2[], uint16_t size)
 {
     uint16_t cnt = 0;
     for (uint16_t i = 0; i < size; i++)
@@ -656,6 +652,7 @@ uint16_t comp_buff(char buff1[], char buff2[], uint16_t size)
         if (buff1[i] != buff2[i])
         {
             cnt = 0;
+            goto ends;
         }
         if (buff1[i] == buff2[i])
         {
@@ -663,110 +660,88 @@ uint16_t comp_buff(char buff1[], char buff2[], uint16_t size)
         }
     }
     return cnt;
+ends:
+    cnt = 0;
+    return cnt;
 }
-uint16_t get_address(char mem_buff[], char my_word[], uint16_t size)
-{
-    uint16_t cnt = 0;
-    uint16_t posEnd = 0;
-    char buff[size];
-
-    for (uint16_t i = 0; i < 512; i++)
-    {
-        for (uint16_t j = 0; j < size; j++)
-        {
-            if (mem_buff[i] != my_word[j])
-            {
-                cnt = 0;
-            }
-            if (mem_buff[i] == my_word[j])
-            {
-                buff[j] = my_word[j];
-                posEnd = i;
-                // eusart_send(my_word[j]); //************
-                i++;
-                cnt++;
-            }
-        }
-        if (comp_buff(buff, my_word, size) == size)
-        {
-            break;
-        }
-    }
-    return (posEnd - size);
-}
-//
-// Get the first word ocurrence
-uint16_t sd_get_addr(uint32_t addr, char *word)
-{
-    char buff[strlen(word)];
-    memset(sd_buff, 0, 512);
-    strcpy(buff, word);
-    sdRead(addr); // sd_buff
-    return get_address(sd_buff, buff, strlen(word));
-}
-void sd_read_Address(uint32_t addr, uint16_t pos, uint16_t size)
-{
-    sdRead_pos(addr, pos, (pos + size));
-}
-///////////////
-///////////////
 void readAtAddr(uint32_t addr, char ssdbuff[])
 {
-    // uint8_t state = 0;
-    uint8_t count = 0;
-    uint8_t size = strlen(ssdbuff);
+    // uint16_t pos = 0;
+    uint16_t count = 0;
+    uint16_t cnt = 0;
+    uint16_t size = strlen(ssdbuff);
     char mbuff[size];
-    sdRead(addr); // sdbuff[]
-
-    for (uint16_t i = 0; i < 32; i++)
+    sdRead(addr); // sd_buff[]        
+    memset(mbuff,0xFF,size);
+    for (uint16_t i = 0; i < 512; i++)
     {
         for (uint16_t j = 0; j < size; j++)
         {
             if (ssdbuff[j] == sd_buff[i + j])
             {
                 mbuff[j] = sd_buff[i + j];
-                // eusart_send(mbuff[j]);
                 count++;
             }
             if (ssdbuff[j] != sd_buff[i + j])
             {
-                // memset(mbuff, 0, size);
+                count = 0;
             }
-            if (comp_buff(mbuff, ssdbuff, size) == 1)
+            if (count == size)
             {
+                
+                // pos = ((i + j + 1) / 16);
+                // eusart_send(pos);
                 goto found;
             }
         }
+        count = 0;
+       
     }
-    count = 0;
 found:
-    eusartString(mbuff);
+    cnt=comp_buff(mbuff,ssdbuff,size);
+    if (cnt==1)
+    {
+        dma_uart_send(mbuff, size);//payload
+        // eusartString(mbuff);
+    }
+    if (cnt == 0)
+    {
+        eusartString("No File");
+        // eusartString(mbuff);
+    }
+}
+
+void getData(char ssdbuff[]){    
+    char addrbuff[4];
+    char msg[12];
+    uint8_t size=strlen(ssdbuff);
+
+    for (uint8_t i = 0; i <(size-4); i++)
+    {
+        msg[i]= ssdbuff[i];
+    }
+    for (uint8_t i = (size - 4); i < 12; i++)
+    {
+       addrbuff[i]= ssdbuff[i];
+    }
+    // dma_uart_send(msg, (size-4));
+    // dma_uart_send(addrbuff, 4);
+    readAtAddr(getsize(addrbuff),msg );
 }
 //////////////
-void eusart0_sdma_listener(char buff[])
+//////////////
+
+void eusart0_sdma_listener(char addrBuff[])
 {
     if (channel5_ready)
-    {        
-        sdRead(getsize(buff));
-        dma_uart_send(sd_buff, 512);
+    {
+
+        dma_uart_send(sdRead(getsize(addrBuff)), 512);
+        // readAtAddr(getsize(addrBuff), "Second_file");
+        // getData(addrBuff);
         channel5_ready = 0;
     }
-}
-////// func pointers ///
-uint32_t counter = 0;
-uint32_t countx = 0;
-uint32_t addr_jump = 0;
-uint32_t addr = 0;
-//
-uint32_t get_file_addr()
-{
-    sdRead_buff(0, 0, 3); // sd_buff
-    uint32_t address;
-    address = (sd_buff[0] & 0xFF);
-    address |= ((sd_buff[1] & 0xFF) << 8);
-    address |= ((sd_buff[2] & 0xFF) << 16);
-
-    return address;
+    
 }
 
 #endif // _SD_CARD
