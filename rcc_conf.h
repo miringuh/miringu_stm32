@@ -64,7 +64,7 @@ HCLK = 40 MHz
 APB1 = 20 MHz
 APB2 = 20 MHz
 */
-void clock_init_20mhz_apb(void)
+void clock_init_40mhz_apb(void)
 {
         /* 1. Enable HSE */
         RCC->CR |= RCC_CR_HSEON;

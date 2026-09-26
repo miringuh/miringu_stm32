@@ -619,10 +619,10 @@ char *eusart0_dma_listener(char buff[])
 {
     if (channel5_ready)
     {
-        channel5_ready = 0;
         // eusartString(buff);
         dma_uart_send(buff, strlen(buff));
-        memset(buff, 0, strlen(buff));
+        // memset(buff, 0, strlen(buff));
+        channel5_ready = 0;
     }
     return buff;
 }

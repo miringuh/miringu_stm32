@@ -63,6 +63,10 @@ volatile uint16_t timer3_freq;
 volatile uint16_t timer1_freq;
 volatile uint16_t ptimer1_freq;
 // TIMER 3
+// freq=tm_clk/(PSC+1)(ARR+1)
+//40,000,000÷(50,000×800) = 1hz      ==1 sec
+//40,000,000÷(500×80)     =1000hz    ==1ms
+//40,000,000÷(5×8)        =1000000hz ==1000ms
 void TIM3_IRQHandler(void)
 {
     if ((TIM3->SR & TIM_SR_UIF))
@@ -76,8 +80,8 @@ void timer3()
 {
     RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
     TIM3->CR1 &= ~CEN;
-    TIM3->PSC = 19; // 1us (1ms=1000us)
-    TIM3->ARR = 999;
+    TIM3->PSC = 499; // 1us (1ms=1000us)
+    TIM3->ARR = 79;
     TIM3->CNT = 0;
     TIM3->DIER = TIM_DIER_UIE | TIM_DIER_TIE;
     TIM3->CR1 = TIM_CR1_ARPE;
@@ -107,8 +111,8 @@ void timer4()
 {
     RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
     TIM4->CR1 &= ~CEN;
-    TIM4->PSC = 19;  // 1us 1ms==1000us
-    TIM4->ARR = 999; // 1ms
+    TIM4->PSC = 499;  // 1us 1ms==1000us
+    TIM4->ARR = 79; // 1ms
     TIM4->CNT = 0;
     TIM4->DIER = TIM_DIER_UIE; //| TIM_DIER_TIE;
     TIM4->CR1 = TIM_CR1_ARPE;
@@ -152,8 +156,8 @@ void timer1_init()
     RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
     timer1_freq = 0;
     TIM1->CR1 &= ~CEN;
-    TIM1->PSC = 19;  // 1us 1ms=1000us
-    TIM1->ARR = 999; //
+    TIM1->PSC = 499;  // 1us 1ms=1000us
+    TIM1->ARR = 79; //
     TIM1->CNT = 0;
     TIM1->RCR = 0; //*****
     TIM1->DIER = TIM_DIER_UIE | TIM_DIER_TIE;
@@ -176,8 +180,8 @@ void timer1_Pwm()
     RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
     timer1_freq = 0;
     TIM1->CR1 &= ~CEN;
-    TIM1->PSC = 19;  // 1us 1ms=1000us
-    TIM1->ARR = 999; //
+    TIM1->PSC = 499;  // 1us 1ms=1000us
+    TIM1->ARR = 79; //
     TIM1->CNT = 0;
     TIM1->RCR = 0; //*****
 

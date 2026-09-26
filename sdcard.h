@@ -341,7 +341,7 @@ void stopSpi()
     GPIOB->BSRR = CS_ON;
     power(0);
 }
-//
+//************* */
 void convertAddr(uint32_t addr, uint8_t pos)
 {
     uint8_t vhigh = (uint8_t)((addr & 0xFF000000) >> 24);
@@ -364,7 +364,6 @@ uint8_t getHex(char val)
     {
         value = val - 0x31;
     }
-    // eusart_send(value);
     return value;
 }
 uint32_t getsize(char addr[])
@@ -373,10 +372,9 @@ uint32_t getsize(char addr[])
     uint8_t high = getHex(((addr[1] & 0xFF)));
     uint8_t mid = getHex(((addr[2] & 0xFF)));
     uint8_t low = getHex((addr[3] & 0xFF));
-
     return ((vhigh << 24) | (high << 16) | (mid << 8) | low);
 }
-//
+//***************** */
 //         READ BUFF
 char *sdRead(uint32_t addr) // cmd17 sd_buff
 {
@@ -643,7 +641,7 @@ wrMem:
     spi2_send(0XFF);
 }
 //
-// BUFF nanipulate
+//          BUFF nanipulate
 uint8_t comp_buff(char buff1[], char buff2[], uint16_t size)
 {
     uint16_t cnt = 0;
@@ -671,8 +669,8 @@ void readAtAddr(uint32_t addr, char ssdbuff[])
     uint16_t cnt = 0;
     uint16_t size = strlen(ssdbuff);
     char mbuff[size];
-    sdRead(addr); // sd_buff[]        
-    memset(mbuff,0xFF,size);
+    sdRead(addr); // sd_buff[]
+    memset(mbuff, 0xFF, size);
     for (uint16_t i = 0; i < 512; i++)
     {
         for (uint16_t j = 0; j < size; j++)
@@ -688,20 +686,19 @@ void readAtAddr(uint32_t addr, char ssdbuff[])
             }
             if (count == size)
             {
-                
+
                 // pos = ((i + j + 1) / 16);
                 // eusart_send(pos);
                 goto found;
             }
         }
         count = 0;
-       
     }
 found:
-    cnt=comp_buff(mbuff,ssdbuff,size);
-    if (cnt==1)
+    cnt = comp_buff(mbuff, ssdbuff, size);
+    if (cnt == 1)
     {
-        dma_uart_send(mbuff, size);//payload
+        dma_uart_send(mbuff, size); // payload
         // eusartString(mbuff);
     }
     if (cnt == 0)
@@ -710,27 +707,34 @@ found:
         // eusartString(mbuff);
     }
 }
-
-void getData(char ssdbuff[]){    
+void getData(char ssdbuff[])
+{
     char addrbuff[4];
     char msg[12];
-    uint8_t size=strlen(ssdbuff);
+    uint8_t size = strlen(ssdbuff);
 
-    for (uint8_t i = 0; i <(size-4); i++)
+    for (uint8_t i = 0; i < (size - 4); i++)
     {
-        msg[i]= ssdbuff[i];
+        msg[i] = ssdbuff[i];
     }
     for (uint8_t i = (size - 4); i < 12; i++)
     {
-       addrbuff[i]= ssdbuff[i];
+        addrbuff[i] = ssdbuff[i];
     }
     // dma_uart_send(msg, (size-4));
     // dma_uart_send(addrbuff, 4);
-    readAtAddr(getsize(addrbuff),msg );
+    readAtAddr(getsize(addrbuff), msg);
 }
-//////////////
-//////////////
+//////////////////////
+// sync --> buff_size --> command --> sd_Address
+// 2    --> xxxx      --> x       --> xxxx
+#define SYNC 0X02
+#define Sread 0X00
+#define Swrite 0X01
+#define Swrite_req 0X03
+uint8_t state = 0;
 
+//
 void eusart0_sdma_listener(char addrBuff[])
 {
     if (channel5_ready)
@@ -741,7 +745,60 @@ void eusart0_sdma_listener(char addrBuff[])
         // getData(addrBuff);
         channel5_ready = 0;
     }
-    
+}
+
+uint32_t getBuffSize(char addr[])
+{
+
+    return getsize(addr);
+}
+uint32_t get_sd_Address(char addr[])
+{
+
+    return getsize(addr);
+}
+
+void getCommand(char msg[])
+{
+    char buff[4];
+    char Addrbuff[4];
+
+    comm = msg[5];
+
+    buff[0] = msg[4];
+    buff[1] = msg[3]; // Buff-size
+    buff[2] = msg[2];
+    buff[3] = msg[1]; // Position
+    uint32_t ssize = getBuffSize(buff);
+
+    Addrbuff[0] = msg[6];
+    Addrbuff[1] = msg[7];
+    Addrbuff[2] = msg[8];
+    Addrbuff[3] = msg[9];
+    uint32_t sdaddr = get_sd_Address(Addrbuff);
+
+    char buffer[ssize];
+
+    if (comm == Sread) // 2 0000 1 sdAddr
+    {
+        sdRead(sdaddr);
+        channel5_ready = 0;
+    }
+    if (comm == Swrite) // 2 size 1 sdAddr
+    {
+        sdWrite_pos_buff(sdaddr, buffer, 0, (ssize & 0x00FF));
+        sdRead(sdaddr);
+        eusart0_dma_rx_init(U19200, 10, data);
+        eusart0_dma_tx_init(U19200);
+    }
+    if (comm == Swrite_req) // 2 size 3 0000
+    {
+        eusart0_dma_rx_init(U19200, ssize, buffer);
+        eusart0_dma_tx_init(U19200);
+        channel5_ready = 0;
+        eusart0_sdma_listener(buffer);
+        dma_uart_send("req ok", 6);
+    }
 }
 
 #endif // _SD_CARD

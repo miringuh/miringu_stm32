@@ -64,7 +64,12 @@ Most Important Registers Per Use Case
 | CH3     | CCMR2 lower | CCR3 | CC3E       |
 | CH4     | CCMR2 upper | CCR4 | CC4E       |
 --------------------------------------------
+freq=timer/(arr+1)(psc+1)
+
+
+
 */
+
 volatile uint32_t capture;
 void TIM2_IRQHandler(void)
 {
@@ -74,21 +79,29 @@ void TIM2_IRQHandler(void)
     {
         // timer_freq++;
         TIM2->SR &= ~TIM_SR_CC1IF;
-        // capture = TIM2->CCR1;
-        // eusart_send((capture & 0xFF00) >> 8);
-        // eusart_send(0xee);
+        capture = TIM2->CCR1;
+        eusart_send((capture & 0xFF00) >> 8);
+        eusart_send((capture & 0xff));
     }
     if ((TIM2->SR & TIM_SR_CC2IF))
     {
         // timer1_freq++;
         TIM2->SR &= ~TIM_SR_CC2IF;
-        // capture = TIM2->CCR2;
-        capture = TIM2->CNT;
+        capture = TIM2->CCR2;
+        // capture = TIM2->CNT;
         // eusart_send((capture & 0xff00) >> 8);
         // eusart_send((capture & 0xff));
     }
-    eusart_send((GPIOA->IDR & 0xff));
+
 };
+
+// 1ms == 1000us
+//
+//freq=tm_clk/(PSC+1)(ARR+1)
+//40,000,000÷(50,000×800) = 1hz      ==1 sec
+//40,000,000÷(5000×800) = 100hz      
+//40,000,000÷(500×80)     =1000hz    ==1ms
+//40,000,000÷(5×8)        =1000000hz ==1000ms
 
 void timer2_ch1_init() // PA0 in
 {
@@ -97,8 +110,12 @@ void timer2_ch1_init() // PA0 in
     confPinA(FLOAT_INP, 0);
 
     TIM2->CR1 &= ~CEN;
-    TIM2->PSC = 71;  // 1us 1ms=1000us
-    TIM2->ARR = 999; // 10ms
+//    TIM2->PSC = 499; // 1us 1ms=1000us
+//    TIM2->ARR = 79;  // 1ms
+    
+    TIM2->PSC = 49990; // 
+    TIM2->ARR = 799;  // 1hz
+    TIM2->CNT = 0;
 
     TIM2->CCMR1 |= TIM_CCMR1_CC1S_0; // ch1-input
     TIM2->CCER |= TIM_CCER_CC1P;     // fall-edge
@@ -133,9 +150,9 @@ void timer2_ch2_init() // pa1
     TIM2->CCER = 0;
     GPIOA->CRL = (AF_P_P50MHZ << GPIO_CRL_MODE1_Pos); // pA1
 
-    TIM2->PSC = 19;  // 1us
-    TIM2->ARR = 999; //   1ms = 1000us
-    TIM2->CCR2 = 400;
+    TIM2->PSC = 49999;
+    TIM2->ARR = 799; // 1ms
+    TIM2->CCR2 = 0;
     TIM2->CNT = 0;
     TIM2->CR1 = TIM_CR1_ARPE | TIM_CR1_URS;
     TIM2->CR1 |= (0 << TIM_CR1_CMS_Pos);

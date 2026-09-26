@@ -21,7 +21,7 @@ uint8_t tx_buffer[TX_BUFFSIZE];
 
 char buffxn[120];
 char *buffn = " ";
-char data[7];
+char data[512];
 
 char *getchar_2str(char a)
 {
@@ -55,7 +55,7 @@ void reset_regs()
 int main()
 {
     reset_regs();
-    clock_init_20mhz_apb();
+    clock_init_40mhz_apb();
     SysTick_Init();
     RCC->AHBENR = RCC_AHBENR_DMA1EN;
     RCC->APB2ENR = RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN | RCC_APB2ENR_IOPBEN;
@@ -67,16 +67,16 @@ int main()
     // timer2_ch2_init();
 
     timer4();
-    timer4_delay(5000);
+    timer4_delay(900);
 
     eusart_init(U19200);
-    eusart0_dma_rx_init(U19200, 4, data);
+    eusart0_dma_rx_init(U19200, 10, data);
     eusart0_dma_tx_init(U19200);
 
     sd_init(BAUD_FCLK_128);
     sd_card_cond_8();
     read_opt_cond_41();
-    spi2_init(BAUD_FCLK_16);
+    // spi2_init(BAUD_FCLK_16);
 
     // EraseCard(0);
     // EraseCard(1);
@@ -87,19 +87,6 @@ int main()
     // sdWrite_pos_buff(1, "third_file", 30, 32);
     // sdWrite_pos_buff(1, "fourth_file", 40, 48);
     // sdWrite_pos_buff(1, "fifth_file", 50, 64);
-    // for (int i = 0; i < 10; i++)
-    // {
-    //     // EraseCard(i);
-    //     sdRead(i);
-    //     dma_uart_send(sd_buff, 512);
-    // }
-
-    // sdRead(0);
-    // sdRead(1);
-    // sdRead(2);
-    // dma_uart_send(sd_buff, 512);
-
-    // readAtAddr(1, "Second_file");
 
     // sdRead(1);
     // dma_uart_send(sd_buff, 512);
