@@ -358,21 +358,21 @@ uint8_t getHex(char val)
     uint8_t value = 0;
     if ((val >= 0x30) & (val <= 0X39)) // 0....9
     {
-        value = val - 0X30;
+        value = val - 48;
     }
     if ((val >= 0x41) & (val <= 0X46)) // A....F
     {
-        value = val - 0x31;
+        value = val - 55;
     }
     return value;
 }
 uint32_t getsize(char addr[])
 {
-    uint8_t vhigh = getHex(((addr[0] & 0xFF)));
-    uint8_t high = getHex(((addr[1] & 0xFF)));
-    uint8_t mid = getHex(((addr[2] & 0xFF)));
-    uint8_t low = getHex((addr[3] & 0xFF));
-    return ((vhigh << 24) | (high << 16) | (mid << 8) | low);
+    uint8_t vhigh = getHex(((addr[0])));
+    uint8_t high = getHex(((addr[1])));
+    uint8_t mid = getHex(((addr[2])));
+    uint8_t low = getHex((addr[3]));
+    return ((vhigh << 12) | (high << 8) | (mid << 4) | low);
 }
 //***************** */
 //         READ BUFF
@@ -493,7 +493,8 @@ post:
 
     return 0;
 }
-//          DMA
+
+//         SPI  DMA
 void spi_dma_read(uint32_t addr) // not working
 {
     response = command(CMD17, 0x00, (addr << 9), 0X95); // 2GB
@@ -508,7 +509,7 @@ void spi_dma_write(char data[], uint16_t ssize)
 {
     dma_spi_send(data, ssize);
 }
-//
+//       ERASE CARD
 void EraseCard(uint32_t addr) // cmd17 sd_buff
 {
     uint16_t ccn = 0x4FF;
@@ -544,6 +545,7 @@ wrMem:
     spi2_send(0XFF);
     timer4_delay(80);
 }
+
 //          WRITE BUFF
 void sdWrite_String(uint32_t addr, char data[]) // cmd24
 {
@@ -727,78 +729,84 @@ void getData(char ssdbuff[])
 }
 //////////////////////
 // sync --> buff_size --> command --> sd_Address
-// 2    --> xxxx      --> x       --> xxxx
+// 2    --> xxxx      --> x       --> xxxxxx
 #define SYNC 0X02
 #define Sread 0X00
 #define Swrite 0X01
-#define Swrite_req 0X03
 uint8_t state = 0;
+uint32_t autoAddr = 0;
+uint16_t autosize = 0;
 
+//
+uint32_t sd_Addr_conv(char buff[])
+{
+    uint8_t high = getHex(buff[0]);
+    uint8_t high_low = getHex(buff[1]);
+    uint8_t mid = getHex(buff[2]);
+    uint8_t mid_low = getHex(buff[3]);
+    uint8_t low = getHex(buff[4]);
+    uint8_t low_low = buff[5];
+    return ((high << 20) | (high_low << 16) | (mid << 12) | (mid_low << 8) | (low << 4) | low_low);
+}
+uint32_t getBuffSize(char addr[])
+{
+    return getsize(addr);
+}
+uint32_t get_sd_Address(char addr[])
+{
+    return sd_Addr_conv(addr);
+}
+
+void getCommand(char msg[])
+{
+    char buff[4];
+    char comm = 0;
+    char Addrbuff[6];
+
+    comm = getHex(msg[5]);
+
+    buff[3] = getHex(msg[4]);
+    buff[2] = getHex(msg[3]);
+    buff[1] = getHex(msg[2]);
+    buff[0] = getHex(msg[1]);
+    uint16_t ssize = getBuffSize(buff);
+
+    Addrbuff[5] = getHex(msg[11]);
+    Addrbuff[4] = getHex(msg[10]);
+    Addrbuff[3] = getHex(msg[9]);
+    Addrbuff[2] = getHex(msg[8]);
+    Addrbuff[1] = getHex(msg[7]);
+    Addrbuff[0] = getHex(msg[6]);
+    uint32_t sdaddr = get_sd_Address(Addrbuff);
+
+    char buffer[ssize];
+
+    if (comm == Sread) // 2 0000 0 sdAddr
+    {
+        // dma_read_uart(12, buffer, re_dma_rx);
+        sdRead(sdaddr);
+        dma_uart_send(sd_buff, 512);
+    }
+    if (comm == Swrite) // 2 size 1 sdAddr
+    {
+        // dma_read_uart(ssize, buffer, re_dma_rx);
+        sdWrite_String(sdaddr, buffer);
+
+        sdRead(sdaddr);
+        dma_uart_send(sd_buff, 512);
+    }
+}
 //
 void eusart0_sdma_listener(char addrBuff[])
 {
     if (channel5_ready)
     {
 
-        dma_uart_send(sdRead(getsize(addrBuff)), 512);
+        // dma_uart_send(sdRead(getsize(addrBuff)), 512);
         // readAtAddr(getsize(addrBuff), "Second_file");
         // getData(addrBuff);
+        getCommand(addrBuff);
         channel5_ready = 0;
     }
 }
-
-uint32_t getBuffSize(char addr[])
-{
-
-    return getsize(addr);
-}
-uint32_t get_sd_Address(char addr[])
-{
-
-    return getsize(addr);
-}
-
-void getCommand(char msg[])
-{
-    char buff[4];
-    char Addrbuff[4];
-
-    comm = msg[5];
-
-    buff[0] = msg[4];
-    buff[1] = msg[3]; // Buff-size
-    buff[2] = msg[2];
-    buff[3] = msg[1]; // Position
-    uint32_t ssize = getBuffSize(buff);
-
-    Addrbuff[0] = msg[6];
-    Addrbuff[1] = msg[7];
-    Addrbuff[2] = msg[8];
-    Addrbuff[3] = msg[9];
-    uint32_t sdaddr = get_sd_Address(Addrbuff);
-
-    char buffer[ssize];
-
-    if (comm == Sread) // 2 0000 1 sdAddr
-    {
-        sdRead(sdaddr);
-        channel5_ready = 0;
-    }
-    if (comm == Swrite) // 2 size 1 sdAddr
-    {
-        sdWrite_pos_buff(sdaddr, buffer, 0, (ssize & 0x00FF));
-        sdRead(sdaddr);
-        eusart0_dma_rx_init(U19200, 10, data);
-        eusart0_dma_tx_init(U19200);
-    }
-    if (comm == Swrite_req) // 2 size 3 0000
-    {
-        eusart0_dma_rx_init(U19200, ssize, buffer);
-        eusart0_dma_tx_init(U19200);
-        channel5_ready = 0;
-        eusart0_sdma_listener(buffer);
-        dma_uart_send("req ok", 6);
-    }
-}
-
 #endif // _SD_CARD

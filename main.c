@@ -70,12 +70,13 @@ int main()
     timer4_delay(900);
 
     eusart_init(U19200);
-    eusart0_dma_rx_init(U19200, 10, data);
+    eusart0_dma_rx_init(U19200, 12, data);
     eusart0_dma_tx_init(U19200);
 
     sd_init(BAUD_FCLK_128);
     sd_card_cond_8();
     read_opt_cond_41();
+    eusartString("------end------");
     // spi2_init(BAUD_FCLK_16);
 
     // EraseCard(0);

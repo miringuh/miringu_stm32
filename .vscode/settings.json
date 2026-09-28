@@ -1,4 +1,8 @@
 {
   "C_Cpp.errorSquiggles": "disabled",
-  "C_Cpp.default.compilerPath": "/usr/bin/arm-none-eabi-gcc"
+  "C_Cpp.default.compilerPath": "/usr/bin/arm-none-eabi-gcc",
+  "editor.formatOnPaste": true,
+  "editor.mouseWheelZoom": true,
+  "editor.autoClosingBrackets": "always",
+  "editor.autoIndentOnPaste": true
 }
