@@ -185,7 +185,6 @@ void USART1_IRQHandler()
     {
         // USART1->SR &= ~RXNE_FLAG;
         dummy = USART1->SR;
-        rdVal = USART1->DR;
         // NVIC_DisableIRQ(USART1_IRQn);
     }
 }
@@ -224,7 +223,7 @@ uint8_t eusart_send(uint8_t val)
     while (!(USART1->SR & TXE_FLAG)) // 1 DR-->>reg
         ;
     dummy = USART1->SR;
-    rdVal = USART1->DR;
+    // rdVal = USART1->DR;
     return USART1->DR;
 }
 uint8_t eusart_int_send(int val)
@@ -239,7 +238,7 @@ uint8_t eusart_int_send(int val)
 }
 void eusartString(char *mesg)
 {
-    char buff[20];
+    char buff[strlen(mesg)];
     strcpy(buff, mesg);
     // eusart_send(' ');
     for (uint8_t i = 0; i < strlen(mesg) + 1; i++)
@@ -250,7 +249,7 @@ void eusartString(char *mesg)
 uint8_t eusart_rd()
 {
 
-    rdVal = USART1->DR;
+    dummy = USART1->DR;
     while ((USART1->SR & FE_FLAG)) // 1=error
         ;
     while ((USART1->SR & NE_FLAG)) // 1=noise
@@ -258,12 +257,13 @@ uint8_t eusart_rd()
     while (!(USART1->SR & RXNE_FLAG)) // 0=not recvd
         ;
     //
+    rdVal = USART1->DR;
     return rdVal;
 }
 char eusart_char_rd()
 {
 
-    rdVal = USART1->DR;
+    dummy = USART1->DR;
     while ((USART1->SR & FE_FLAG)) // 1=error
         ;
     while ((USART1->SR & NE_FLAG)) // 1=noise
@@ -271,6 +271,7 @@ char eusart_char_rd()
     while (!(USART1->SR & RXNE_FLAG)) // 0=not recvd
         ;
     //
+    rdVal = USART1->DR;
     return rdVal;
 }
 //////////////////////////
@@ -378,7 +379,7 @@ uint8_t eusart_rd_2()
 }
 void eusartString_2(char *mesg)
 {
-    char buff[20];
+    char buff[strlen(mesg)];
     strcpy(buff, mesg);
     eusart_send_2(' ');
     for (uint8_t i = 0; i < strlen(mesg) + 1; i++)
@@ -481,7 +482,7 @@ uint8_t eusart_rd_3()
 }
 void eusartString_3(char *mesg)
 {
-    char buff[20];
+    char buff[strlen(mesg)];
     strcpy(buff, mesg);
     eusart_send_3(' ');
     for (uint8_t i = 0; i < strlen(mesg) + 1; i++)
@@ -626,10 +627,38 @@ char *eusart0_dma_listener(char buff[])
     }
     return buff;
 }
-typedef char *(*read_uart)(char[]);
-char *dma_read_uart(char buff[], read_uart cb)
+//////
+void dma_rx_reinit(uint16_t msize, char msg[])
 {
-    return cb(buff);
+    channel5_ready = 0;
+    NVIC_DisableIRQ(DMA1_Channel5_IRQn);
+    DMA1_Channel5->CCR &= ~DMAEN;
+    while (DMA1_Channel5->CCR & DMAEN)
+    {
+    }
+    USART1->CR1 |= USART_CR1_UE | USART_CR1_RE | USART_CR1_TE;
+    USART1->CR3 |= USART_CR3_DMAR;
+    DMA1_Channel5->CPAR = (uint32_t)&USART1->DR;
+    DMA1_Channel5->CMAR = (uint32_t)msg;
+    DMA1_Channel5->CNDTR = msize;
+    DMA1_Channel5->CCR &= ~MEM2MEM; // mem2mem
+    DMA1_Channel5->CCR |= CIRC;     // 1-circ
+
+    // DMA1_Channel5->CCR |= MINC;                                     // mem incr
+    // DMA1_Channel5->CCR &= ~PINC;                                    // per incr
+    // DMA1_Channel5->CCR &= ~DIR;                                     // 0=peri READ 1=mem READ
+    // DMA1_Channel5->CCR &= ~(DMA_CCR_MSIZE_Msk | DMA_CCR_PSIZE_Msk); // peri/mem size
+    // DMA1_Channel5->CCR |= DMA_CCR_PL_1;                             // high prioty
+
+    DMA1_Channel5->CCR |= TCIEN | TEIEN | HTIEN;
+    DMA1_Channel5->CCR |= DMAEN;
+    NVIC_SetPriority(DMA1_Channel5_IRQn, 2);
+    NVIC_EnableIRQ(DMA1_Channel5_IRQn);
+}
+typedef void (*read_uart)(uint16_t, char[]);
+void dma_read_uart(uint16_t msize, char buff[], read_uart cb)
+{
+    cb(msize, buff);
 }
 #endif
 /*

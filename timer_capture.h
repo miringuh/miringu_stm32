@@ -92,16 +92,15 @@ void TIM2_IRQHandler(void)
         // eusart_send((capture & 0xff00) >> 8);
         // eusart_send((capture & 0xff));
     }
-
 };
 
 // 1ms == 1000us
 //
-//freq=tm_clk/(PSC+1)(ARR+1)
-//40,000,000÷(50,000×800) = 1hz      ==1 sec
-//40,000,000÷(5000×800) = 100hz      
-//40,000,000÷(500×80)     =1000hz    ==1ms
-//40,000,000÷(5×8)        =1000000hz ==1000ms
+// freq=tm_clk/(PSC+1)(ARR+1)
+// 40,000,000÷(50,000×800) = 1hz      ==1 sec
+// 40,000,000÷(5000×800) = 100hz
+// 40,000,000÷(500×80)     =1000hz    ==1ms
+// 40,000,000÷(5×8)        =1000000hz ==1000ms
 
 void timer2_ch1_init() // PA0 in
 {
@@ -110,11 +109,11 @@ void timer2_ch1_init() // PA0 in
     confPinA(FLOAT_INP, 0);
 
     TIM2->CR1 &= ~CEN;
-//    TIM2->PSC = 499; // 1us 1ms=1000us
-//    TIM2->ARR = 79;  // 1ms
-    
-    TIM2->PSC = 49990; // 
-    TIM2->ARR = 799;  // 1hz
+    //    TIM2->PSC = 499; // 1us 1ms=1000us
+    //    TIM2->ARR = 79;  // 1ms
+
+    TIM2->PSC = 49990; //
+    TIM2->ARR = 799;   // 1hz
     TIM2->CNT = 0;
 
     TIM2->CCMR1 |= TIM_CCMR1_CC1S_0; // ch1-input
@@ -156,7 +155,7 @@ void timer2_ch2_init() // pa1
     TIM2->CNT = 0;
     TIM2->CR1 = TIM_CR1_ARPE | TIM_CR1_URS;
     TIM2->CR1 |= (0 << TIM_CR1_CMS_Pos);
-    TIM1->CR1 &= ~(TIM_CR1_OPM | TIM_CR1_UDIS | TIM_DIR | TIM_CR1_URS); // cnt stops
+    TIM2->CR1 &= ~(TIM_CR1_OPM | TIM_CR1_UDIS | TIM_DIR | TIM_CR1_URS); // cnt stops
 
     TIM2->CCMR1 &= ~TIM_CCMR1_CC2S; // ch2-output
 

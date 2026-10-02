@@ -19,17 +19,18 @@
 #define TX_BUFFSIZE 8
 uint8_t tx_buffer[TX_BUFFSIZE];
 
-char buffxn[120];
+char buffxn[2];
+char bdata[2];
 char *buffn = " ";
 char data[512];
 
 char *getchar_2str(char a)
 {
-    data[0] = a;
-    data[1] = '/';
-    strcpy(buffxn, data);
-    strcat(data, buffxn);
-    return data;
+    bdata[0] = a;
+    bdata[1] = '/';
+    strcpy(buffxn, bdata);
+    strcat(bdata, buffxn);
+    return bdata;
 }
 void reset_regs()
 {
@@ -76,7 +77,7 @@ int main()
     sd_init(BAUD_FCLK_64);
     sd_card_cond_8();
     read_opt_cond_41();
-    eusartString("------end------");
+    eusartString("-----end-------");
     // spi2_init(BAUD_FCLK_16);
 
     // EraseCard(0);
