@@ -4,5 +4,7 @@
   "editor.formatOnPaste": true,
   "editor.mouseWheelZoom": true,
   "editor.autoClosingBrackets": "always",
-  "editor.autoIndentOnPaste": true
+  "editor.autoIndentOnPaste": true,
+  "terminal.integrated.fontSize": 9,
+  "terminal.integrated.fontWeight": "normal"
 }

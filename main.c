@@ -73,7 +73,7 @@ int main()
     eusart0_dma_rx_init(U19200, 12, data);
     eusart0_dma_tx_init(U19200);
 
-    sd_init(BAUD_FCLK_128);
+    sd_init(BAUD_FCLK_64);
     sd_card_cond_8();
     read_opt_cond_41();
     eusartString("------end------");
@@ -83,12 +83,13 @@ int main()
     // EraseCard(1);
     // EraseCard(2);
     // EraseCard(1);
-    // sdWrite_pos_buff(1, "first_file", 10, 0);
-    // sdWrite_pos_buff(1, "Second_file", 20, 16);
-    // sdWrite_pos_buff(1, "third_file", 30, 32);
-    // sdWrite_pos_buff(1, "fourth_file", 40, 48);
-    // sdWrite_pos_buff(1, "fifth_file", 50, 64);
+    // sdWrite_pos_buff(0, "first_file", 10, 0);
+    // sdWrite_pos_buff(0, "Second_file", 20, 16);
+    // sdWrite_pos_buff(0, "third_file", 30, 32);
+    // sdWrite_pos_buff(0, "fourth_file", 40, 48);
+    // sdWrite_pos_buff(0, "fifth_file", 50, 64);
 
+    // sdWrite_String(1, "testing again");
     // sdRead(1);
     // dma_uart_send(sd_buff, 512);
 

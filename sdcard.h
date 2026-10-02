@@ -547,19 +547,12 @@ wrMem:
 }
 
 //          WRITE BUFF
-void sdWrite_String(uint32_t addr, char data[]) // cmd24
+void sdWrite_String(uint32_t addr, char *data) // cmd24
 {
     char buff[512];
     memset(buff, 0xFF, 512);
     strcpy(buff, data);
-    uint16_t count = 0;
     uint16_t ccn = 0x2FF;
-
-    for (uint16_t i = 0; i < strlen(data); i++)
-    {
-        buff[i] = data[count];
-        count++;
-    }
 
     command(CMD24, 0x00, (addr << 9), 0X95); // 2GB
 
@@ -586,16 +579,17 @@ wrMem:
     {
         GPIOB->BSRR = CS_OFF; // This is critical WHY?? don know why.....
     }
-    spi2_send(0XFF);
-    spi2_send(0XFF);
     chipStatus();
     GPIOB->BSRR = CS_OFF;
-    timer4_delay(10000);
+    spi2_send(0XFF);
+    spi2_send(0XFF);
 }
 void sdWrite_pos_buff(uint32_t addr, char buff[], uint32_t fd_addr, uint16_t posStr)
 {
     uint16_t count = 0;
     uint16_t ccn = 0x4FF;
+    memset(sd_buff, 0xFF, 512);
+
     sdRead(addr);
 
     if (strlen(buff) < 12) // filename
@@ -730,13 +724,18 @@ void getData(char ssdbuff[])
 //////////////////////
 // sync --> buff_size --> command --> sd_Address
 // 2    --> xxxx      --> x       --> xxxxxx
-#define SYNC 0X02
-#define Sread 0X00
-#define Swrite 0X01
+uint8_t SYNC = 0X02;
+uint8_t Sread = 0X00;
+uint8_t Swrite = 0X01;
+uint8_t req_Swrite = 0X03;
+uint8_t sd_erase = 0X04;
+uint8_t stop_wrt = 0X05;
+uint8_t task = 0;
+
 uint8_t state = 0;
 uint32_t autoAddr = 0;
 uint16_t autosize = 0;
-
+uint16_t addr_cnt = 0;
 //
 uint32_t sd_Addr_conv(char buff[])
 {
@@ -759,6 +758,9 @@ uint32_t get_sd_Address(char addr[])
 
 void getCommand(char msg[])
 {
+    /*
+    1-b 4-size/pos 1-comm 6-sd-addr
+    */
     char buff[4];
     char comm = 0;
     char Addrbuff[6];
@@ -779,21 +781,45 @@ void getCommand(char msg[])
     Addrbuff[0] = getHex(msg[6]);
     uint32_t sdaddr = get_sd_Address(Addrbuff);
 
-    char buffer[ssize];
-
-    if (comm == Sread) // 2 0000 0 sdAddr
+    if ((comm == Sread) & (state == 0)) // 2 0000 0 sdAddr
     {
         // dma_read_uart(12, buffer, re_dma_rx);
         sdRead(sdaddr);
         dma_uart_send(sd_buff, 512);
+        state = 0;
     }
-    if (comm == Swrite) // 2 size 1 sdAddr
+    if ((comm == sd_erase) & (state == 0)) // Erase
     {
-        // dma_read_uart(ssize, buffer, re_dma_rx);
-        sdWrite_String(sdaddr, buffer);
+        EraseCard(sdaddr);
+        state = 0;
+    }
+    
+    if ((comm == stop_wrt)) //
+    {
+        state = 0;
+    }
 
-        sdRead(sdaddr);
-        dma_uart_send(sd_buff, 512);
+    if (state == 1) // 2 size 1 sdAddr
+    {
+        sdWrite_pos_buff(autoAddr, msg, 0, autosize);
+        // sdWrite_String(autoAddr, msg);
+
+        dma_uart_send("wrt-ok", 6);
+        if (autosize <= 512)
+        {
+            autosize += 16;
+        }
+        state = 0;
+    }
+    if ((comm == req_Swrite) & (state == 0))
+    {
+        autoAddr = sdaddr;
+        autosize = ssize;
+        // addr_cnt = autosize;
+        // buffer[autosize];
+        dma_uart_send("req-ok", 6);
+        channel5_ready = 0;
+        state = 1;
     }
 }
 //
@@ -810,3 +836,28 @@ void eusart0_sdma_listener(char addrBuff[])
     }
 }
 #endif // _SD_CARD
+       /*
+       eusart_init(U19200);
+           eusart0_dma_rx_init(U19200, 12, data);
+           eusart0_dma_tx_init(U19200);
+       
+           sd_init(BAUD_FCLK_64);
+           sd_card_cond_8();
+           read_opt_cond_41();
+           eusartString("------end------");
+           // spi2_init(BAUD_FCLK_16);
+       
+           // EraseCard(0);
+           // EraseCard(1);
+           // EraseCard(2);
+           // EraseCard(1);
+           // sdWrite_pos_buff(0, "first_file", 10, 0);
+           // sdWrite_pos_buff(0, "Second_file", 20, 16);
+           // sdWrite_pos_buff(0, "third_file", 30, 32);
+           // sdWrite_pos_buff(0, "fourth_file", 40, 48);
+           // sdWrite_pos_buff(0, "fifth_file", 50, 64);
+       
+           // sdWrite_String(1, "testing again");
+           // sdRead(1);
+           // dma_uart_send(sd_buff, 512);
+       */
